@@ -98,7 +98,7 @@ endif ()
 ##########################################################
 # Set module's Name
 ##########################################################
-#set(THIRD_PARTY_NAME Lib)
+set(THIRD_PARTY_NAME Lib)
 #set(CORE_NAME Core)
 #set(PLATFORMS_NAME Platforms)
 #set(SUBSYSTEMS_NAME Subsystems)
@@ -113,7 +113,7 @@ endif ()
 ##########################################################
 # Process modules
 ##########################################################
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})

@@ -42,7 +42,7 @@ jobs:
             echo "Checking format for: $TARGET_DIRS"
             find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \) | xargs -r clang-format-21 -i
             
-            if [ -n "$(git status --porcelain)" ]; then
+            if [ -n "$(git status --porcelain -uno)" ]; then
               echo "--------------------------------------------------"
               echo " !! FORMAT MISMATCH DETECTED !! "
               echo "--------------------------------------------------"

@@ -261,7 +261,7 @@ TEST(AtomicNumericTest, TestLessEqual_MultipleThreads_ReflectsConcurrentChanges)
     while (!bStarted)
     {
         std::this_thread::yield();
-    }    
+    }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 

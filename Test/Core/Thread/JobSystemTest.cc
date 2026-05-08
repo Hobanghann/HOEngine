@@ -134,7 +134,7 @@ TEST(JobSystemTest, KickJobs_MultiplePublishers_ExecutesAllJobsWithoutLoss)
                 {
                     JobDesc job{[](void* pData, int32_t size)
                                 {
-                                    auto counter = static_cast<std::atomic<int32_t>*>(pData);                                   
+                                    auto counter = static_cast<std::atomic<int32_t>*>(pData);
                                     counter->fetch_add(1);
                                 },
                                 static_cast<void*>(pCounter),

@@ -1,0 +1,13 @@
+.*
+!.git
+!.gitignore
+!.gitattributes
+!.gitmodules
+!.github/
+!.clang-format
+!.clang-tidy
+
+build*/
+build/
+
+Testing/

@@ -1,0 +1,116 @@
+Checks: >
+  -*,
+
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  bugprone-implicit-fallthrough,
+
+  clang-analyzer-*,
+
+  concurrency-*,
+
+  # cppcoreguidelines
+  cppcoreguidelines-c-copy-assignment-signature,
+  cppcoreguidelines-explicit-virtual-functions,
+  cppcoreguidelines-interfaces-global-init,
+  cppcoreguidelines-missing-std-forward,
+  cppcoreguidelines-narrowing-conversions,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-slicing,
+  cppcoreguidelines-virtual-class-destructor,
+  cppcoreguidelines-avoid-const-or-ref-data-members,
+  cppcoreguidelines-non-private-member-variables-in-classes,
+  cppcoreguidelines-pro-type-const-cast,
+  cppcoreguidelines-macro-usage,
+
+  performance-*,
+  performance-inefficient-vector-operation,
+  performance-no-automatic-move,
+
+  # modernize
+  modernize-deprecated-headers,
+  modernize-make-unique,
+  modernize-redundant-void-arg,
+  modernize-use-bool-literals,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-loop-convert,
+
+  # readability
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-container-size-empty,
+  readability-delete-null-pointer,
+  readability-duplicate-include,
+  readability-implicit-bool-conversion,
+  readability-inconsistent-declaration-parameter-name,
+  readability-make-member-function-const,
+  readability-misleading-indentation,
+  readability-named-parameter,
+  readability-redundant-access-specifiers,
+  readability-redundant-control-flow,
+  readability-redundant-declaration,
+  readability-redundant-function-ptr-deref,
+  readability-redundant-smartptr-get,
+  readability-static-accessed-through-instance,
+  readability-uniqueptr-delete-release,
+  readability-identifier-naming,
+  readability-isolate-declaration,
+
+  # misc
+  misc-forward-declaration-namespace,
+  misc-macro-parentheses,
+  misc-move-constructor-init,
+  misc-move-forwarding-reference,
+  misc-redundant-expression,
+  misc-suspicious-missing-comma,
+  misc-suspicious-semicolon,
+  misc-suspicious-string-compare,
+  misc-swapped-arguments,
+  misc-unconventional-assign-operator,
+  misc-unused-alias-decls,
+  misc-unused-using-decls,
+  misc-static-assert,
+  misc-const-correctness,
+
+WarningsAsErrors: '*'
+
+HeaderFilterRegex: '.*Core/.*'
+FormatStyle: none
+
+CheckOptions:
+  - key: system-headers
+    value: 0
+
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: 'm'
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: 'm'
+  - key: readability-identifier-naming.MemberCase
+    value: CamelCase
+  - key: readability-identifier-naming.StaticVariablePrefix
+    value: 's'
+  - key: readability-identifier-naming.PublicMethodCase
+    value: CamelCase
+  - key: readability-identifier-naming.PrivateMethodCase
+    value: camelBack
+  - key: readability-identifier-naming.ProtectedMethodCase
+    value: camelBack
+  - key: readability-identifier-naming.EnumPrefix
+    value: 'e'
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE

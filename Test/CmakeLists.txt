@@ -1,0 +1,37 @@
+message(STATUS "[Module] Start to process test module.")
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+##########################################################
+# Download and Make Available Google Test
+##########################################################
+set(GTEST_NAME googletest)
+
+FetchContent_Declare(${GTEST_NAME}
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.14.0
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+message (STATUS "Start to Download " ${GTEST_NAME} "...")
+FetchContent_MakeAvailable(${GTEST_NAME})
+message (STATUS "Downloading " ${GTEST_NAME} " finished.")
+
+################################################################################
+# Set Google Test properties
+################################################################################
+foreach(tgt gmock gmock_main gtest gtest_main)
+    if (TARGET ${tgt})
+        set_target_properties(
+            ${tgt} PROPERTIES 
+            FOLDER "Test/gtest"
+            SYSTEM TRUE
+            )
+    endif()
+endforeach()
+
+################################################################################
+# Process subdirectories
+################################################################################
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
+
+message(STATUS "[Module] Processing test module finished.\n")

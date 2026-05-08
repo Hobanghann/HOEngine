@@ -1,0 +1,36 @@
+message(STATUS "Start to process ${CORE_NAME} Test.")
+
+##########################################################
+# Set Test's Name
+##########################################################
+set(MATH_TEST_NAME MathTests)
+set(THREAD_TEST_NAME ThreadTests)
+set(THREAD_FALLBACK_TEST_NAME ThreadFallbackTests)
+set(TEMPLATES_TEST_NAME TemplatesTests)
+set(TIME_TEST_NAME TimeTests)
+set(IO_TEST_NAME IOTests)
+set(LOG_TEST_NAME LogTests)
+
+##########################################################
+# Set Test Suite Prefix
+##########################################################
+set(MATH_PREFIX ${CORE_NAME}.Math.)
+set(THREAD_PREFIX ${CORE_NAME}.Thread.Normal.)
+set(THREAD_FALLBACK_PREFIX ${CORE_NAME}.Thread.Fallback.)
+set(TEMPLATES_PREFIX ${CORE_NAME}.Templates.)
+set(TIME_PREFIX ${CORE_NAME}.Time.)
+set(IO_PREFIX ${CORE_NAME}.IO.)
+set(LOG_PREFIX ${CORE_NAME}.Log.)
+
+##########################################################
+# Process Subdirectories
+##########################################################
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Math)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thread)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThreadFallback)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Templates)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Time)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/IO)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Log)
+
+message(STATUS "Processing ${CORE_NAME} Test finished.")

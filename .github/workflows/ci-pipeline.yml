@@ -91,15 +91,11 @@ jobs:
       - name: Run clang-tidy
         shell: bash
         run: |
-          echo "Running clang-tidy check..."
+          TARGET_DIRS="Core"
+          
+          FILES=$(find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \))
 
-          for dir in Core; do
-            if [ -d "$dir" ]; then
-              echo "--- Running clang-tidy for directory: $dir ---"
-              
-              run-clang-tidy -p build -quiet -source-filter="([\\/]|^)$dir[\\/].*\.(h|cc)$"
-            fi
-          done
+          echo "$FILES" | xargs -r clang-tidy -p build --quiet
 
   build-test:
     name: Build And Test

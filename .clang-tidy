@@ -5,6 +5,7 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-forward-declaration-namespace,
+  -bugprone-macro-parentheses,
 
   clang-analyzer-*,
 

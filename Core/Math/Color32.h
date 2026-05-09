@@ -388,7 +388,7 @@ uint8_t Color32::ToR8() const
 
 uint16_t Color32::ToRG8() const
 {
-    return (static_cast<uint16_t>(G) << 8) | R;
+    return static_cast<uint16_t>((static_cast<uint16_t>(G) << 8) | R);
 }
 
 uint32_t Color32::ToRGB8() const
@@ -423,7 +423,7 @@ uint8_t Color32::ToL8() const
 
 uint16_t Color32::ToLA8() const
 {
-    return (static_cast<uint16_t>(A) << 8) | R;
+    return static_cast<uint16_t>((static_cast<uint16_t>(A) << 8) | R);
 }
 
 INLINE constexpr Color32 Color32::sAliceBlue = Color32(240, 248, 255, 255);

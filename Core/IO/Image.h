@@ -167,6 +167,8 @@ Color32 Image::GetColor32(int32_t x, int32_t y) const
         case eFormat::RGB32F:
         case eFormat::RGBA32F:
             return Color32(GetColor128(x, y));
+        default:
+            break;
     }
     HO_ASSERT(x < mWidth && y < mHeight, "out of bound");
     const int32_t idx = y * mWidth + x;
@@ -196,6 +198,8 @@ Color128 Image::GetColor128(int32_t x, int32_t y) const
         case eFormat::RGB8:
         case eFormat::RGBA8:
             return Color128(GetColor32(x, y));
+        default:
+            break;
     }
 
     HO_ASSERT(x < mWidth && y < mHeight, "out of bound");

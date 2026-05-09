@@ -5,7 +5,7 @@
 #include "Core/Math/Color128.h"
 #include "Core/Math/Matrix3x3.h"
 #include "Core/Math/Vector4.h"
-#include "Core/Templates/Id.h"
+#include "Core/Templates/ID.h"
 
 namespace ho
 {

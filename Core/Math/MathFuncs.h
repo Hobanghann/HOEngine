@@ -147,7 +147,7 @@ template <typename T>
     }
 
     const bool bNegativeExp = (exp < 0);
-    int32_t e = bNegativeExp ? -(exp + 1) : exp;
+    uint32_t e = bNegativeExp ? static_cast<uint32_t>(-(exp + 1)) : static_cast<uint32_t>(exp);
     if (bNegativeExp)
     {
         ++e;

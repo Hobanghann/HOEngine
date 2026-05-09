@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "vector4.h"
+#include "Vector4.h"
 
 namespace ho
 {

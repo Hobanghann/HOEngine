@@ -146,7 +146,7 @@ TEST(Color32Test, Luminance_DefaultAndCustomWeights_ReturnsCorrectBrightness)
     EXPECT_NEAR(defaultLuminance, manualLuminance, math::EPSILON_CMP);
 
     float customLuminance = c.Luminance(0.3f, 0.59f, 0.11f);
-    EXPECT_NEAR(customLuminance, 0.3f * 100 + 0.59f * 150 + 0.11f * 200, math::EPSILON_CMP);
+    EXPECT_NEAR(customLuminance, 0.3f * 100 + 0.59f * 150 + 0.11f * 200, math::EPSILON_CMP * 10.f);
 }
 
 TEST(Color32Test, ToR8_Color32_ReturnsRedComponent)

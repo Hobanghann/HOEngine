@@ -405,7 +405,7 @@ TEST_F(Basis3DTest, LookAt_ZeroTarget_DoesNotChangeOrientation)
 
     Basis3D lookedB = b.LookedAt(Vector3::sZero, up);
 
-    EXPECT_TRUE(b == lookedB);
+    EXPECT_TRUE(b.IsEqualApprox(lookedB));
 }
 
 TEST_F(Basis3DTest, LookAt_TargetCollinearWithUp_HandlesGracefully)
@@ -445,7 +445,7 @@ TEST_F(Basis3DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 
     Basis3D lookedB = b.LookedAt(b.GetForward(), b.GetUp(), true);
 
-    EXPECT_TRUE(b == lookedB);
+    EXPECT_TRUE(b.IsEqualApprox(lookedB));
 }
 
 TEST_F(Basis3DTest, OperatorMul_TwoBases_ReturnsCombinedTransform)

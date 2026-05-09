@@ -1,7 +1,7 @@
-#include "matrix4x4.h"
+#include "Matrix4x4.h"
 
-#include "matrix3x3.h"
-#include "vector3.h"
+#include "Matrix3x3.h"
+#include "Vector3.h"
 
 namespace ho
 {

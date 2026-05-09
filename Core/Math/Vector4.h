@@ -62,7 +62,7 @@ struct alignas(16) Vector4 final
     [[nodiscard]] FORCE_INLINE float Magnitude() const;
     [[nodiscard]] constexpr float SqrdMagnitude() const;
 
-    [[nodiscard]] FORCE_INLINE void Normalize();
+    FORCE_INLINE void Normalize();
     [[nodiscard]] FORCE_INLINE Vector4 Normalized() const;
 
     constexpr void Project(const Vector4& ontoVector);

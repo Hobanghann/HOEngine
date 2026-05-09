@@ -20,7 +20,7 @@ TEST(AtomicNumericTest, SetAndGet_MultiThreads_MaintainsAtomicity)
     for (int32_t i = 0; i < threadCount; ++i)
     {
         writers.emplace_back(
-            [&num, i, iterations]()
+            [&num, i]()
             {
                 int32_t value = (i + 1) * 1111;
                 for (int32_t j = 0; j < iterations; ++j)
@@ -115,7 +115,7 @@ TEST(AtomicNumericTest, ExchangeIfGreater_MultipleThreads_FinalValueIsMaximum)
     for (int32_t i = 0; i < threadCount; ++i)
     {
         threads.emplace_back(
-            [&num, i, iterations]()
+            [&num, i]()
             {
                 for (int32_t j = 1; j <= iterations; ++j)
                 {

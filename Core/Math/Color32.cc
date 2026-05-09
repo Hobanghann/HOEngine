@@ -1,6 +1,6 @@
-#include "color32.h"
+#include "Color32.h"
 
-#include "color128.h"
+#include "Color128.h"
 
 namespace ho
 {

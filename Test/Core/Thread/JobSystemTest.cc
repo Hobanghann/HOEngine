@@ -17,7 +17,7 @@ static void addInt(void* pData, int32_t size)
     ++(*p);
 }
 
-void sleepAndAddInt(void* pData, int32_t size)
+static void sleepAndAddInt(void* pData, int32_t size)
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
     int32_t* p = reinterpret_cast<int32_t*>(pData);
@@ -105,18 +105,6 @@ TEST(JobSystemTest, KickJobsAndWait_MultipleJobs_BlocksMainThreadUntilCompletion
     EXPECT_GE(elapsed, SLEEP_TIME * jobCount / 4);
 }
 
-void nestedSlowJob(void* pData, int32_t size)
-{
-    auto counter = *static_cast<std::atomic<int32_t>**>(pData);
-
-    if (counter->load() % 13 == 0)
-    {
-        std::this_thread::yield();
-    }
-
-    counter->fetch_add(1);
-}
-
 TEST(JobSystemTest, KickJobs_MultiplePublishers_ExecutesAllJobsWithoutLoss)
 {
     JobSystem js(std::string(), 8);
@@ -128,7 +116,7 @@ TEST(JobSystemTest, KickJobs_MultiplePublishers_ExecutesAllJobsWithoutLoss)
     for (int32_t t = 0; t < 4; ++t)
     {
         publishers.emplace_back(
-            [&js, pCounter, outerJobCount]()
+            [&js, pCounter]()
             {
                 for (int32_t i = 0; i < outerJobCount; ++i)
                 {

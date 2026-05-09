@@ -1,4 +1,4 @@
-#include "thread.h"
+#include "Thread.h"
 
 #if defined(THREAD_ENABLED)
 

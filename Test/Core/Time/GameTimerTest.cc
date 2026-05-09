@@ -11,7 +11,7 @@ using namespace ho;
 
 constexpr auto DEFAULT_DELAY = 10ms;
 
-void advanceTime(std::chrono::milliseconds ms)
+static void advanceTime(std::chrono::milliseconds ms)
 {
     std::this_thread::sleep_for(ms);
 }

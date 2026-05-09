@@ -195,12 +195,12 @@ Projection Projection::CreatePerspective(const Matrix4x4& m)
 }
 
 constexpr Projection::Projection()
-  : mMatrix(Matrix4x4())
-  , mFov(0.0f)
+  : mFov(0.0f)
   , mAspectRatio(0.0f)
   , mNear(0.0f)
   , mFar(0.0f)
   , mbOrthographic(false)
+  , mMatrix(Matrix4x4())
 {
 }
 

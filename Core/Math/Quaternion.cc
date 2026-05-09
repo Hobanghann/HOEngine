@@ -1,6 +1,6 @@
-#include "quaternion.h"
+#include "Quaternion.h"
 
-#include "matrix3x3.h"
+#include "Matrix3x3.h"
 
 namespace ho
 {

@@ -67,7 +67,6 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wstrict-aliasing
             -Wnull-dereference
             -Wdouble-promotion
-            -Wformat=1
             -Wcast-qual
             -Wcast-align
             -fms-extensions

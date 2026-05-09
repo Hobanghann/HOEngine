@@ -19,19 +19,19 @@ struct LogEntry
     eLogLevel Level;
 };
 
-class LogSink_imgui final : public spdlog::sinks::base_sink<std::mutex>
+class LogSinkImgui final : public spdlog::sinks::base_sink<std::mutex>
 {
   public:
     bool IsEmpty()
     {
-        std::lock_guard<std::mutex> lock(this->mutex_);
+        const std::lock_guard<std::mutex> lock(this->mutex_);
         return mLogQueue.empty();
     }
 
     void PopLog(LogEntry* outEntry)
     {
         HO_ASSERT(outEntry, "outEntry is null.");
-        std::lock_guard<std::mutex> lock(this->mutex_);
+        const std::lock_guard<std::mutex> lock(this->mutex_);
         if (mLogQueue.empty())
         {
             return;

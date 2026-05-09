@@ -9,6 +9,7 @@
 #include <spdlog/sinks/base_sink.h>
 #include <string>
 
+#include "LogLevel.h"
 #include "Macros.h"
 
 namespace ho

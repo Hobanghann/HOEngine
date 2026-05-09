@@ -7,6 +7,7 @@
 #define SPDLOG_LEVEL_NAMES {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL", "OFF"}
 #endif
 
+#include "LogLevel.h"
 #include "LogSinkImgui.h"
 #include "Macros.h"
 

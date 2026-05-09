@@ -59,13 +59,3 @@
 #define HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER() HO_DISABLE_SPECIFIC_COMPILER_WARNING("-Wpadded")
 #define HO_DISABLE_COMPILER_WARNING_FAILING_TO_HOLD_LOCK()
 #endif
-
-enum class eLogLevel
-{
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-    Critical,
-};

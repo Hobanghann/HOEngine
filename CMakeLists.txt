@@ -67,7 +67,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wstrict-aliasing
             -Wnull-dereference
             -Wdouble-promotion
-            -Wformat=2
+            -Wformat=1
             -Wcast-qual
             -Wcast-align
             -fms-extensions
@@ -79,6 +79,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-unused-parameter
             -Wno-gnu-anonymous-struct   # allow anonymous struct/union
             -Wno-double-promotion       # allow float to double promotion
+            -Wno-sign-conversion
             -fno-exceptions
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")        

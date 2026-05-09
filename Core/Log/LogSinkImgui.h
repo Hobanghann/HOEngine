@@ -9,7 +9,7 @@
 #include <spdlog/sinks/base_sink.h>
 #include <string>
 
-#include "Core/Macros.h"
+#include "Macros.h"
 
 namespace ho
 {

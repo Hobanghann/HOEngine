@@ -7,8 +7,8 @@
 #define SPDLOG_LEVEL_NAMES {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL", "OFF"}
 #endif
 
-#include "Core/Macros.h"
 #include "LogSinkImgui.h"
+#include "Macros.h"
 
 namespace spdlog
 {

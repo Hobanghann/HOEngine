@@ -4,7 +4,7 @@
 #include <mutex>
 
 #include "Core/Config.h"
-#include "Core/Macros.h"
+#include "Macros.h"
 
 namespace ho
 {

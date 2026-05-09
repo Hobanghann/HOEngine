@@ -4,7 +4,7 @@
 #include <thread>
 
 #include "Core/Config.h"
-#include "Core/Macros.h"
+#include "Macros.h"
 #include "Mutex.h"
 
 // This class defines a recursive mutex that can be used with a condition

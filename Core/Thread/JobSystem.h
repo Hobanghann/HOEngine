@@ -8,8 +8,8 @@
 
 #include "ConditionVariable.h"
 #include "Core/Config.h"
-#include "Core/Macros.h"
 #include "Core/Templates/AtomicNumeric.h"
+#include "Macros.h"
 #include "Mutex.h"
 #include "SpinLock.h"
 #include "Thread.h"

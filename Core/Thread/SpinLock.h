@@ -7,7 +7,7 @@
 #endif
 
 #include "Core/Config.h"
-#include "Core/Macros.h"
+#include "Macros.h"
 #include "Thread.h"
 
 namespace ho

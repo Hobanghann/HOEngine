@@ -4,10 +4,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Core/Macros.h"
 #include "Core/Math/Quaternion.h"
 #include "Core/Math/Transform3D.h"
 #include "Core/Math/Vector3.h"
-#include "Core/Macros.h"
 
 namespace ho
 {

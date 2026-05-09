@@ -3,7 +3,8 @@ Checks: >
 
   bugprone-*,
   -bugprone-easily-swappable-parameters,
-  bugprone-implicit-fallthrough,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-forward-declaration-namespace,
 
   clang-analyzer-*,
 
@@ -13,7 +14,6 @@ Checks: >
   cppcoreguidelines-c-copy-assignment-signature,
   cppcoreguidelines-explicit-virtual-functions,
   cppcoreguidelines-interfaces-global-init,
-  cppcoreguidelines-missing-std-forward,
   cppcoreguidelines-narrowing-conversions,
   cppcoreguidelines-pro-type-member-init,
   cppcoreguidelines-slicing,
@@ -21,11 +21,10 @@ Checks: >
   cppcoreguidelines-avoid-const-or-ref-data-members,
   cppcoreguidelines-non-private-member-variables-in-classes,
   cppcoreguidelines-pro-type-const-cast,
-  cppcoreguidelines-macro-usage,
 
   performance-*,
-  performance-inefficient-vector-operation,
-  performance-no-automatic-move,
+  -performance-enum-size,
+  -performance-inefficient-string-concatenation,
 
   # modernize
   modernize-deprecated-headers,
@@ -42,12 +41,10 @@ Checks: >
   readability-container-size-empty,
   readability-delete-null-pointer,
   readability-duplicate-include,
-  readability-implicit-bool-conversion,
   readability-inconsistent-declaration-parameter-name,
   readability-make-member-function-const,
   readability-misleading-indentation,
   readability-named-parameter,
-  readability-redundant-access-specifiers,
   readability-redundant-control-flow,
   readability-redundant-declaration,
   readability-redundant-function-ptr-deref,
@@ -59,7 +56,6 @@ Checks: >
 
   # misc
   misc-forward-declaration-namespace,
-  misc-macro-parentheses,
   misc-move-constructor-init,
   misc-move-forwarding-reference,
   misc-redundant-expression,
@@ -75,12 +71,13 @@ Checks: >
 
 WarningsAsErrors: '*'
 
-HeaderFilterRegex: '.*Core/.*'
 FormatStyle: none
 
 CheckOptions:
   - key: system-headers
     value: 0
+  - key: readability-identifier-naming.MemberIgnoredRegexp
+    value: "^(s|m|b|p|sb|sp|mb|mp)[A-Z][a-zA-Z0-9]*$"
 
   - key: readability-identifier-naming.ClassCase
     value: CamelCase
@@ -111,6 +108,4 @@ CheckOptions:
   - key: readability-identifier-naming.EnumCase
     value: CamelCase
   - key: readability-identifier-naming.MacroDefinitionCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.ConstexprVariableCase
     value: UPPER_CASE

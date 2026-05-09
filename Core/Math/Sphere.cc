@@ -27,7 +27,7 @@ Sphere Sphere::FromPositionsCentroid(const Vector3* pPositions, int32_t count)
     float maxSqrdDist = 0;
     for (int32_t i = 0; i < count; ++i)
     {
-        float sqrdDist = math::SqrdDistance(center, pPositions[i]);
+        const float sqrdDist = math::SqrdDistance(center, pPositions[i]);
         maxSqrdDist = math::Max(maxSqrdDist, sqrdDist);
     }
     radius = math::Sqrt(maxSqrdDist);
@@ -129,7 +129,8 @@ Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
     const float ySqrdDist = math::SqrdDistance(yMinVec, yMaxVec);
     const float zSqrdDist = math::SqrdDistance(zMinVec, zMaxVec);
 
-    Vector3 a, b;
+    Vector3 a;
+    Vector3 b;
     if (xSqrdDist > ySqrdDist && xSqrdDist > zSqrdDist)
     {
         a = xMinVec;
@@ -195,8 +196,8 @@ Sphere Sphere::Merge(const Sphere& lhs, const Sphere& rhs)
 
     const float newRadius = (dist + radius1 + radius2) * 0.5f;
 
-    Vector3 dir = diff / dist;
-    Vector3 newCenter = center1 + dir * (newRadius - radius1);
+    const Vector3 dir = diff / dist;
+    const Vector3 newCenter = center1 + dir * (newRadius - radius1);
 
     return Sphere{newCenter, newRadius};
 }

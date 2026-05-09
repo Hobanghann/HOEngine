@@ -11,38 +11,38 @@ AABB AABB::FromPositions(const Vector3* pPositions, int32_t count)
     {
         return AABB(pPositions[0], pPositions[0]);
     }
-    Vector3 MinEdges = Vector3(math::FLOAT_MAX, math::FLOAT_MAX, math::FLOAT_MAX);
-    Vector3 MaxEdges = Vector3(-math::FLOAT_MAX, -math::FLOAT_MAX, -math::FLOAT_MAX);
+    Vector3 minEdges = Vector3(math::FLOAT_MAX, math::FLOAT_MAX, math::FLOAT_MAX);
+    Vector3 maxEdges = Vector3(-math::FLOAT_MAX, -math::FLOAT_MAX, -math::FLOAT_MAX);
 
     for (int32_t i = 0; i < count; ++i)
     {
         // construct aabb edges
-        if (pPositions[i].X > MaxEdges.X)
+        if (pPositions[i].X > maxEdges.X)
         {
-            MaxEdges.X = pPositions[i].X;
+            maxEdges.X = pPositions[i].X;
         }
-        if (pPositions[i].X < MinEdges.X)
+        if (pPositions[i].X < minEdges.X)
         {
-            MinEdges.X = pPositions[i].X;
+            minEdges.X = pPositions[i].X;
         }
-        if (pPositions[i].Y > MaxEdges.Y)
+        if (pPositions[i].Y > maxEdges.Y)
         {
-            MaxEdges.Y = pPositions[i].Y;
+            maxEdges.Y = pPositions[i].Y;
         }
-        if (pPositions[i].Y < MinEdges.Y)
+        if (pPositions[i].Y < minEdges.Y)
         {
-            MinEdges.Y = pPositions[i].Y;
+            minEdges.Y = pPositions[i].Y;
         }
-        if (pPositions[i].Z > MaxEdges.Z)
+        if (pPositions[i].Z > maxEdges.Z)
         {
-            MaxEdges.Z = pPositions[i].Z;
+            maxEdges.Z = pPositions[i].Z;
         }
-        if (pPositions[i].Z < MinEdges.Z)
+        if (pPositions[i].Z < minEdges.Z)
         {
-            MinEdges.Z = pPositions[i].Z;
+            minEdges.Z = pPositions[i].Z;
         }
     }
-    return AABB(MinEdges, MaxEdges);
+    return AABB(minEdges, maxEdges);
 }
 
 std::string AABB::ToString() const

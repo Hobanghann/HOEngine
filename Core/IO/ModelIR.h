@@ -16,11 +16,11 @@ struct TextureIR;
 struct ModelIR
 {
     std::string NameStr;
-    std::unique_ptr<const MeshIR> upMeshIR;
-    std::unique_ptr<const SkeletonIR> upSkeletonIR;
-    std::unique_ptr<const SkinIR> upSkinIR;
-    std::vector<std::unique_ptr<const AnimationIR>> upAnimationIRs;
-    std::vector<std::unique_ptr<const MaterialIR>> upMaterialIRs;
-    std::vector<std::unique_ptr<const TextureIR>> upTextureIRs;
+    std::unique_ptr<const MeshIR> pMeshIR;
+    std::unique_ptr<const SkeletonIR> pSkeletonIR;
+    std::unique_ptr<const SkinIR> pSkinIR;
+    std::vector<std::unique_ptr<const AnimationIR>> pAnimationIRs;
+    std::vector<std::unique_ptr<const MaterialIR>> pMaterialIRs;
+    std::vector<std::unique_ptr<const TextureIR>> pTextureIRs;
 };
 } // namespace ho

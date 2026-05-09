@@ -7,8 +7,9 @@
 
 namespace ho
 {
-struct Projection final
+class Projection final
 {
+  public:
     [[nodiscard]] FORCE_INLINE static Projection CreateOrthographic(float viewWidth,
                                                                     float viewHeight,
                                                                     float near,
@@ -18,18 +19,21 @@ struct Projection final
         float fov, float viewWidth, float viewHeight, float near, float far);
     [[nodiscard]] FORCE_INLINE static Projection CreatePerspective(const Matrix4x4& m);
 
-    FORCE_INLINE Projection();
-    FORCE_INLINE Projection(const Projection&) = default;
-    FORCE_INLINE Projection& operator=(const Projection& rhs);
+    FORCE_INLINE constexpr Projection();
+    FORCE_INLINE constexpr Projection(const Projection&) = default;
+    FORCE_INLINE constexpr Projection& operator=(const Projection& rhs);
     ~Projection() = default;
 
-    [[nodiscard]] FORCE_INLINE float GetFOV() const;
-    [[nodiscard]] FORCE_INLINE float GetAspectRatio() const;
-    [[nodiscard]] FORCE_INLINE float GetNearDistance() const;
-    [[nodiscard]] FORCE_INLINE float GetFarDistance() const;
+    [[nodiscard]] FORCE_INLINE constexpr Matrix4x4 operator*(const Transform3D& t) const;
 
-    FORCE_INLINE void SetFOV(float fov);
-    FORCE_INLINE void SetAspectRatio(float viewWidth, float viewHeight);
+    [[nodiscard]] FORCE_INLINE constexpr float GetFOV() const;
+    [[nodiscard]] FORCE_INLINE constexpr float GetAspectRatio() const;
+    [[nodiscard]] FORCE_INLINE constexpr float GetNearDistance() const;
+    [[nodiscard]] FORCE_INLINE constexpr float GetFarDistance() const;
+    [[nodiscard]] FORCE_INLINE constexpr Matrix4x4 GetMatrix() const;
+
+    FORCE_INLINE constexpr void SetFOV(float fov);
+    FORCE_INLINE constexpr void SetAspectRatio(float viewWidth, float viewHeight);
     FORCE_INLINE void SetNearDistance(float near);
     FORCE_INLINE void SetFarDistance(float far);
 
@@ -43,8 +47,6 @@ struct Projection final
 
     [[nodiscard]] std::string ToString() const;
 
-    Matrix4x4 Matrix;
-
   private:
     // Store projection parameters (fov, AspectRatio, Near, Far) directly to
     // avoid catastrophic cancellation when reconstructing them from the
@@ -52,25 +54,27 @@ struct Projection final
     // precision loss in inverse computations.
     union
     {
-        float Fov;
-        float ViewHeight;
+        float mFov;
+        float mViewHeight;
     };
 
-    float AspectRatio;
-    float Near;
-    float Far;
+    float mAspectRatio;
+    float mNear;
+    float mFar;
 
-    bool bOrthographic;
+    bool mbOrthographic;
+
+    Matrix4x4 mMatrix;
 };
 
 Projection Projection::CreateOrthographic(float viewWidth, float viewHeight, float near, float far)
 {
     Projection proj;
-    proj.bOrthographic = true;
-    proj.ViewHeight = viewHeight;
-    proj.AspectRatio = viewWidth / viewHeight;
-    proj.Near = near;
-    proj.Far = far;
+    proj.mbOrthographic = true;
+    proj.mViewHeight = viewHeight;
+    proj.mAspectRatio = viewWidth / viewHeight;
+    proj.mNear = near;
+    proj.mFar = far;
 
     float range = far - near;
 
@@ -78,12 +82,12 @@ Projection Projection::CreateOrthographic(float viewWidth, float viewHeight, flo
     {
         range = math::FLOAT_MIN;
     }
-    float invRange = 1.0f / range;
+    const float invRange = 1.0f / range;
 
-    proj.Matrix = Matrix4x4({2.0f / viewWidth, 0.0f, 0.0f, 0.0f},
-                            {0.0f, 2.0f / viewHeight, 0.0f, 0.0f},
-                            {0.0f, 0.0f, -2.0f * invRange, 0.f},
-                            {0.0f, 0.0f, -(far + near) * invRange, 1.0f});
+    proj.mMatrix = Matrix4x4({2.0f / viewWidth, 0.0f, 0.0f, 0.0f},
+                             {0.0f, 2.0f / viewHeight, 0.0f, 0.0f},
+                             {0.0f, 0.0f, -2.0f * invRange, 0.f},
+                             {0.0f, 0.0f, -(far + near) * invRange, 1.0f});
 
     return proj;
 }
@@ -91,8 +95,8 @@ Projection Projection::CreateOrthographic(float viewWidth, float viewHeight, flo
 Projection Projection::CreateOrthographic(const Matrix4x4& m)
 {
     Projection proj;
-    proj.bOrthographic = true;
-    proj.Matrix = m;
+    proj.mbOrthographic = true;
+    proj.mMatrix = m;
 
     // Extract projection parameters from the Matrix.
     // Use double precision internally to minimize cancellation and rounding
@@ -105,26 +109,26 @@ Projection Projection::CreateOrthographic(const Matrix4x4& m)
     // If Matrix is invalid or uninitialized, fallback to zero projection.
     if (math::IsZeroApprox(static_cast<float>(m11)) || math::IsZeroApprox(static_cast<float>(m00)))
     {
-        proj.ViewHeight = 0.0f;
-        proj.AspectRatio = 0.0f;
-        proj.Near = 0.0f;
-        proj.Far = 0.0f;
+        proj.mViewHeight = 0.0f;
+        proj.mAspectRatio = 0.0f;
+        proj.mNear = 0.0f;
+        proj.mFar = 0.0f;
         return proj;
     }
 
-    proj.ViewHeight = static_cast<float>(2.0 / m11);
+    proj.mViewHeight = static_cast<float>(2.0 / m11);
     const double viewWidth = 2.0 / m00;
-    proj.AspectRatio = static_cast<float>(viewWidth / proj.ViewHeight);
+    proj.mAspectRatio = static_cast<float>(viewWidth / proj.mViewHeight);
 
     if (math::IsZeroApprox(static_cast<float>(m22)))
     {
-        proj.Near = 0.0f;
-        proj.Far = 0.0f;
+        proj.mNear = 0.0f;
+        proj.mFar = 0.0f;
     }
     else
     {
-        proj.Near = static_cast<float>((m23 + 1.0) / m22);
-        proj.Far = static_cast<float>((m23 - 1.0) / m22);
+        proj.mNear = static_cast<float>((m23 + 1.0) / m22);
+        proj.mFar = static_cast<float>((m23 - 1.0) / m22);
     }
 
     return proj;
@@ -133,30 +137,30 @@ Projection Projection::CreateOrthographic(const Matrix4x4& m)
 Projection Projection::CreatePerspective(float fov, float viewWidth, float viewHeight, float near, float far)
 {
     Projection proj;
-    proj.bOrthographic = false;
-    proj.Fov = fov;
-    proj.AspectRatio = viewWidth / viewHeight;
-    proj.Near = near;
-    proj.Far = far;
-    const float fovFactor = 1.0f / math::Tan(proj.Fov * 0.5f);
-    float nearMinusFar = (proj.Near - proj.Far);
+    proj.mbOrthographic = false;
+    proj.mFov = fov;
+    proj.mAspectRatio = viewWidth / viewHeight;
+    proj.mNear = near;
+    proj.mFar = far;
+    const float fovFactor = 1.0f / math::Tan(proj.mFov * 0.5f);
+    float nearMinusFar = (proj.mNear - proj.mFar);
     if (math::IsEqualApprox(nearMinusFar, 0.0f))
     {
         nearMinusFar = math::FLOAT_MIN;
     }
     const float invNearMinusFar = 1.0f / nearMinusFar;
-    proj.Matrix = Matrix4x4({fovFactor / proj.AspectRatio, 0.0f, 0.0f, 0.0f},
-                            {0.0f, fovFactor, 0.0f, 0.0f},
-                            {0.0f, 0.0f, (proj.Near + proj.Far) * invNearMinusFar, -1.0f},
-                            {0.0f, 0.0f, (2.0f * proj.Near * proj.Far) * invNearMinusFar, 0.0f});
+    proj.mMatrix = Matrix4x4({fovFactor / proj.mAspectRatio, 0.0f, 0.0f, 0.0f},
+                             {0.0f, fovFactor, 0.0f, 0.0f},
+                             {0.0f, 0.0f, (proj.mNear + proj.mFar) * invNearMinusFar, -1.0f},
+                             {0.0f, 0.0f, (2.0f * proj.mNear * proj.mFar) * invNearMinusFar, 0.0f});
     return proj;
 }
 
 Projection Projection::CreatePerspective(const Matrix4x4& m)
 {
     Projection proj;
-    proj.bOrthographic = false;
-    proj.Matrix = m;
+    proj.mbOrthographic = false;
+    proj.mMatrix = m;
 
     // Extract projection parameters from the Matrix.
     // Use double precision internally to minimize cancellation and rounding
@@ -169,104 +173,114 @@ Projection Projection::CreatePerspective(const Matrix4x4& m)
     // If Matrix is invalid or uninitialized, fallback to zero projection.
     if (math::IsZeroApprox(static_cast<float>(m00)))
     {
-        proj.Fov = 0.0f;
-        proj.AspectRatio = 0.0f;
-        proj.Near = 0.0f;
-        proj.Far = 0.0f;
+        proj.mFov = 0.0f;
+        proj.mAspectRatio = 0.0f;
+        proj.mNear = 0.0f;
+        proj.mFar = 0.0f;
         return proj;
     }
 
     const double fovFactor = m11;
     const double fovRad = 2.0 * std::atan(1.0 / fovFactor);
-    proj.Fov = static_cast<float>(fovRad);
+    proj.mFov = static_cast<float>(fovRad);
 
-    proj.AspectRatio = static_cast<float>(fovFactor / m00);
+    proj.mAspectRatio = static_cast<float>(fovFactor / m00);
 
     const double nearDist = m23 / (m22 - 1.0);
     const double farDist = m23 / (m22 + 1.0);
 
-    proj.Near = static_cast<float>(nearDist);
-    proj.Far = static_cast<float>(farDist);
+    proj.mNear = static_cast<float>(nearDist);
+    proj.mFar = static_cast<float>(farDist);
     return proj;
 }
 
-Projection::Projection()
-  : Matrix(Matrix4x4())
-  , Fov(0.0f)
-  , AspectRatio(0.0f)
-  , Near(0.0f)
-  , Far(0.0f)
-  , bOrthographic(false)
+constexpr Projection::Projection()
+  : mMatrix(Matrix4x4())
+  , mFov(0.0f)
+  , mAspectRatio(0.0f)
+  , mNear(0.0f)
+  , mFar(0.0f)
+  , mbOrthographic(false)
 {
 }
 
-Projection& Projection::operator=(const Projection& rhs)
+constexpr Projection& Projection::operator=(const Projection& rhs)
 {
     if (this == &rhs)
     {
         return *this;
     }
-    Matrix = rhs.Matrix;
-    Fov = rhs.Fov;
-    AspectRatio = rhs.AspectRatio;
-    Near = rhs.Near;
-    Far = rhs.Far;
-    bOrthographic = rhs.bOrthographic;
+    mMatrix = rhs.mMatrix;
+    mFov = rhs.mFov;
+    mAspectRatio = rhs.mAspectRatio;
+    mNear = rhs.mNear;
+    mFar = rhs.mFar;
+    mbOrthographic = rhs.mbOrthographic;
     return *this;
 }
 
-float Projection::GetFOV() const
+constexpr Matrix4x4 Projection::operator*(const Transform3D& t) const
 {
-    if (bOrthographic)
+    return mMatrix * t.Matrix;
+}
+
+constexpr float Projection::GetFOV() const
+{
+    if (mbOrthographic)
     {
         return 0.0f;
     }
-    return Fov;
+    return mFov;
 }
 
-float Projection::GetAspectRatio() const
+constexpr float Projection::GetAspectRatio() const
 {
-    return AspectRatio;
+    return mAspectRatio;
 }
 
-float Projection::GetFarDistance() const
+constexpr float Projection::GetFarDistance() const
 {
-    return Far;
+    return mFar;
 }
 
-float Projection::GetNearDistance() const
+constexpr float Projection::GetNearDistance() const
 {
-    return Near;
+    return mNear;
 }
 
-void Projection::SetFOV(float fov)
+constexpr Matrix4x4 Projection::GetMatrix() const
 {
-    if (!bOrthographic)
+    return mMatrix;
+}
+
+constexpr void Projection::SetFOV(float fov)
+{
+    if (!mbOrthographic)
     {
-        Fov = fov;
-        const float fovFactor = 1.0f / math::Tan(Fov * 0.5f);
+        mFov = fov;
+        const float fovFactor = 1.0f / math::Tan(mFov * 0.5f);
         const float aspect = GetAspectRatio();
-        Matrix.Data[0][0] = fovFactor / aspect;
-        Matrix.Data[1][1] = fovFactor;
+        mMatrix.Data[0][0] = fovFactor / aspect;
+        mMatrix.Data[1][1] = fovFactor;
     }
 }
 
-void Projection::SetAspectRatio(float viewWidth, float viewHeight)
+constexpr void Projection::SetAspectRatio(float viewWidth, float viewHeight)
 {
-    AspectRatio = viewWidth / viewHeight;
+    mAspectRatio = viewWidth / viewHeight;
 
-    Matrix.Data[0][0] = Matrix.Data[1][1] / AspectRatio;
+    mMatrix.Data[0][0] = mMatrix.Data[1][1] / mAspectRatio;
 }
 
 void Projection::SetNearDistance(float near)
 {
-    Near = near;
+    mNear = near;
     const float far = GetFarDistance();
 
-    const double nearDist = static_cast<double>(Near);
+    const double nearDist = static_cast<double>(mNear);
     const double farDist = static_cast<double>(far);
 
-    if (bOrthographic)
+    if (mbOrthographic)
     {
         double range = farDist - nearDist;
         if (range == 0.0)
@@ -275,27 +289,27 @@ void Projection::SetNearDistance(float near)
         }
         const double invRange = 1.0 / range;
 
-        Matrix.Data[2][2] = static_cast<float>(-2.0 * invRange);
-        Matrix.Data[2][3] = static_cast<float>(-(farDist + nearDist) * invRange);
+        mMatrix.Data[2][2] = static_cast<float>(-2.0 * invRange);
+        mMatrix.Data[2][3] = static_cast<float>(-(farDist + nearDist) * invRange);
     }
     else
     {
         const double invNearMinusFar = 1.0 / (nearDist - farDist);
 
-        Matrix.Data[2][2] = static_cast<float>((nearDist + farDist) * invNearMinusFar);
-        Matrix.Data[2][3] = static_cast<float>((2.0 * nearDist * farDist) * invNearMinusFar);
+        mMatrix.Data[2][2] = static_cast<float>((nearDist + farDist) * invNearMinusFar);
+        mMatrix.Data[2][3] = static_cast<float>((2.0 * nearDist * farDist) * invNearMinusFar);
     }
 }
 
 void Projection::SetFarDistance(float far)
 {
-    Far = far;
+    mFar = far;
     const float n = GetNearDistance();
 
     const double nearDist = static_cast<double>(n);
-    const double farDist = static_cast<double>(Far);
+    const double farDist = static_cast<double>(mFar);
 
-    if (bOrthographic)
+    if (mbOrthographic)
     {
         double range = farDist - nearDist;
         if (range == 0.0)
@@ -304,26 +318,26 @@ void Projection::SetFarDistance(float far)
         }
         const double invRange = 1.0 / range;
 
-        Matrix.Data[2][2] = static_cast<float>(-2.0 * invRange);
-        Matrix.Data[2][3] = static_cast<float>(-(farDist + nearDist) * invRange);
+        mMatrix.Data[2][2] = static_cast<float>(-2.0 * invRange);
+        mMatrix.Data[2][3] = static_cast<float>(-(farDist + nearDist) * invRange);
     }
     else
     {
         const double invNearMinusFar = 1.0 / (nearDist - farDist);
 
-        Matrix.Data[2][2] = static_cast<float>((nearDist + farDist) * invNearMinusFar);
-        Matrix.Data[2][3] = static_cast<float>((2.0 * nearDist * farDist) * invNearMinusFar);
+        mMatrix.Data[2][2] = static_cast<float>((nearDist + farDist) * invNearMinusFar);
+        mMatrix.Data[2][3] = static_cast<float>((2.0 * nearDist * farDist) * invNearMinusFar);
     }
 }
 
 constexpr bool Projection::operator==(const Projection& rhs) const
 {
-    if (bOrthographic != rhs.bOrthographic)
+    if (mbOrthographic != rhs.mbOrthographic)
     {
         return false;
     }
-    return Matrix == rhs.Matrix && Fov == rhs.Fov && AspectRatio == rhs.AspectRatio && Near == rhs.Near &&
-           Far == rhs.Far;
+    return mMatrix == rhs.mMatrix && mFov == rhs.mFov && mAspectRatio == rhs.mAspectRatio && mNear == rhs.mNear &&
+           mFar == rhs.mFar;
 }
 
 constexpr bool Projection::operator!=(const Projection& rhs) const
@@ -333,23 +347,17 @@ constexpr bool Projection::operator!=(const Projection& rhs) const
 
 constexpr bool Projection::IsEqualApprox(const Projection& rhs) const
 {
-    if (bOrthographic != rhs.bOrthographic)
+    if (mbOrthographic != rhs.mbOrthographic)
     {
         return false;
     }
-    return Matrix.IsEqualApprox(rhs.Matrix) && math::IsEqualApprox(Fov, rhs.Fov) &&
-           math::IsEqualApprox(AspectRatio, rhs.AspectRatio) && math::IsEqualApprox(Near, rhs.Near) &&
-           math::IsEqualApprox(Far, rhs.Far);
+    return mMatrix.IsEqualApprox(rhs.mMatrix) && math::IsEqualApprox(mFov, rhs.mFov) &&
+           math::IsEqualApprox(mAspectRatio, rhs.mAspectRatio) && math::IsEqualApprox(mNear, rhs.mNear) &&
+           math::IsEqualApprox(mFar, rhs.mFar);
 }
 
 constexpr bool Projection::IsNotEqualApprox(const Projection& rhs) const
 {
     return !IsEqualApprox(rhs);
 }
-
-FORCE_INLINE constexpr Matrix4x4 operator*(const Projection& p, const Transform3D& t)
-{
-    return p.Matrix * t.Matrix;
-}
-
 } // namespace ho

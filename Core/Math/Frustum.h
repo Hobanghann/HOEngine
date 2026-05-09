@@ -54,6 +54,6 @@ struct Frustum
 
     std::string ToString() const;
 
-    Plane planes[6] = {Plane()};
+    Plane Planes[6] = {Plane()};
 };
 } // namespace ho

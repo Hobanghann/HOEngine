@@ -40,9 +40,9 @@ AABB Transform3D::Transform(const AABB& volume) const
 
 Sphere Transform3D::Transform(const Sphere& volume) const
 {
-    Vector3 newCenter = Transform(volume.Center);
+    const Vector3 newCenter = Transform(volume.Center);
 
-    float maxScale = math::Max(GetScaleX(), math::Max(GetScaleY(), GetScaleZ()));
+    const float maxScale = math::Max(GetScaleX(), math::Max(GetScaleY(), GetScaleZ()));
 
     return Sphere(newCenter, volume.Radius * maxScale);
 }

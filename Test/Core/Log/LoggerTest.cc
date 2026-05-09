@@ -34,7 +34,7 @@ TEST_F(LoggerTest, GetFileName_VariousPathFormats_ExtractsOnlyName)
 
 TEST_F(LoggerTest, Init_WithImguiSink_IsAvailableAndEmpty)
 {
-    LogSink_imgui* pSink = Logger::GetImGuiSink();
+    LogSinkImgui* pSink = Logger::GetImGuiSink();
 
     ASSERT_NE(pSink, nullptr);
     EXPECT_TRUE(pSink->IsEmpty());
@@ -51,7 +51,7 @@ TEST_F(LoggerTest, Macros_AllLogLevels_AreSuccessfullyCapturedBySink)
 
     FlushAsyncLogs();
 
-    LogSink_imgui* pSink = Logger::GetImGuiSink();
+    LogSinkImgui* pSink = Logger::GetImGuiSink();
     ASSERT_NE(pSink, nullptr);
     EXPECT_FALSE(pSink->IsEmpty());
 
@@ -92,7 +92,7 @@ TEST_F(LoggerTest, Macro_WithFormattingAndMetadata_CapturesCorrectContext)
 
     FlushAsyncLogs();
 
-    LogSink_imgui* pSink = Logger::GetImGuiSink();
+    LogSinkImgui* pSink = Logger::GetImGuiSink();
     LogEntry entry;
     pSink->PopLog(&entry);
 
@@ -111,7 +111,7 @@ TEST_F(LoggerTest, TraceScope_BasicFlow_CapturesExecutionTime)
     }
     FlushAsyncLogs();
 
-    LogSink_imgui* pSink = Logger::GetImGuiSink();
+    LogSinkImgui* pSink = Logger::GetImGuiSink();
     LogEntry entry1, entry2;
 
     pSink->PopLog(&entry1);

@@ -107,8 +107,6 @@ FORCE_INLINE int32_t Image::GetPixelBytes(eFormat format)
         case eFormat::RGB8:
             return 3;
         case eFormat::RGBA8:
-            return 4;
-
         case eFormat::R32F:
             return 4;
         case eFormat::RG32F:
@@ -171,7 +169,7 @@ Color32 Image::GetColor32(int32_t x, int32_t y) const
             return Color32(GetColor128(x, y));
     }
     HO_ASSERT(x < mWidth && y < mHeight, "out of bound");
-    int32_t idx = y * mWidth + x;
+    const int32_t idx = y * mWidth + x;
 
     const std::uint8_t* px = mBitmap.data() + idx * GetPixelBytes(mFormat);
     switch (mFormat)
@@ -201,7 +199,7 @@ Color128 Image::GetColor128(int32_t x, int32_t y) const
     }
 
     HO_ASSERT(x < mWidth && y < mHeight, "out of bound");
-    int32_t idx = y * mWidth + x;
+    const int32_t idx = y * mWidth + x;
 
     const float* px = reinterpret_cast<const float*>(mBitmap.data() + idx * GetPixelBytes(mFormat));
     switch (mFormat)

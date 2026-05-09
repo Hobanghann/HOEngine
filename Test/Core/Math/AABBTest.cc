@@ -63,7 +63,7 @@ TEST(AABBTest, FromPositions_ArrayOfPoints_GeneratesTightestBox)
         Vector3(0.0f, -1.0f, 4.0f),
     };
 
-    AABB box = AABB::FromPositions(positions.data(), positions.size());
+    AABB box = AABB::FromPositions(positions.data(), static_cast<int32_t>(positions.size()));
 
     EXPECT_FLOAT_EQ(box.MinEdges.X, -2.0f);
     EXPECT_FLOAT_EQ(box.MinEdges.Y, -1.0f);
@@ -77,7 +77,7 @@ TEST(AABBTest, FromPositions_ArrayOfPoints_GeneratesTightestBox)
     EXPECT_EQ(box.GetCenter(), expectedCenter);
 
     positions = {Vector3(1.0f, 2.0f, 3.0f)};
-    box = AABB::FromPositions(positions.data(), positions.size());
+    box = AABB::FromPositions(positions.data(), static_cast<int32_t>(positions.size()));
     EXPECT_FLOAT_EQ(box.MinEdges.X, 1.0f);
     EXPECT_FLOAT_EQ(box.MinEdges.Y, 2.0f);
     EXPECT_FLOAT_EQ(box.MinEdges.Z, 3.0f);

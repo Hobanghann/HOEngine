@@ -104,8 +104,8 @@ struct MeshIR
 
             if (!Positions.empty())
             {
-                Aabb = AABB::FromPositions(Positions.data(), Positions.size());
-                Sphere = Sphere::FromPositionsRitter(Positions.data(), Positions.size());
+                Aabb = AABB::FromPositions(Positions.data(), static_cast<int32_t>(Positions.size()));
+                Sphere = Sphere::FromPositionsRitter(Positions.data(), static_cast<int32_t>(Positions.size()));
             }
             MorphNameToIndex.reserve(MorphTargets.size());
             for (int32_t i = 0; i < static_cast<int32_t>(MorphTargets.size()); ++i)
@@ -158,7 +158,7 @@ struct MeshIR
 
         std::vector<MorphTarget> MorphTargets;
 
-        // Index of ModelIR's upMaterialIRs.
+        // Index of ModelIR's pMaterialIRs.
         int32_t RenderMaterialIndex;
 
         AABB Aabb;
@@ -184,7 +184,7 @@ struct MeshIR
             int32_t allVertexCount = 0;
             for (const auto& sm : SubMeshes)
             {
-                allVertexCount += sm.Positions.size();
+                allVertexCount += static_cast<int32_t>(sm.Positions.size());
             }
             allPositions.reserve(allVertexCount);
             for (const auto& sm : SubMeshes)
@@ -193,7 +193,7 @@ struct MeshIR
             }
             if (!allPositions.empty())
             {
-                Sphere = Sphere::FromPositionsRitter(allPositions.data(), allPositions.size());
+                Sphere = Sphere::FromPositionsRitter(allPositions.data(), static_cast<int32_t>(allPositions.size()));
             }
         }
         SubMeshNameToIndex.reserve(SubMeshes.size());

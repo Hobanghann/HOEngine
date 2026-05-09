@@ -9,8 +9,8 @@
 
 namespace ho
 {
-HO_DISABLE_COMPILER_WARNING_PUSH;
-HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER;
+HO_DISABLE_COMPILER_WARNING_PUSH();
+HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
 
 struct MaterialIR
 {
@@ -127,7 +127,7 @@ struct MaterialIR
     bool bWireframe = false;
     bool bBackfaceCulling = true;
 
-    // Index of ModelIR's upTextureIRs.
+    // Index of ModelIR's pTextureIRs.
     int32_t TextureIRIndices[static_cast<int32_t>(eTextureUsage::Last)];
 
     int32_t UVChannels[static_cast<int32_t>(eTextureUsage::Last)];
@@ -135,5 +135,5 @@ struct MaterialIR
     Matrix3x3 UVTransforms[static_cast<int32_t>(eTextureUsage::Last)];
 };
 
-HO_DISABLE_COMPILER_WARNING_POP;
+HO_DISABLE_COMPILER_WARNING_POP();
 } // namespace ho

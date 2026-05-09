@@ -24,7 +24,7 @@ struct TextureIR
 
     TextureIR(std::string&& nameStr, std::vector<std::unique_ptr<Image>>&& images, eTextureType type)
       : NameStr(std::move(nameStr))
-      , upImages(std::move(images))
+      , pImages(std::move(images))
       , Type(type)
     {
     }
@@ -36,7 +36,7 @@ struct TextureIR
     TextureIR& operator=(const TextureIR&) = delete;
 
     std::string NameStr;
-    std::vector<std::unique_ptr<Image>> upImages;
+    std::vector<std::unique_ptr<Image>> pImages;
     eTextureType Type = eTextureType::None;
 };
 } // namespace ho

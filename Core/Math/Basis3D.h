@@ -321,7 +321,7 @@ constexpr void Basis3D::RotateQuaternionLocal(const Quaternion& q)
 {
     HO_ASSERT(q.IsUnitApprox(), "Quaternion must be unit.");
 
-    Matrix3x3 rm = Matrix3x3::FromQuaternion(q);
+    const Matrix3x3 rm = Matrix3x3::FromQuaternion(q);
     Matrix = Matrix * rm;
 }
 

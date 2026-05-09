@@ -7,6 +7,7 @@
 #include "Core/Math/Quaternion.h"
 #include "Core/Math/Transform3D.h"
 #include "Core/Math/Vector3.h"
+#include "Core/Macros.h"
 
 namespace ho
 {
@@ -52,8 +53,8 @@ struct AnimationIR
         CubicSpline = 3
     };
 
-    HO_DISABLE_COMPILER_WARNING_PUSH;
-    HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER;
+    HO_DISABLE_COMPILER_WARNING_PUSH();
+    HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
 
     struct TranslationKey
     {
@@ -73,7 +74,7 @@ struct AnimationIR
         Vector3 Scale;
     };
 
-    HO_DISABLE_COMPILER_WARNING_POP;
+    HO_DISABLE_COMPILER_WARNING_POP();
 
     struct MorphingKey
     {
@@ -102,7 +103,7 @@ struct AnimationIR
     {
         SkeletalTrack() = default;
 
-        SkeletalTrack(size_t boneIndex,
+        SkeletalTrack(int32_t boneIndex,
                       std::vector<TranslationKey>&& translationKeySequence,
                       eInterpolationMode translationInterpMode,
                       std::vector<RotationKey>&& rotationKeySequence,

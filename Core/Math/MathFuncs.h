@@ -146,7 +146,7 @@ template <typename T>
         return (exp < 0) ? math::FLOAT_INF : 0.0f;
     }
 
-    bool bNegativeExp = (exp < 0);
+    const bool bNegativeExp = (exp < 0);
     int32_t e = bNegativeExp ? -(exp + 1) : exp;
     if (bNegativeExp)
     {
@@ -193,7 +193,7 @@ template <typename T>
     // exactly).
     if (f < 0.0f)
     {
-        return math::FLOAT_NaN;
+        return math::FLOAT_NAN;
     }
     if (f == 0.0f)
     {
@@ -202,9 +202,9 @@ template <typename T>
 
 #if defined(_MSC_VER) || defined(__SSE__)
     const __m128 fOneHalf = _mm_set_ss(0.5f);
-    __m128 y0 = _mm_set_ss(f);
-    __m128 x0 = _mm_rsqrt_ss(y0);
-    __m128 fOver2 = _mm_mul_ss(y0, fOneHalf);
+    const __m128 y0 = _mm_set_ss(f);
+    const __m128 x0 = _mm_rsqrt_ss(y0);
+    const __m128 fOver2 = _mm_mul_ss(y0, fOneHalf);
 
     // 1st Newton-Raphson iteration
     __m128 x1 = _mm_mul_ss(x0, x0);
@@ -312,7 +312,7 @@ FORCE_INLINE void SinCos(float* outSin, float* outCos, float radian)
         sign = +1.0f;
     }
 
-    float y2 = y * y;
+    const float y2 = y * y;
 
     // 11-degree minimax approximation
     *outSin =
@@ -322,7 +322,7 @@ FORCE_INLINE void SinCos(float* outSin, float* outCos, float radian)
         y;
 
     // 10-degree minimax approximation
-    float p =
+    const float p =
         ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
     *outCos = sign * p;
 }

@@ -33,8 +33,8 @@ class BinaryRecursiveMutex
         ++sTlsLockCount;
     }
 
-    HO_DISABLE_COMPILER_WARNING_PUSH;
-    HO_DISABLE_COMPILER_WARNING_FAILING_TO_HOLD_LOCK;
+    HO_DISABLE_COMPILER_WARNING_PUSH();
+    HO_DISABLE_COMPILER_WARNING_FAILING_TO_HOLD_LOCK();
 
     FORCE_INLINE void Unlock() const
     {
@@ -46,7 +46,7 @@ class BinaryRecursiveMutex
         }
     }
 
-    HO_DISABLE_COMPILER_WARNING_POP;
+    HO_DISABLE_COMPILER_WARNING_POP();
 
     [[nodiscard]] FORCE_INLINE bool TryLock() const
     {
@@ -107,7 +107,7 @@ class MutexLock<BinaryRecursiveMutex<Tag>>
     }
 
   private:
-    const BinaryRecursiveMutex<Tag>& mMutex;
+    const BinaryRecursiveMutex<Tag>& mMutex; // NOLINT
 };
 
 #else

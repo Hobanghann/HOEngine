@@ -31,7 +31,7 @@ class Semaphore final
 
     [[nodiscard]] FORCE_INLINE bool TryAcquire()
     {
-        std::unique_lock lock(mMutex);
+        const std::unique_lock lock(mMutex);
         if (mCount)
         {
             --mCount;
@@ -42,7 +42,7 @@ class Semaphore final
 
     FORCE_INLINE void Release()
     {
-        std::unique_lock lock(mMutex);
+        const std::unique_lock lock(mMutex);
         ++mCount;
         mCV.notify_one();
     }

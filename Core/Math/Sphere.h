@@ -15,9 +15,9 @@ struct Sphere final
     [[nodiscard]] static Sphere Merge(const Sphere& lhs, const Sphere& rhs);
 
     constexpr Sphere();
-    constexpr Sphere(const Sphere& s) = default;
+    constexpr Sphere(const Sphere& rhs) = default;
     constexpr Sphere(const Vector3& center, float radius);
-    constexpr Sphere& operator=(const Sphere& c);
+    constexpr Sphere& operator=(const Sphere& rhs);
     ~Sphere() = default;
 
     [[nodiscard]] constexpr bool operator==(const Sphere& rhs) const;
@@ -44,7 +44,7 @@ constexpr Sphere::Sphere(const Vector3& center, float radius)
 {
 }
 
-constexpr Sphere& Sphere::operator=(const Sphere& bounding_volume) = default;
+constexpr Sphere& Sphere::operator=(const Sphere& rhs) = default;
 
 constexpr bool Sphere::operator==(const Sphere& rhs) const
 {

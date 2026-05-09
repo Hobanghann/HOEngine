@@ -19,9 +19,9 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttr
 {
     Path path(std::string("TestAssets/TestObj/Cube/cube.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
+    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
     // Check Mesh
     for (const MeshIR::SubMesh& subMeshIR : pMeshIR->SubMeshes)
@@ -65,7 +65,7 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttr
     EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check MaterialIR
-    const MaterialIR* pTexMaterialIR = upModelIR->upMaterialIRs[0].get();
+    const MaterialIR* pTexMaterialIR = pModelIR->pMaterialIRs[0].get();
     EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.0f, 0.0f, 0.0f));
     EXPECT_TRUE(pTexMaterialIR->Diffuse.IsEqualApprox(Color128(0.6f, 0.6f, 0.6f)));
     EXPECT_EQ(pTexMaterialIR->Specular, Color128(0.0f, 0.0f, 0.0f));
@@ -97,32 +97,31 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttr
     EXPECT_EQ(pTexMaterialIR->bBackfaceCulling, true);
 
     const TextureIR* pDiffuseIR =
-        upModelIR
-            ->upTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
+        pModelIR
+            ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
             .get();
     EXPECT_EQ(pDiffuseIR->NameStr, std::string("test_diffuse"));
     EXPECT_EQ(pDiffuseIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pSpecularIR =
-        upModelIR
-            ->upTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
+        pModelIR
+            ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
             .get();
     EXPECT_EQ(pSpecularIR->NameStr, std::string("test_specular"));
     EXPECT_EQ(pSpecularIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pSpecularHighlight =
-        upModelIR
-            ->upTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Shininess)]]
+        pModelIR
+            ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Shininess)]]
             .get();
     EXPECT_EQ(pSpecularHighlight->NameStr, std::string("test_specular_highlight"));
     EXPECT_EQ(pSpecularHighlight->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pHeightIR =
-        upModelIR
-            ->upTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Height)]]
+        pModelIR->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Height)]]
             .get();
     EXPECT_EQ(pHeightIR->NameStr, std::string("test_bump"));
     EXPECT_EQ(pHeightIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pAlphaIR =
-        upModelIR
-            ->upTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Opacity)]]
+        pModelIR
+            ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Opacity)]]
             .get();
     EXPECT_EQ(pAlphaIR->NameStr, std::string("test_alpha"));
     EXPECT_EQ(pAlphaIR->Type, TextureIR::eTextureType::Texture2D);
@@ -142,7 +141,7 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttr
     EXPECT_TRUE(pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Transmission)] == -1);
     EXPECT_TRUE(pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Anisotropy)] == -1);
 
-    const MaterialIR* pAttrMaterialIR = upModelIR->upMaterialIRs[1].get();
+    const MaterialIR* pAttrMaterialIR = pModelIR->pMaterialIRs[1].get();
 
     EXPECT_EQ(pAttrMaterialIR->Ambient, Color128(0.2f, 0.2f, 0.2f));
     EXPECT_EQ(pAttrMaterialIR->Diffuse, Color128(0.1f, 0.1f, 0.1f));
@@ -201,29 +200,27 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_DeduplicatesIdenticalTextures)
 {
     Path path(std::string("TestAssets/TestObj/CubeWithDuplicatedTexture/cube.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
+    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
+    ASSERT_NE(pModelIR, nullptr);
 
-    EXPECT_EQ(upModelIR->upTextureIRs.size(), 1);
+    EXPECT_EQ(pModelIR->pTextureIRs.size(), 1);
 
-    const MaterialIR* pMaterialIR = upModelIR->upMaterialIRs[0].get();
+    const MaterialIR* pMaterialIR = pModelIR->pMaterialIRs[0].get();
     const TextureIR* pDiffuseIR =
-        upModelIR->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
             .get();
     const TextureIR* pSpecularIR =
-        upModelIR
-            ->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
             .get();
     const TextureIR* pSpecularHighlightIR =
-        upModelIR
-            ->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
             .get();
 
     const TextureIR* pNormalIR =
-        upModelIR->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Height)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Height)]]
             .get();
     const TextureIR* pAlphaIR =
-        upModelIR->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Opacity)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Opacity)]]
             .get();
 
     EXPECT_EQ(pDiffuseIR, pSpecularIR);
@@ -236,9 +233,9 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_CorrectlyParsesMultipleSubMeshes)
 {
     Path path(std::string("TestAssets/TestObj/MultipleMesh/multi_mesh.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
+    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), 2);
 
@@ -249,7 +246,7 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_CorrectlyParsesMultipleSubMeshes)
 
     for (const auto& subMeshIR : pMeshIR->SubMeshes)
     {
-        const MaterialIR* pMaterialIR = upModelIR->upMaterialIRs[subMeshIR.RenderMaterialIndex].get();
+        const MaterialIR* pMaterialIR = pModelIR->pMaterialIRs[subMeshIR.RenderMaterialIndex].get();
         ASSERT_NE(pMaterialIR, nullptr);
 
         if (pMaterialIR->NameStr == "metal")
@@ -270,13 +267,13 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_CorrectlyParsesMultipleSubMeshes)
         EXPECT_EQ(pMetalMaterialIRs[0], pMetalMaterialIRs[i]);
     }
 
-    EXPECT_EQ(upModelIR->upTextureIRs.size(), 1);
+    EXPECT_EQ(pModelIR->pTextureIRs.size(), 1);
 
     const MaterialIR* pMetalMaterialIR = nullptr;
     const MaterialIR* pPlasticMaterialIR = nullptr;
-    for (int32_t i = 0; i < static_cast<int32_t>(upModelIR->upMaterialIRs.size()); ++i)
+    for (int32_t i = 0; i < static_cast<int32_t>(pModelIR->pMaterialIRs.size()); ++i)
     {
-        const MaterialIR* pMaterialIR = upModelIR->upMaterialIRs[i].get();
+        const MaterialIR* pMaterialIR = pModelIR->pMaterialIRs[i].get();
         ASSERT_NE(pMaterialIR, nullptr);
 
         if (pMaterialIR->NameStr == "metal")
@@ -290,13 +287,13 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_CorrectlyParsesMultipleSubMeshes)
     }
 
     const TextureIR* pMetalDiffuseIR =
-        upModelIR
-            ->upTextureIRs[pMetalMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
+        pModelIR
+            ->pTextureIRs[pMetalMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
             .get();
     const TextureIR* pPlasticDiffuseIR =
-        upModelIR
-            ->upTextureIRs[pPlasticMaterialIR
-                               ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
+        pModelIR
+            ->pTextureIRs[pPlasticMaterialIR
+                              ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
             .get();
 
     EXPECT_EQ(pMetalDiffuseIR, pPlasticDiffuseIR);
@@ -312,9 +309,9 @@ TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/Box/glTF/Box.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR = ResourceLoader::LoadModel(std::string("TestBox"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
+    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestBox"), path, false, true);
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
     // Check Mesh
     EXPECT_EQ(pMeshIR->SubMeshes.size(), 1);
@@ -346,7 +343,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
     EXPECT_TRUE(subMeshIR.MorphNameToIndex.empty());
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
-    EXPECT_LT(subMeshIR.RenderMaterialIndex, upModelIR->upMaterialIRs.size());
+    EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
     EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
     EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
     EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
@@ -363,11 +360,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
 
     // Check Material
     const MaterialIR* pMaterialIR = nullptr;
-    for (int32_t i = 0; i < static_cast<int32_t>(upModelIR->upMaterialIRs.size()); ++i)
+    for (int32_t i = 0; i < static_cast<int32_t>(pModelIR->pMaterialIRs.size()); ++i)
     {
-        if (upModelIR->upMaterialIRs[i]->NameStr == "Red")
+        if (pModelIR->pMaterialIRs[i]->NameStr == "Red")
         {
-            pMaterialIR = upModelIR->upMaterialIRs[i].get();
+            pMaterialIR = pModelIR->pMaterialIRs[i].get();
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
@@ -386,7 +383,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
     EXPECT_EQ(pMaterialIR->bBackfaceCulling, true);
 
     // Check SkeletonIR
-    const SkeletonIR* pSkeletonIR = upModelIR->upSkeletonIR.get();
+    const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
     EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), 1);
     EXPECT_EQ(pSkeletonIR->LocalTransforms.size(), 1);
     EXPECT_EQ(pSkeletonIR->Parents.size(), 1);
@@ -403,7 +400,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
     EXPECT_EQ(pSkeletonIR->Parents[0], -1);
 
     // Check Skin
-    const SkinIR* pSkinIR = upModelIR->upSkinIR.get();
+    const SkinIR* pSkinIR = pModelIR->pSkinIR.get();
     EXPECT_EQ(pSkinIR->OffsetTransforms.size(), 1);
     EXPECT_EQ(pSkinIR->OffsetTransforms[0], Transform3D());
 }
@@ -414,10 +411,10 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecifica
 {
     Path path(std::string("TestAssets/TestGltf/BoxInterleaved/glTF/BoxInterleaved.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR =
+    std::unique_ptr<const ModelIR> pModelIR =
         ResourceLoader::LoadModel(std::string("BoxInterleaved"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
     // Check Mesh
     EXPECT_EQ(pMeshIR->SubMeshes.size(), 1);
@@ -448,7 +445,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecifica
     EXPECT_TRUE(subMeshIR.MorphNameToIndex.empty());
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
-    EXPECT_LT(subMeshIR.RenderMaterialIndex, upModelIR->upMaterialIRs.size());
+    EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
     EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
     EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
     EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
@@ -465,11 +462,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecifica
 
     // Check Material
     const MaterialIR* pMaterialIR = nullptr;
-    for (int32_t i = 0; i < static_cast<int32_t>(upModelIR->upMaterialIRs.size()); ++i)
+    for (int32_t i = 0; i < static_cast<int32_t>(pModelIR->pMaterialIRs.size()); ++i)
     {
-        if (upModelIR->upMaterialIRs[i]->NameStr == "BoxInterleaved_unnamed_material_0")
+        if (pModelIR->pMaterialIRs[i]->NameStr == "BoxInterleaved_unnamed_material_0")
         {
-            pMaterialIR = upModelIR->upMaterialIRs[i].get();
+            pMaterialIR = pModelIR->pMaterialIRs[i].get();
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
@@ -488,7 +485,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecifica
     EXPECT_EQ(pMaterialIR->bBackfaceCulling, true);
 
     // Check SkeletonIR
-    const SkeletonIR* pSkeletonIR = upModelIR->upSkeletonIR.get();
+    const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
     EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), 1);
     EXPECT_EQ(pSkeletonIR->LocalTransforms.size(), 1);
     EXPECT_EQ(pSkeletonIR->Parents.size(), 1);
@@ -504,7 +501,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecifica
     EXPECT_EQ(pSkeletonIR->LocalTransforms[0], Transform3D(local_t));
 
     // Check Skin
-    const SkinIR* pSkinIR = upModelIR->upSkinIR.get();
+    const SkinIR* pSkinIR = pModelIR->pSkinIR.get();
     EXPECT_EQ(pSkinIR->OffsetTransforms.size(), 1);
     EXPECT_EQ(pSkinIR->OffsetTransforms[0], Transform3D());
 }
@@ -513,10 +510,10 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxVertexColors_ValidatesStandardSpecific
 {
     Path path(std::string("TestAssets/TestGltf/BoxVertexColors/glTF/BoxVertexColors.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR =
+    std::unique_ptr<const ModelIR> pModelIR =
         ResourceLoader::LoadModel(std::string("BoxVertexColors"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
     ASSERT_EQ(pMeshIR->SubMeshes.size(), 1);
     const auto& subMeshIR = pMeshIR->SubMeshes[0];
@@ -532,9 +529,9 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxTextured_ValidatesStandardSpecificatio
 {
     Path path(std::string("TestAssets/TestGltf/BoxTextured/glTF/BoxTextured.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR = ResourceLoader::LoadModel(std::string("BoxTextured"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
+    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("BoxTextured"), path, false, true);
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), 1);
     const MeshIR::SubMesh& subMeshIR = pMeshIR->SubMeshes[0];
@@ -564,7 +561,7 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxTextured_ValidatesStandardSpecificatio
     EXPECT_TRUE(subMeshIR.MorphNameToIndex.empty());
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
-    EXPECT_LT(subMeshIR.RenderMaterialIndex, upModelIR->upMaterialIRs.size());
+    EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
     EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
     EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
     EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
@@ -581,35 +578,34 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxTextured_ValidatesStandardSpecificatio
 
     // Check Material
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
-    const MaterialIR* pMaterialIR = upModelIR->upMaterialIRs[subMeshIR.RenderMaterialIndex].get();
+    const MaterialIR* pMaterialIR = pModelIR->pMaterialIRs[subMeshIR.RenderMaterialIndex].get();
 
     const TextureIR* pAlbedoIR =
-        upModelIR->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Albedo)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Albedo)]]
             .get();
     EXPECT_EQ(pAlbedoIR->NameStr, std::string("test_albedo"));
     EXPECT_EQ(pAlbedoIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pMetallicRoughnessIR =
-        upModelIR
-            ->upTextureIRs[pMaterialIR
-                               ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::MetallicRoughness)]]
+        pModelIR
+            ->pTextureIRs[pMaterialIR
+                              ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::MetallicRoughness)]]
             .get();
     EXPECT_EQ(pMetallicRoughnessIR->NameStr, std::string("test_metallic_roughness"));
     EXPECT_EQ(pMetallicRoughnessIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pNormal =
-        upModelIR->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Normal)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Normal)]]
             .get();
     EXPECT_EQ(pNormal->NameStr, std::string("test_normal"));
     EXPECT_EQ(pNormal->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pAmbientOcclusionIR =
-        upModelIR
-            ->upTextureIRs[pMaterialIR
-                               ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::AmbientOcclusion)]]
+        pModelIR
+            ->pTextureIRs[pMaterialIR
+                              ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::AmbientOcclusion)]]
             .get();
     EXPECT_EQ(pAmbientOcclusionIR->NameStr, std::string("test_occlusion"));
     EXPECT_EQ(pAmbientOcclusionIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pEmissiveIR =
-        upModelIR
-            ->upTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Emissive)]]
+        pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Emissive)]]
             .get();
     EXPECT_EQ(pEmissiveIR->NameStr, std::string("test_emissive"));
     EXPECT_EQ(pEmissiveIR->Type, TextureIR::eTextureType::Texture2D);
@@ -619,12 +615,12 @@ TEST(ResourceLoaderTest, LoadModel_glTFRiggidFiture_ValidatesStandardSpecificati
 {
     Path path(std::string("TestAssets/TestGltf/RiggedFigure/glTF/RiggedFigure.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR =
+    std::unique_ptr<const ModelIR> pModelIR =
         ResourceLoader::LoadModel(std::string("RiggedFigure"), path, false, false);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
-    const SkeletonIR* pSkeletonIR = upModelIR->upSkeletonIR.get();
-    const SkinIR* pSkinIR = upModelIR->upSkinIR.get();
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
+    const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
+    const SkinIR* pSkinIR = pModelIR->pSkinIR.get();
 
     const auto& subMeshIR = pMeshIR->SubMeshes[0];
     EXPECT_LT(0, subMeshIR.Positions.size());
@@ -1032,14 +1028,14 @@ TEST(ResourceLoaderTest, LoadModel_glTFRiggidFiture_ValidatesStandardSpecificati
                     .IsEqualApprox(translate));
 
     // Check Animation
-    EXPECT_EQ(upModelIR->upAnimationIRs.size(), 1);
-    EXPECT_LE(upModelIR->upAnimationIRs[0]->GetSkeletalTrackCount(), pSkeletonIR->GetBoneCount());
+    EXPECT_EQ(pModelIR->pAnimationIRs.size(), 1);
+    EXPECT_LE(pModelIR->pAnimationIRs[0]->GetSkeletalTrackCount(), pSkeletonIR->GetBoneCount());
 
     auto TestSkeletalTrack = [&](const char* boneName)
     {
-        EXPECT_TRUE(upModelIR->upAnimationIRs[0]->HasSkeletalTrack(pSkeletonIR->GetBoneIndex(boneName)));
+        EXPECT_TRUE(pModelIR->pAnimationIRs[0]->HasSkeletalTrack(pSkeletonIR->GetBoneIndex(boneName)));
         const AnimationIR::SkeletalTrack& torso_joint_1Track =
-            upModelIR->upAnimationIRs[0]->GetSkeletalTrack(pSkeletonIR->GetBoneIndex(boneName));
+            pModelIR->pAnimationIRs[0]->GetSkeletalTrack(pSkeletonIR->GetBoneIndex(boneName));
         EXPECT_EQ(torso_joint_1Track.TranslationInterpMode, AnimationIR::eInterpolationMode::Linear);
         EXPECT_GT(torso_joint_1Track.TranslationKeySequence.size(), 0);
         EXPECT_EQ(torso_joint_1Track.RotationInterpMode, AnimationIR::eInterpolationMode::Linear);
@@ -1073,11 +1069,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFAnimatedMorphCube_ValidatesStandardSpecif
 {
     Path path(std::string("TestAssets/TestGltf/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> upModelIR =
+    std::unique_ptr<const ModelIR> pModelIR =
         ResourceLoader::LoadModel(std::string("AnimatedMorphCube"), path, false, true);
-    ASSERT_NE(upModelIR, nullptr);
-    const MeshIR* pMeshIR = upModelIR->upMeshIR.get();
-    const SkeletonIR* pSkeletonIR = upModelIR->upSkeletonIR.get();
+    ASSERT_NE(pModelIR, nullptr);
+    const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
+    const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
 
     // Check Morph Target
     const MeshIR::SubMesh& subMeshIR = pMeshIR->GetSubMesh("Cube");
@@ -1091,11 +1087,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFAnimatedMorphCube_ValidatesStandardSpecif
     }
 
     // Check AnimationIR
-    EXPECT_EQ(upModelIR->upAnimationIRs.size(), 1);
-    EXPECT_EQ(upModelIR->upAnimationIRs[0]->GetMorphTargetTrackCount(), 1);
-    EXPECT_TRUE(upModelIR->upAnimationIRs[0]->HasMorphTargetTrack(0));
+    EXPECT_EQ(pModelIR->pAnimationIRs.size(), 1);
+    EXPECT_EQ(pModelIR->pAnimationIRs[0]->GetMorphTargetTrackCount(), 1);
+    EXPECT_TRUE(pModelIR->pAnimationIRs[0]->HasMorphTargetTrack(0));
     const AnimationIR::MorphTargetTrack& track =
-        upModelIR->upAnimationIRs[0]->GetMorphTargetTrack(pSkeletonIR->GetBoneIndex("AnimatedMorphCube"));
+        pModelIR->pAnimationIRs[0]->GetMorphTargetTrack(pSkeletonIR->GetBoneIndex("AnimatedMorphCube"));
     EXPECT_EQ(track.KeySequance.size(), 127);
     for (const AnimationIR::MorphingKey& key : track.KeySequance)
     {

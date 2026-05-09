@@ -159,7 +159,7 @@ constexpr void Transform2D::SetOrigin(const Vector2& origin)
 
 constexpr Basis2D Transform2D::GetBasis() const
 {
-    return Basis2D(Vector2(Matrix.GetCol0()), Vector2(Matrix.GetCol1()));
+    return Basis2D(Vector2(Matrix.Data[0][0], Matrix.Data[1][0]), Vector2(Matrix.Data[0][1], Matrix.Data[1][1]));
 }
 
 constexpr void Transform2D::SetBasis(const Basis2D& basis)

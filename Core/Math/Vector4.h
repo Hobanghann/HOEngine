@@ -5,6 +5,7 @@
 #include "Core/Macros.h"
 #include "MathDefs.h"
 #include "MathFuncs.h"
+#include "Vector3.h"
 
 namespace ho
 {
@@ -17,8 +18,8 @@ struct alignas(16) Vector4 final
 {
     constexpr Vector4();
     constexpr Vector4(float x, float y, float z, float w);
-    explicit Vector4(const Vector2& v);
-    explicit Vector4(const Vector3& v);
+    constexpr Vector4(const Vector2& v);
+    constexpr Vector4(const Vector3& v);
     explicit Vector4(const Quaternion& q);
     explicit Vector4(const Color128& c);
     constexpr Vector4(const Vector4&) = default;
@@ -72,7 +73,7 @@ struct alignas(16) Vector4 final
 
     [[nodiscard]] FORCE_INLINE bool IsFinite() const;
 
-    Vector3 ToCartesian() const;
+    constexpr Vector3 ToCartesian() const;
 
     std::string ToString() const;
 
@@ -92,7 +93,7 @@ struct alignas(16) Vector4 final
             float W;
         };
 
-        float Data[4];
+        float Data[4] = {};
     };
 };
 
@@ -109,6 +110,22 @@ constexpr Vector4::Vector4(float x, float y, float z, float w)
   , Y(y)
   , Z(z)
   , W(w)
+{
+}
+
+constexpr Vector4::Vector4(const Vector2& v)
+  : X(v.X)
+  , Y(v.Y)
+  , Z(0.0f)
+  , W(0.0f)
+{
+}
+
+constexpr Vector4::Vector4(const Vector3& v)
+  : X(v.X)
+  , Y(v.Y)
+  , Z(v.Z)
+  , W(0.0f)
 {
 }
 
@@ -331,11 +348,6 @@ constexpr bool Vector4::IsUnitApprox() const
     return math::IsEqualApprox(SqrdMagnitude(), 1.0f, math::EPSILON_UNIT);
 }
 
-bool Vector4::IsFinite() const
-{
-    return math::IsFinite(X) && math::IsFinite(Y) && math::IsFinite(Z) && math::IsFinite(W);
-}
-
 constexpr void Vector4::Project(const Vector4& ontoVector)
 {
     const float sqMag = ontoVector.SqrdMagnitude();
@@ -354,6 +366,17 @@ constexpr Vector4 Vector4::Projected(const Vector4& ontoVector) const
     Vector4 copy = *this;
     copy.Project(ontoVector);
     return copy;
+}
+
+bool Vector4::IsFinite() const
+{
+    return math::IsFinite(X) && math::IsFinite(Y) && math::IsFinite(Z) && math::IsFinite(W);
+}
+
+constexpr Vector3 Vector4::ToCartesian() const
+{
+    const float invW = 1.0f / W;
+    return Vector3(invW * X, invW * Y, invW * Z);
 }
 
 } // namespace ho

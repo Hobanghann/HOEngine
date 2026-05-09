@@ -8,13 +8,13 @@
 namespace ho
 {
 static std::shared_ptr<spdlog::logger> gLogger;
-static std::shared_ptr<LogSink_imgui> gSink_imgui;
+static std::shared_ptr<LogSinkImgui> gSink_imgui;
 
 void Logger::Init()
 {
     spdlog::init_thread_pool(8192, 1);
 
-    gSink_imgui = std::make_shared<LogSink_imgui>();
+    gSink_imgui = std::make_shared<LogSinkImgui>();
 
     gLogger = std::make_shared<spdlog::async_logger>("HOEngine", gSink_imgui, spdlog::thread_pool());
 
@@ -73,7 +73,7 @@ void Logger::Log(eLogLevel level, const char* file, int32_t line, const char* fm
     }
 }
 
-LogSink_imgui* Logger::GetImGuiSink()
+LogSinkImgui* Logger::GetImGuiSink()
 {
     return gSink_imgui.get();
 }

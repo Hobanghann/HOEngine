@@ -49,9 +49,9 @@ struct alignas(16) Color128
     [[nodiscard]] constexpr float Luminance(float rWeight, float gWeight, float bWeight) const;
 
     [[nodiscard]] constexpr Color128 Over(const Color128& background) const;
-    [[nodiscard]] constexpr Color128 Under(const Color128& background) const;
+    [[nodiscard]] constexpr Color128 Under(const Color128& foreground) const;
 
-    [[nodiscard]] FORCE_INLINE Color128 sRGBToLinear() const;
+    [[nodiscard]] FORCE_INLINE Color128 SrgbToLinear() const;
     [[nodiscard]] FORCE_INLINE Color128 LinearTosRGB() const;
 
     [[nodiscard]] std::string ToString() const;
@@ -256,7 +256,7 @@ constexpr Color128 Color128::Under(const Color128& foreground) const
     }
 }
 
-Color128 Color128::sRGBToLinear() const
+Color128 Color128::SrgbToLinear() const
 {
     auto toLinear = [](float c)
     {

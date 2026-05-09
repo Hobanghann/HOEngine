@@ -102,7 +102,7 @@ TEST(MathFuncsTest, IsFinite_NormalAndExtremeValues_DetectsInfinityAndNaN)
 
     EXPECT_FALSE(IsFinite(math::FLOAT_INF));
     EXPECT_FALSE(IsFinite(-math::FLOAT_INF));
-    EXPECT_FALSE(IsFinite(math::FLOAT_NaN));
+    EXPECT_FALSE(IsFinite(math::FLOAT_NAN));
 }
 
 TEST(MathFuncsTest, IsInf_InfiniteAndNormalValues_DetectsOnlyInfinity)
@@ -112,14 +112,14 @@ TEST(MathFuncsTest, IsInf_InfiniteAndNormalValues_DetectsOnlyInfinity)
 
     EXPECT_FALSE(IsInf(0.0f));
     EXPECT_FALSE(IsInf(1.0f));
-    EXPECT_FALSE(IsInf(math::FLOAT_NaN));
+    EXPECT_FALSE(IsInf(math::FLOAT_NAN));
     EXPECT_FALSE(IsInf(math::FLOAT_MAX));
     EXPECT_FALSE(IsInf(math::FLOAT_MIN));
 }
 
 TEST(MathFuncsTest, IsNaN_NaNAndNormalValues_DetectsOnlyNaN)
 {
-    EXPECT_TRUE(IsNaN(math::FLOAT_NaN));
+    EXPECT_TRUE(IsNaN(math::FLOAT_NAN));
 
     EXPECT_FALSE(IsNaN(0.0f));
     EXPECT_FALSE(IsNaN(123.45f));

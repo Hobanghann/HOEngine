@@ -149,7 +149,7 @@ class ObjectPool
 
     int32_t GetFullSize() const
     {
-        return mPool.size();
+        return static_cast<int32_t>(mPool.size());
     }
 
     const std::deque<std::optional<T>>& GetRawPool() const

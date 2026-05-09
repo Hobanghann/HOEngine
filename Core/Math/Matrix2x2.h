@@ -70,7 +70,7 @@ struct alignas(16) Matrix2x2
             Vector2 Row1;
         };
 
-        float Data[2][2];
+        float Data[2][2] = {};
     };
 };
 

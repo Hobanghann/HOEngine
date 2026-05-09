@@ -5,10 +5,10 @@
 #include "Core/Macros.h"
 #include "MathDefs.h"
 #include "MathFuncs.h"
+#include "Vector2.h"
 
 namespace ho
 {
-struct Vector2;
 struct Vector4;
 
 struct alignas(16) Vector3 final
@@ -16,7 +16,7 @@ struct alignas(16) Vector3 final
     constexpr Vector3();
     constexpr Vector3(float x, float y, float z);
     constexpr Vector3(const Vector3&) = default;
-    explicit Vector3(const Vector2& v);
+    constexpr explicit Vector3(const Vector2& v);
     explicit Vector3(const Vector4& v);
     constexpr Vector3& operator=(const Vector3& rhs);
     ~Vector3() = default;
@@ -70,7 +70,7 @@ struct alignas(16) Vector3 final
 
     [[nodiscard]] FORCE_INLINE bool IsFinite() const;
 
-    [[nodiscard]] Vector2 ToCartesian() const;
+    [[nodiscard]] constexpr Vector2 ToCartesian() const;
 
     [[nodiscard]] Vector4 ToHomogeneous() const;
 
@@ -90,11 +90,10 @@ struct alignas(16) Vector3 final
             float Z;
         };
 
-        float Data[3];
+        float Data[3] = {};
     };
 
-  private:
-    float mPad = 0.0f;
+    float Pad = 0.0f;
 };
 
 constexpr Vector3::Vector3()
@@ -108,6 +107,13 @@ constexpr Vector3::Vector3(float x, float y, float z)
   : X(x)
   , Y(y)
   , Z(z)
+{
+}
+
+constexpr Vector3::Vector3(const Vector2& v)
+  : X(v.X)
+  , Y(v.Y)
+  , Z(0.0f)
 {
 }
 
@@ -201,7 +207,7 @@ constexpr Vector3 Vector3::operator/(float scalar) const
 
 constexpr Vector3& Vector3::operator/=(float scalar)
 {
-    float inv = 1.0f / scalar;
+    const float inv = 1.0f / scalar;
     *this *= inv;
     return *this;
 }
@@ -342,5 +348,11 @@ constexpr bool Vector3::IsUnitApprox() const
 bool Vector3::IsFinite() const
 {
     return math::IsFinite(X) && math::IsFinite(Y) && math::IsFinite(Z);
+}
+
+constexpr Vector2 Vector3::ToCartesian() const
+{
+    const float invZ = 1.0f / Z;
+    return Vector2(X * invZ, Y * invZ);
 }
 } // namespace ho

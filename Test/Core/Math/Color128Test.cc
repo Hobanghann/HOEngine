@@ -215,7 +215,7 @@ TEST(Color128Test, Under_BackgroundAndForeground_ReturnsCorrectAlphaCompositing)
 TEST(Color128Test, ColorSpaceConversion_RoundTrip_MatchesOriginalWithApproximation)
 {
     Color128 srgb(0.5f, 0.5f, 0.5f, 1.0f);
-    Color128 linear = srgb.sRGBToLinear();
+    Color128 linear = srgb.SrgbToLinear();
     Color128 reconv = linear.LinearTosRGB();
 
     // Round-trip must approximately equal original
@@ -227,19 +227,19 @@ TEST(Color128Test, ColorSpaceConversion_RoundTrip_MatchesOriginalWithApproximati
     Color128 black(0.0f, 0.0f, 0.0f, 1.0f);
     Color128 white(1.0f, 1.0f, 1.0f, 1.0f);
 
-    Color128 blackLinear = black.sRGBToLinear();
-    Color128 whiteLinear = white.sRGBToLinear();
+    Color128 blackLinear = black.SrgbToLinear();
+    Color128 whiteLinear = white.SrgbToLinear();
 
     EXPECT_NEAR(blackLinear.R, 0.0f, math::EPSILON_CMP);
     EXPECT_NEAR(whiteLinear.R, 1.0f, math::EPSILON_CMP);
 
     Color128 mid(0.5f, 0.5f, 0.5f, 1.0f);
-    Color128 midLinear = mid.sRGBToLinear();
+    Color128 midLinear = mid.SrgbToLinear();
 
     EXPECT_NEAR(midLinear.R, 0.214041f, math::EPSILON_CMP);
 
     Color128 veryDarkSrgb(0.03f, 0.03f, 0.03f, 1.0f);
-    Color128 veryDarkLinear = veryDarkSrgb.sRGBToLinear();
+    Color128 veryDarkLinear = veryDarkSrgb.SrgbToLinear();
 
     EXPECT_NEAR(veryDarkLinear.R, 0.002322f, math::EPSILON_CMP);
 }

@@ -37,7 +37,7 @@ class ResourceLoader
         const std::string& nameStr,
         const aiMaterial& assimpMaterial,
         aiTexture** pAssimpEmbTextures,
-        const Path& parent_path,
+        const Path& parentPath,
         std::vector<std::unique_ptr<const TextureIR>>* pOutTextureIRs); // this parameter for texture loading
     [[nodiscard]] static std::unique_ptr<const SkeletonIR> loadSkeleton(const std::string& nameStr,
                                                                         const ModelImportContext& importContext);
@@ -47,7 +47,7 @@ class ResourceLoader
         const SkeletonIR& skeletonIR,
         const std::vector<std::unique_ptr<const MaterialIR>>& materialIRs);
     [[nodiscard]] static std::unique_ptr<const AnimationIR> loadAnimation(const std::string& nameStr,
-                                                                          const aiAnimation& AssimpAnim,
+                                                                          const aiAnimation& assimpAnim,
                                                                           const SkeletonIR& skeletonIR);
     [[nodiscard]] static std::unique_ptr<SkinIR> loadSkin(const std::string& nameStr,
                                                           const ModelImportContext& importContext,

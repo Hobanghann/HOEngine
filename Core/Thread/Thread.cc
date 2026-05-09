@@ -37,7 +37,7 @@ void Thread::Join()
 void Thread::SetName(const std::string& nameStr)
 {
 #if defined(_WIN32)
-    std::wstring wNameStr(nameStr.begin(), nameStr.end());
+    const std::wstring wNameStr(nameStr.begin(), nameStr.end());
     SetThreadDescription(static_cast<HANDLE>(mThread.native_handle()), wNameStr.c_str());
 #elif defined(__linux__)
     pthread_setname_np(mThread.native_handle(), nameStr.c_str());
@@ -47,7 +47,7 @@ void Thread::SetName(const std::string& nameStr)
 void Thread::SetCurrentName(const std::string& nameStr)
 {
 #if defined(_WIN32)
-    std::wstring wNameStr(nameStr.begin(), nameStr.end());
+    const std::wstring wNameStr(nameStr.begin(), nameStr.end());
     SetThreadDescription(GetCurrentThread(), wNameStr.c_str());
 #elif defined(__linux__)
     pthread_setname_np(pthread_self(), nameStr.c_str());

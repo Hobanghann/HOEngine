@@ -20,7 +20,7 @@ struct Plane
     FORCE_INLINE Plane(const Vector3& v1,
                        const Vector3& v2,
                        const Vector3& v3,
-                       math::eClockDirection = math::eClockDirection::CounterClockWise);
+                       math::eClockDirection dir = math::eClockDirection::CounterClockWise);
     FORCE_INLINE Plane(const Plane&) = default;
     FORCE_INLINE Plane& operator=(const Plane& rhs);
     ~Plane() = default;
@@ -50,7 +50,7 @@ struct Plane
 
   private:
     template <int32_t N>
-    [[nodiscard]] FORCE_INLINE math::eSide GetSide(const std::array<Vector3, N>& points) const;
+    [[nodiscard]] FORCE_INLINE math::eSide getSide(const std::array<Vector3, N>& points) const;
 };
 
 Plane::Plane()
@@ -126,12 +126,12 @@ Vector3 Plane::Project(const Vector3& point) const
 }
 
 template <int32_t N>
-math::eSide Plane::GetSide(const std::array<Vector3, N>& points) const
+math::eSide Plane::getSide(const std::array<Vector3, N>& points) const
 {
     int32_t outsideCount = 0;
     for (const auto& p : points)
     {
-        if (GetSide(p) == math::eSide::Outside)
+        if (getSide(p) == math::eSide::Outside)
         {
             ++outsideCount;
         }

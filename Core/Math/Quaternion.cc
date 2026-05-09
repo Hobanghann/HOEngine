@@ -18,11 +18,11 @@ Quaternion Quaternion::FromAxisAngle(const Vector3& axis, float angle)
     return Quaternion(axis.X * sin, axis.Y * sin, axis.Z * sin, cos);
 }
 
-Quaternion Quaternion::FromEuler(float pitch, float yaw, float roll, math::eEulerOrder order)
+Quaternion Quaternion::FromEuler(float x, float y, float z, math::eEulerOrder order)
 {
-    const Quaternion qx = FromAxisAngle(Vector3::sUnitX, pitch);
-    const Quaternion qy = FromAxisAngle(Vector3::sUnitY, yaw);
-    const Quaternion qz = FromAxisAngle(Vector3::sUnitZ, roll);
+    const Quaternion qx = FromAxisAngle(Vector3::sUnitX, x);
+    const Quaternion qy = FromAxisAngle(Vector3::sUnitY, y);
+    const Quaternion qz = FromAxisAngle(Vector3::sUnitZ, z);
 
     Quaternion q;
     switch (order)
@@ -59,7 +59,7 @@ Quaternion Quaternion::FromMatrix(const Matrix3x3& m)
 {
     HO_ASSERT(m.IsOrthonormal(), "The matrix must be orthonormal to be converted into a quaternion.");
     /* Allow getting a quaternion from an unnormalized transform */
-    float trace = m.Trace();
+    const float trace = m.Trace();
     float temp[4];
 
     if (trace > 0.0f)
@@ -74,10 +74,10 @@ Quaternion Quaternion::FromMatrix(const Matrix3x3& m)
     }
     else
     {
-        int32_t i =
+        const int32_t i =
             m.Data[0][0] < m.Data[1][1] ? (m.Data[1][1] < m.Data[2][2] ? 2 : 1) : (m.Data[0][0] < m.Data[2][2] ? 2 : 0);
-        int32_t j = (i + 1) % 3;
-        int32_t k = (i + 2) % 3;
+        const int32_t j = (i + 1) % 3;
+        const int32_t k = (i + 2) % 3;
 
         float s = math::Sqrt(m.Data[i][i] - m.Data[j][j] - m.Data[k][k] + 1.0f);
         temp[i] = s * 0.5f;

@@ -39,7 +39,7 @@ TEST(JobSystemFallbackTest, KickJobs_MultipleJobs_KickerThreadExecutesJobsImmedi
         jobs.push_back({addInt, &values[i], sizeof(int32_t), nullptr});
     }
 
-    js.KickJobs(jobs.data(), jobs.size());
+    js.KickJobs(jobs.data(), static_cast<int32_t>(jobs.size()));
 
     for (auto value : values)
     {
@@ -73,7 +73,7 @@ TEST(JobSystemFallbackTest, KickJobsAndWait_MultipleJob_KickerThreadExecutesJobI
         jobs.push_back({addInt, &values[i], sizeof(int32_t), nullptr});
     }
 
-    js.KickJobsAndWait(jobs.data(), jobs.size());
+    js.KickJobsAndWait(jobs.data(), static_cast<int32_t>(jobs.size()));
 
     for (auto value : values)
     {

@@ -16,9 +16,9 @@ std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
     int32_t height = 0;
     int32_t numColorChannels = 0;
 
-    std::unique_ptr<Image> upImg = nullptr;
+    std::unique_ptr<Image> pImg = nullptr;
 
-    if (stbi_is_hdr(path.ToString().c_str()))
+    if (stbi_is_hdr(path.ToString().c_str()) != 0)
     {
         float* pStbiBitmap = stbi_loadf(path.ToString().c_str(), &width, &height, &numColorChannels, 0);
 
@@ -45,7 +45,7 @@ std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
                 stbi_image_free(pStbiBitmap);
                 return nullptr;
         }
-        upImg = std::make_unique<Image>(
+        pImg = std::make_unique<Image>(
             path, path.GetFileName().ToString(), format, width, height, reinterpret_cast<const uint8_t*>(pStbiBitmap));
         stbi_image_free(pStbiBitmap);
     }
@@ -77,18 +77,18 @@ std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
                 stbi_image_free(pStbiBitmap);
                 return nullptr;
         }
-        upImg = std::make_unique<Image>(path, path.GetFileName().ToString(), format, width, height, pStbiBitmap);
+        pImg = std::make_unique<Image>(path, path.GetFileName().ToString(), format, width, height, pStbiBitmap);
         stbi_image_free(pStbiBitmap);
     }
 
-    return upImg;
+    return pImg;
 }
 
 std::unique_ptr<ModelImportContext> ResourceImporter::ImportModel(const Path& path,
                                                                   bool bMakeStatic,
                                                                   bool bConvertToLeftHanded)
 {
-    std::unique_ptr<ModelImportContext> upImportContext = std::make_unique<ModelImportContext>();
+    std::unique_ptr<ModelImportContext> pImportContext = std::make_unique<ModelImportContext>();
 
     unsigned int importFlag = static_cast<unsigned int>(
         aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs |
@@ -109,18 +109,18 @@ std::unique_ptr<ModelImportContext> ResourceImporter::ImportModel(const Path& pa
         importFlag |= static_cast<unsigned int>(aiProcess_ConvertToLeftHanded);
     }
 
-    upImportContext->Importer.ReadFile(path.ToString(), importFlag);
-    upImportContext->pAssimpScene = upImportContext->Importer.GetScene();
-    if (!upImportContext->pAssimpScene)
+    pImportContext->Importer.ReadFile(path.ToString(), importFlag);
+    pImportContext->pAssimpScene = pImportContext->Importer.GetScene();
+    if (!pImportContext->pAssimpScene)
     {
         return nullptr;
     }
-    topologicalSortRecursive(*upImportContext->pAssimpScene->mRootNode, &upImportContext->pFlattedScene);
-    for (int32_t i = 0; i < static_cast<int32_t>(upImportContext->pFlattedScene.size()); ++i)
+    topologicalSortRecursive(*pImportContext->pAssimpScene->mRootNode, &pImportContext->pFlattedScene);
+    for (int32_t i = 0; i < static_cast<int32_t>(pImportContext->pFlattedScene.size()); ++i)
     {
-        upImportContext->NodeToIndex[upImportContext->pFlattedScene[i]] = i;
+        pImportContext->NodeToIndex[pImportContext->pFlattedScene[i]] = i;
     }
-    return upImportContext;
+    return pImportContext;
 }
 
 void ResourceImporter::topologicalSortRecursive(aiNode& root, std::deque<aiNode*>* outFlattedScene)

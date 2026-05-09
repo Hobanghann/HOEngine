@@ -98,7 +98,7 @@ TEST(SphereTest, FromPositionsCentroid_PointArray_GeneratesAverageCenterSphere)
 {
     std::vector<Vector3> points = {
         Vector3(-1.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f)};
-    Sphere sphere = Sphere::FromPositionsCentroid(points.data(), points.size());
+    Sphere sphere = Sphere::FromPositionsCentroid(points.data(), static_cast<int32_t>(points.size()));
 
     EXPECT_NEAR(sphere.Center.X, 0.0f, math::EPSILON_CMP);
     EXPECT_NEAR(sphere.Center.Y, 0.0f, math::EPSILON_CMP);
@@ -106,7 +106,7 @@ TEST(SphereTest, FromPositionsCentroid_PointArray_GeneratesAverageCenterSphere)
     EXPECT_NEAR(sphere.Radius, 1.0f, math::EPSILON_CMP);
 
     points = {Vector3(1.0f, 1.0f, 1.0f)};
-    sphere = Sphere::FromPositionsCentroid(points.data(), points.size());
+    sphere = Sphere::FromPositionsCentroid(points.data(), static_cast<int32_t>(points.size()));
     EXPECT_NEAR(sphere.Center.X, 1.0f, math::EPSILON_CMP);
     EXPECT_NEAR(sphere.Center.Y, 1.0f, math::EPSILON_CMP);
     EXPECT_NEAR(sphere.Center.Z, 1.0f, math::EPSILON_CMP);
@@ -117,7 +117,7 @@ TEST(SphereTest, FromPositionsRitter_PointArray_GeneratesApproximatedTightSphere
 {
     std::vector<Vector3> points = {
         Vector3(-1.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, -1.0f), Vector3(0.0f, 0.0f, 1.0f)};
-    Sphere sphere = Sphere::FromPositionsRitter(points.data(), points.size());
+    Sphere sphere = Sphere::FromPositionsRitter(points.data(), static_cast<int32_t>(points.size()));
 
     EXPECT_NEAR(sphere.Center.X, 0.0f, math::EPSILON_CMP);
     EXPECT_NEAR(sphere.Center.Y, 0.0f, math::EPSILON_CMP);
@@ -125,7 +125,7 @@ TEST(SphereTest, FromPositionsRitter_PointArray_GeneratesApproximatedTightSphere
     EXPECT_NEAR(sphere.Radius, 1.0f, math::EPSILON_CMP);
 
     points = {Vector3(1.0f, 1.0f, 1.0f)};
-    sphere = Sphere::FromPositionsRitter(points.data(), points.size());
+    sphere = Sphere::FromPositionsRitter(points.data(), static_cast<int32_t>(points.size()));
     EXPECT_NEAR(sphere.Center.X, 1.0f, math::EPSILON_CMP);
     EXPECT_NEAR(sphere.Center.Y, 1.0f, math::EPSILON_CMP);
     EXPECT_NEAR(sphere.Center.Z, 1.0f, math::EPSILON_CMP);

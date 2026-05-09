@@ -96,17 +96,17 @@ void Basis3D::LookAt(const Vector3& at, const Vector3& up, bool bFacingAt)
     }
     right.Normalize();
 
-    Vector3 newUp = forward.Cross(right);
+    const Vector3 newUp = forward.Cross(right);
 
     Matrix.SetCol0(right * magX);
     Matrix.SetCol1(newUp * magY);
     Matrix.SetCol2(forward * magZ);
 }
 
-Basis3D Basis3D::LookedAt(const Vector3& target, const Vector3& up, bool bFacingAt) const
+Basis3D Basis3D::LookedAt(const Vector3& at, const Vector3& up, bool bFacingAt) const
 {
     Basis3D copy = *this;
-    copy.LookAt(target, up, bFacingAt);
+    copy.LookAt(at, up, bFacingAt);
     return copy;
 }
 

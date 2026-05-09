@@ -63,47 +63,47 @@ template <class T>
 }
 
 template <class T>
-[[nodiscard]] FORCE_INLINE T Lerp(const T& v1, const T& v2, const Vector2& barycentric)
+[[nodiscard]] FORCE_INLINE constexpr T Lerp(const T& v1, const T& v2, const Vector2& barycentric)
 {
     return barycentric.X * v1 + barycentric.Y * v2;
 }
 
 template <class T>
-[[nodiscard]] FORCE_INLINE T Lerp(const T& v1, const T& v2, const T& v3, const Vector3& barycentric)
+[[nodiscard]] FORCE_INLINE constexpr T Lerp(const T& v1, const T& v2, const T& v3, const Vector3& barycentric)
 {
     return barycentric.X * v1 + barycentric.Y * v2 + barycentric.Z * v3;
 }
 
-[[nodiscard]] FORCE_INLINE float PcerpW(const Vector2& invW, const Vector2& barycentric)
+[[nodiscard]] FORCE_INLINE constexpr float PcerpW(const Vector2& invW, const Vector2& barycentric)
 {
     const float denom = (barycentric.X * invW.X + barycentric.Y * invW.Y);
 
     return 1.0f / denom;
 }
 
-[[nodiscard]] FORCE_INLINE float PcerpW(const Vector3& invW, const Vector3& barycentric)
+[[nodiscard]] FORCE_INLINE constexpr float PcerpW(const Vector3& invW, const Vector3& barycentric)
 {
     const float denom = (barycentric.X * invW.X + barycentric.Y * invW.Y + barycentric.Z * invW.Z);
     return 1.0f / denom;
 }
 
 template <class T>
-[[nodiscard]] FORCE_INLINE T
-Pcerp(const T& a1, const T& a2, const Vector2& barycentric, const Vector2& invW, float interpolatedW)
+[[nodiscard]] FORCE_INLINE constexpr T Pcerp(
+    const T& a1, const T& a2, const Vector2& barycentric, const Vector2& invW, float interpolatedW)
 {
     return interpolatedW * (invW.X * barycentric.X * a1 + invW.Y * barycentric.Y * a2);
 }
 
 template <class T>
-[[nodiscard]] FORCE_INLINE T
-Pcerp(const T& a1, const T& a2, const T& a3, const Vector3& barycentric, const Vector3& invW, float interpolatedW)
+[[nodiscard]] FORCE_INLINE constexpr T Pcerp(
+    const T& a1, const T& a2, const T& a3, const Vector3& barycentric, const Vector3& invW, float interpolatedW)
 {
     return interpolatedW * (invW.X * barycentric.X * a1 + invW.Y * barycentric.Y * a2 + invW.Z * barycentric.Z * a3);
 }
 
 template <class T>
-[[nodiscard]] FORCE_INLINE T
-Pcerp(const T& a1, const T& a2, const Vector2& barycentric, const Vector4& v1, const Vector4& v2)
+[[nodiscard]] FORCE_INLINE constexpr T Pcerp(
+    const T& a1, const T& a2, const Vector2& barycentric, const Vector4& v1, const Vector4& v2)
 {
     const Vector2 invW = Vector2(1.0f / v1.W, 1.0f / v2.W);
     const float interpolatedW = PcerpW(invW, barycentric);
@@ -111,13 +111,13 @@ Pcerp(const T& a1, const T& a2, const Vector2& barycentric, const Vector4& v1, c
 }
 
 template <class T>
-[[nodiscard]] FORCE_INLINE T Pcerp(const T& a1,
-                                   const T& a2,
-                                   const T& a3,
-                                   const Vector3& barycentric,
-                                   const Vector4& v1,
-                                   const Vector4& v2,
-                                   const Vector4& v3)
+[[nodiscard]] FORCE_INLINE constexpr T Pcerp(const T& a1,
+                                             const T& a2,
+                                             const T& a3,
+                                             const Vector3& barycentric,
+                                             const Vector4& v1,
+                                             const Vector4& v2,
+                                             const Vector4& v3)
 {
     const Vector3 invW = Vector3(1.0f / v1.W, 1.0f / v2.W, 1.0f / v3.W);
     const float interpolatedW = PcerpW(invW, barycentric);
@@ -142,7 +142,7 @@ template <class T>
 
     if (cos > 0.9995f)
     {
-        Quaternion result = barycentric.X * q1 + barycentric.Y * adjQ2;
+        const Quaternion result = barycentric.X * q1 + barycentric.Y * adjQ2;
         return result.Normalized();
     }
 

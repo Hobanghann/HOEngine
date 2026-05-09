@@ -40,19 +40,19 @@ class FrustumTest : public ::testing::Test
 
 TEST_F(FrustumTest, Constructor_DefaultAndAllParameters_InitializesCorrectPlanes)
 {
-    EXPECT_EQ(defaultFrustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Left)], defaultPlane);
-    EXPECT_EQ(defaultFrustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Right)], defaultPlane);
-    EXPECT_EQ(defaultFrustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Bottom)], defaultPlane);
-    EXPECT_EQ(defaultFrustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Top)], defaultPlane);
-    EXPECT_EQ(defaultFrustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Near)], defaultPlane);
-    EXPECT_EQ(defaultFrustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Far)], defaultPlane);
+    EXPECT_EQ(defaultFrustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Left)], defaultPlane);
+    EXPECT_EQ(defaultFrustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Right)], defaultPlane);
+    EXPECT_EQ(defaultFrustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Bottom)], defaultPlane);
+    EXPECT_EQ(defaultFrustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Top)], defaultPlane);
+    EXPECT_EQ(defaultFrustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Near)], defaultPlane);
+    EXPECT_EQ(defaultFrustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Far)], defaultPlane);
 
-    EXPECT_EQ(f1.planes[static_cast<int32_t>(Frustum::ePlanePos::Left)], left);
-    EXPECT_EQ(f1.planes[static_cast<int32_t>(Frustum::ePlanePos::Right)], right);
-    EXPECT_EQ(f1.planes[static_cast<int32_t>(Frustum::ePlanePos::Bottom)], bottom);
-    EXPECT_EQ(f1.planes[static_cast<int32_t>(Frustum::ePlanePos::Top)], top);
-    EXPECT_EQ(f1.planes[static_cast<int32_t>(Frustum::ePlanePos::Near)], Near);
-    EXPECT_EQ(f1.planes[static_cast<int32_t>(Frustum::ePlanePos::Far)], far);
+    EXPECT_EQ(f1.Planes[static_cast<int32_t>(Frustum::ePlanePos::Left)], left);
+    EXPECT_EQ(f1.Planes[static_cast<int32_t>(Frustum::ePlanePos::Right)], right);
+    EXPECT_EQ(f1.Planes[static_cast<int32_t>(Frustum::ePlanePos::Bottom)], bottom);
+    EXPECT_EQ(f1.Planes[static_cast<int32_t>(Frustum::ePlanePos::Top)], top);
+    EXPECT_EQ(f1.Planes[static_cast<int32_t>(Frustum::ePlanePos::Near)], Near);
+    EXPECT_EQ(f1.Planes[static_cast<int32_t>(Frustum::ePlanePos::Far)], far);
 }
 
 TEST_F(FrustumTest, OperatorAssign_AnotherFrustum_CopiesAllPlanes)
@@ -62,7 +62,7 @@ TEST_F(FrustumTest, OperatorAssign_AnotherFrustum_CopiesAllPlanes)
     for (auto pos : allPlanePos)
     {
         EXPECT_TRUE(
-            defaultFrustum.planes[static_cast<int32_t>(pos)].IsEqualApprox(f1.planes[static_cast<int32_t>(pos)]));
+            defaultFrustum.Planes[static_cast<int32_t>(pos)].IsEqualApprox(f1.Planes[static_cast<int32_t>(pos)]));
     }
     EXPECT_EQ(defaultFrustum, f1);
 }
@@ -166,17 +166,17 @@ TEST_F(FrustumTest, FromMatrix4x4_IdentityViewProjection_ExtractsStandardUnitFru
 
     for (auto pos : allPlanePos)
     {
-        const Plane& plane = frustum.planes[static_cast<int32_t>(pos)];
+        const Plane& plane = frustum.Planes[static_cast<int32_t>(pos)];
         const Vector3& n = plane.Normal;
         EXPECT_NEAR(n.Magnitude(), 1.0f, math::EPSILON_CMP);
     }
 
-    EXPECT_FALSE(frustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Left)].IsEqualApprox(
-        frustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Right)]));
-    EXPECT_FALSE(frustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Top)].IsEqualApprox(
-        frustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Bottom)]));
-    EXPECT_FALSE(frustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Near)].IsEqualApprox(
-        frustum.planes[static_cast<int32_t>(Frustum::ePlanePos::Far)]));
+    EXPECT_FALSE(frustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Left)].IsEqualApprox(
+        frustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Right)]));
+    EXPECT_FALSE(frustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Top)].IsEqualApprox(
+        frustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Bottom)]));
+    EXPECT_FALSE(frustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Near)].IsEqualApprox(
+        frustum.Planes[static_cast<int32_t>(Frustum::ePlanePos::Far)]));
 
     EXPECT_TRUE(f1.IsEqualApprox(frustum));
 }

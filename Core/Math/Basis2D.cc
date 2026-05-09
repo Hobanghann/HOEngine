@@ -17,7 +17,7 @@ void Basis2D::Rotate(float angle)
     float sin = 0.0f;
     float cos = 0.0f;
     math::SinCos(&sin, &cos, angle);
-    Matrix2x2 rotationMat = Matrix2x2({cos, sin}, {-sin, cos});
+    const Matrix2x2 rotationMat = Matrix2x2({cos, sin}, {-sin, cos});
     Matrix = rotationMat * Matrix;
 }
 
@@ -33,7 +33,7 @@ void Basis2D::RotateLocal(float angle)
     float sin = 0.0f;
     float cos = 0.0f;
     math::SinCos(&sin, &cos, angle);
-    Matrix2x2 rotationMat = Matrix2x2({cos, sin}, {-sin, cos});
+    const Matrix2x2 rotationMat = Matrix2x2({cos, sin}, {-sin, cos});
     Matrix = Matrix * rotationMat;
 }
 
@@ -54,7 +54,7 @@ void Basis2D::LookAt(const Vector2& at)
     const float magX = GetScaleX();
     const float magY = GetScaleY();
     up.Normalize();
-    Vector2 right = Vector2(up.Y, -up.X);
+    const Vector2 right = Vector2(up.Y, -up.X);
     Matrix.SetCol0(magX * right);
     Matrix.SetCol1(magY * up);
 }

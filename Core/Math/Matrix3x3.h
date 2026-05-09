@@ -81,7 +81,7 @@ struct alignas(16) Matrix3x3
             Vector3 Row2;
         };
 
-        float Data[3][4]; // with pad
+        float Data[3][4] = {}; // with pad
     };
 };
 
@@ -382,10 +382,18 @@ constexpr Matrix3x3 Matrix3x3::FromQuaternion(const Quaternion& q)
     Matrix3x3 m;
     const float d = q.SqrdMagnitude();
     const float s = 2.0f / d;
-    const float xs = q.X * s, ys = q.Y * s, zs = q.Z * s;
-    const float wx = q.W * xs, wy = q.W * ys, wz = q.W * zs;
-    const float xx = q.X * xs, xy = q.X * ys, xz = q.X * zs;
-    const float yy = q.Y * ys, yz = q.Y * zs, zz = q.Z * zs;
+    const float xs = q.X * s;
+    const float ys = q.Y * s;
+    const float zs = q.Z * s;
+    const float wx = q.W * xs;
+    const float wy = q.W * ys;
+    const float wz = q.W * zs;
+    const float xx = q.X * xs;
+    const float xy = q.X * ys;
+    const float xz = q.X * zs;
+    const float yy = q.Y * ys;
+    const float yz = q.Y * zs;
+    const float zz = q.Z * zs;
     m.SetCol0(Vector3(1.0f - (yy + zz), xy + wz, xz - wy));
     m.SetCol1(Vector3(xy - wz, 1.0f - (xx + zz), yz + wx));
     m.SetCol2(Vector3(xz + wy, yz - wx, 1.0f - (xx + yy)));

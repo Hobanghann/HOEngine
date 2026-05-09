@@ -23,7 +23,7 @@ struct JobDesc
     Entry EntryFunctionPtr = nullptr;
     void* pInputData = nullptr;
     int32_t InputSize = 0;
-    std::shared_ptr<AtomicNumeric<int32_t>> spCounter; // completion counter
+    std::shared_ptr<AtomicNumeric<int32_t>> pCounter; // completion counter
 };
 
 #if defined(THREAD_ENABLED)
@@ -56,7 +56,7 @@ class JobSystem final
 
     FORCE_INLINE void KickJobsAndWait(const JobDesc* pJobs, int32_t jobCount);
 
-    FORCE_INLINE void WaitForCounter(std::shared_ptr<AtomicNumeric<std::int32_t>>& spCounter);
+    FORCE_INLINE void WaitForCounter(std::shared_ptr<AtomicNumeric<std::int32_t>>& pCounter);
 
     FORCE_INLINE void WaitForIdle();
 
@@ -85,7 +85,7 @@ void JobSystem::Worker::workerLoop(void* pOwner)
     while (true)
     {
         {
-            MutexLock lock(pJobSystem->mMutex);
+            const MutexLock lock(pJobSystem->mMutex);
             while (pJobSystem->mJobQueue.empty() && pJobSystem->mbRunning)
             {
                 pJobSystem->mCV.Wait(lock); // wait until job is kicked in queue
@@ -100,20 +100,20 @@ void JobSystem::Worker::workerLoop(void* pOwner)
 
         job.EntryFunctionPtr(job.pInputData, job.InputSize);
 
-        if (job.spCounter != nullptr)
+        if (job.pCounter != nullptr)
         {
             // if job was waited by job system
             // decrement count and if count is zero, wake up main thread
-            if (job.spCounter->Decrement() == 0)
+            if (job.pCounter->Decrement() == 0)
             {
-                MutexLock lock(pJobSystem->mMutex);
+                const MutexLock lock(pJobSystem->mMutex);
                 pJobSystem->mCV.NotifyAll();
             }
         }
 
         if (pJobSystem->mJobCount.Decrement() == 0)
         {
-            MutexLock lock(pJobSystem->mMutex);
+            const MutexLock lock(pJobSystem->mMutex);
             pJobSystem->mCV.NotifyAll(); // for wake up main thread
         }
     }
@@ -134,7 +134,7 @@ JobSystem::JobSystem(const std::string& nameStr, int32_t workerCount)
 JobSystem::~JobSystem()
 {
     {
-        MutexLock lock(mMutex);
+        const MutexLock lock(mMutex);
         mbRunning = false;
         mCV.NotifyAll();
     }
@@ -147,7 +147,7 @@ JobSystem::~JobSystem()
 
 void JobSystem::KickJob(const JobDesc& job)
 {
-    MutexLock lock(mMutex);
+    const MutexLock lock(mMutex);
     mJobCount.Increment();
     mJobQueue.push(job);
     mCV.NotifyOne();
@@ -156,7 +156,7 @@ void JobSystem::KickJob(const JobDesc& job)
 void JobSystem::KickJobs(const JobDesc* pJobs, int32_t jobCount)
 {
     HO_ASSERT(pJobs, "pJobs is null.");
-    MutexLock lock(mMutex);
+    const MutexLock lock(mMutex);
     mJobCount.Add(jobCount);
     for (int32_t i = 0; i < jobCount; ++i)
     {
@@ -167,52 +167,52 @@ void JobSystem::KickJobs(const JobDesc* pJobs, int32_t jobCount)
 
 void JobSystem::KickJobAndWait(const JobDesc& job)
 {
-    auto spCounter = std::make_shared<AtomicNumeric<int32_t>>(1);
+    auto pCounter = std::make_shared<AtomicNumeric<int32_t>>(1);
     JobDesc j = job;
-    j.spCounter = spCounter;
+    j.pCounter = pCounter;
     KickJob(j);
-    WaitForCounter(spCounter);
+    WaitForCounter(pCounter);
 }
 
 void JobSystem::KickJobsAndWait(const JobDesc* pJobs, int32_t jobCount)
 {
     HO_ASSERT(pJobs, "pJobs is null.");
-    auto spCounter = std::make_shared<AtomicNumeric<int32_t>>(jobCount);
-    static std::vector<JobDesc> jobsWithCounter;
-    jobsWithCounter.reserve(jobCount);
+    auto pCounter = std::make_shared<AtomicNumeric<int32_t>>(jobCount);
+    static std::vector<JobDesc> sJobsWithCounter;
+    sJobsWithCounter.reserve(jobCount);
 
     for (int32_t i = 0; i < jobCount; ++i)
     {
         JobDesc job = pJobs[i];
-        job.spCounter = spCounter;
-        jobsWithCounter.push_back(job);
+        job.pCounter = pCounter;
+        sJobsWithCounter.push_back(job);
     }
 
-    KickJobs(jobsWithCounter.data(), jobsWithCounter.size());
-    jobsWithCounter.clear();
-    WaitForCounter(spCounter);
+    KickJobs(sJobsWithCounter.data(), static_cast<int32_t>(sJobsWithCounter.size()));
+    sJobsWithCounter.clear();
+    WaitForCounter(pCounter);
 }
 
-void JobSystem::WaitForCounter(std::shared_ptr<AtomicNumeric<std::int32_t>>& spCounter)
+void JobSystem::WaitForCounter(std::shared_ptr<AtomicNumeric<std::int32_t>>& pCounter)
 {
     // busy wait while sSpinCount.
     int32_t spinCount = sSpinCount;
-    while (spCounter->Get() > 0 && spinCount)
+    while (pCounter->Get() > 0 && spinCount)
     {
-        if (spCounter->Get() == 0)
+        if (pCounter->Get() == 0)
         {
             return;
         }
         CPU_PAUSE();
         --spinCount;
     }
-    if (spCounter->Get() == 0)
+    if (pCounter->Get() == 0)
     {
         return;
     }
 
-    MutexLock lock(mMutex);
-    while (spCounter->Get() > 0)
+    const MutexLock lock(mMutex);
+    while (pCounter->Get() > 0)
     {
         mCV.Wait(lock);
     }
@@ -230,7 +230,7 @@ void JobSystem::WaitForIdle()
         CPU_PAUSE();
     }
 
-    MutexLock lock(mMutex);
+    const MutexLock lock(mMutex);
     while (mJobCount.Get() > 0)
     {
         mCV.Wait(lock);
@@ -248,9 +248,9 @@ class JobSystem final
     void KickJob(const JobDesc& job)
     {
         job.EntryFunctionPtr(job.pInputData, job.InputSize);
-        if (job.spCounter != nullptr)
+        if (job.pCounter != nullptr)
         {
-            job.spCounter->Decrement();
+            job.pCounter->Decrement();
         }
     }
 
@@ -263,34 +263,34 @@ class JobSystem final
         }
     }
 
-    void WaitForCounter(std::shared_ptr<AtomicNumeric<std::int32_t>> spCounter)
+    void WaitForCounter(std::shared_ptr<AtomicNumeric<std::int32_t>> pCounter)
     {
-        (void)spCounter; // no-op, all jobs run inline
+        (void)pCounter; // no-op, all jobs run inline
     }
 
     void KickJobAndWait(const JobDesc& job)
     {
-        auto spCounter = std::make_shared<AtomicNumeric<int32_t>>(1);
+        auto pCounter = std::make_shared<AtomicNumeric<int32_t>>(1);
         JobDesc j = job;
-        j.spCounter = spCounter;
+        j.pCounter = pCounter;
         KickJob(j);
     }
 
     void KickJobsAndWait(const JobDesc* jobs, int32_t jobCount)
     {
         HO_ASSERT(jobs, "jobs is null.");
-        auto spCounter = std::make_shared<AtomicNumeric<int32_t>>(static_cast<int32_t>(jobCount));
-        static std::vector<JobDesc> jobsWithCounter;
-        jobsWithCounter.reserve(jobCount);
+        auto pCounter = std::make_shared<AtomicNumeric<int32_t>>(static_cast<int32_t>(jobCount));
+        static std::vector<JobDesc> sJobsWithCounter;
+        sJobsWithCounter.reserve(jobCount);
 
         for (int32_t i = 0; i < jobCount; ++i)
         {
             JobDesc job = jobs[i];
-            job.spCounter = spCounter;
-            jobsWithCounter.push_back(job);
+            job.pCounter = pCounter;
+            sJobsWithCounter.push_back(job);
         }
 
-        KickJobs(jobsWithCounter.data(), jobsWithCounter.size());
+        KickJobs(sJobsWithCounter.data(), static_cast<int32_t>(sJobsWithCounter.size()));
     }
 };
 

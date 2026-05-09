@@ -130,7 +130,10 @@ constexpr Transform3D::Transform3D(float scaleX,
                                    const Vector3& up,
                                    const Vector3& forward,
                                    const Vector3& origin)
-  : Matrix(Matrix4x4(Vector4(scaleX * right), Vector4(scaleY * up), Vector4(scaleZ * forward), origin.ToHomogeneous()))
+  : Matrix(Matrix4x4(Vector4(scaleX * right),
+                     Vector4(scaleY * up),
+                     Vector4(scaleZ * forward),
+                     Vector4(origin.X, origin.Y, origin.Z, 1.f)))
 {
 }
 
@@ -214,7 +217,9 @@ constexpr void Transform3D::SetOrigin(const Vector3& origin)
 
 constexpr Basis3D Transform3D::GetBasis() const
 {
-    return Basis3D(Vector3(Matrix.GetCol0()), Vector3(Matrix.GetCol1()), Vector3(Matrix.GetCol2()));
+    return Basis3D(Vector3(Matrix.Row0.X, Matrix.Row1.X, Matrix.Row2.X),
+                   Vector3(Matrix.Row0.Y, Matrix.Row1.Y, Matrix.Row2.Y),
+                   Vector3(Matrix.Row0.Z, Matrix.Row1.Z, Matrix.Row2.Z));
 }
 
 constexpr void Transform3D::SetBasis(const Basis3D& basis)
@@ -298,19 +303,19 @@ constexpr void Transform3D::ScaleUniform(float scale)
 
 FORCE_INLINE void Transform3D::RotateAxisAngle(const Vector3& axis, float angle)
 {
-    Quaternion q = Quaternion::FromAxisAngle(axis, angle);
+    const Quaternion q = Quaternion::FromAxisAngle(axis, angle);
     RotateQuaternion(q);
 }
 
 FORCE_INLINE void Transform3D::RotateEuler(float angleXRad, float angleYRad, float angleZRad, math::eEulerOrder order)
 {
-    Quaternion q = Quaternion::FromEuler(angleXRad, angleYRad, angleZRad, order);
+    const Quaternion q = Quaternion::FromEuler(angleXRad, angleYRad, angleZRad, order);
     RotateQuaternion(q);
 }
 
 constexpr void Transform3D::RotateQuaternion(const Quaternion& q)
 {
-    Matrix3x3 rotationMat = Matrix3x3::FromQuaternion(q);
+    const Matrix3x3 rotationMat = Matrix3x3::FromQuaternion(q);
 
     for (int32_t j = 0; j < 4; ++j)
     {
@@ -408,7 +413,7 @@ constexpr void Transform3D::ScaleUniformLocal(float scale)
 
 FORCE_INLINE void Transform3D::RotateAxisAngleLocal(const Vector3& axis, float angle)
 {
-    Quaternion q = Quaternion::FromAxisAngle(axis, angle);
+    const Quaternion q = Quaternion::FromAxisAngle(axis, angle);
     RotateQuaternionLocal(q);
 }
 
@@ -417,13 +422,13 @@ FORCE_INLINE void Transform3D::RotateEulerLocal(float angleXRad,
                                                 float angleZRad,
                                                 math::eEulerOrder order)
 {
-    Quaternion q = Quaternion::FromEuler(angleXRad, angleYRad, angleZRad, order);
+    const Quaternion q = Quaternion::FromEuler(angleXRad, angleYRad, angleZRad, order);
     RotateQuaternionLocal(q);
 }
 
 constexpr void Transform3D::RotateQuaternionLocal(const Quaternion& q)
 {
-    Matrix3x3 rotationMat = Matrix3x3::FromQuaternion(q);
+    const Matrix3x3 rotationMat = Matrix3x3::FromQuaternion(q);
 
     for (int32_t i = 0; i < 3; ++i)
     {

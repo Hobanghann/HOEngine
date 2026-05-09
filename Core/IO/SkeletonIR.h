@@ -22,13 +22,13 @@ struct SkeletonIR
         HO_ASSERT((BoneNameStrs.size() == LocalTransforms.size() && BoneNameStrs.size() == Parents.size()),
                   "Invalid SkeletonIR");
 
-        const int32_t count = BoneNameStrs.size();
+        const int32_t count = static_cast<int32_t>(BoneNameStrs.size());
 
         Parents.reserve(BoneNameStrs.size());
         Children.resize(count);
         for (int32_t i = 0; i < static_cast<int32_t>(Parents.size()); ++i)
         {
-            int32_t parent = Parents[i];
+            const int32_t parent = Parents[i];
             if (parent >= 0)
             {
                 Children[parent].push_back(i);
@@ -68,7 +68,7 @@ struct SkeletonIR
 
     FORCE_INLINE const Transform3D& GetLocalTransform(const std::string& nameStr) const
     {
-        int32_t index = GetBoneIndex(nameStr);
+        const int32_t index = GetBoneIndex(nameStr);
         return GetLocalTransform(index);
     }
 

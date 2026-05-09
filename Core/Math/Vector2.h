@@ -87,7 +87,7 @@ struct alignas(8) Vector2 final
             float Y;
         };
 
-        float Data[2];
+        float Data[2] = {};
     };
 };
 
@@ -201,9 +201,9 @@ constexpr bool Vector2::operator==(const Vector2& rhs) const
     return X == rhs.X && Y == rhs.Y;
 }
 
-constexpr bool Vector2::operator!=(const Vector2& vector) const
+constexpr bool Vector2::operator!=(const Vector2& rhs) const
 {
-    return !(*this == vector);
+    return !(*this == rhs);
 }
 
 constexpr bool Vector2::operator<(const Vector2& rhs) const

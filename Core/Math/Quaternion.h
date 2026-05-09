@@ -94,7 +94,7 @@ struct alignas(16) Quaternion final
             float W;
         };
 
-        float Data[4];
+        float Data[4] = {};
     };
 };
 

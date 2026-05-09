@@ -53,18 +53,18 @@ class GameTimer final
     {
         if (mbStopped)
         {
-            Duration total = (mStopTime - mBaseTime) - mPausedTime;
+            const Duration total = (mStopTime - mBaseTime) - mPausedTime;
             return std::chrono::duration<float>(total).count();
         }
-        TimePoint currTime = ChronoClock::now();
-        Duration total = (currTime - mBaseTime) - mPausedTime;
+        const TimePoint currTime = ChronoClock::now();
+        const Duration total = (currTime - mBaseTime) - mPausedTime;
 
         return std::chrono::duration<float>(total).count();
     }
 
     FORCE_INLINE void Reset()
     {
-        TimePoint currTime = ChronoClock::now();
+        const TimePoint currTime = ChronoClock::now();
 
         mBaseTime = currTime;
         mPrevFrameTime = currTime;
@@ -89,7 +89,7 @@ class GameTimer final
     {
         if (mbStopped)
         {
-            TimePoint currTime = ChronoClock::now();
+            const TimePoint currTime = ChronoClock::now();
 
             mPausedTime += currTime - mStopTime;
 

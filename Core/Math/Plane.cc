@@ -41,7 +41,7 @@ math::eSide Plane::GetAabbSide(const AABB& aabb) const
 
 math::eSide Plane::GetSphereSide(const Sphere& sphere) const
 {
-    float res = Normal.Dot(sphere.Center) + D;
+    const float res = Normal.Dot(sphere.Center) + D;
     if (res > math::EPSILON_POINT_ON_PLANE)
     {
         if (res >= sphere.Radius)

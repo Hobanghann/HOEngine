@@ -27,7 +27,7 @@ namespace ho
 
 static std::string extractFileName(const std::string& fileNameWithExtStr)
 {
-    size_t dotIdx = fileNameWithExtStr.rfind('.');
+    const size_t dotIdx = fileNameWithExtStr.rfind('.');
     if (dotIdx == std::string::npos)
     {
         return fileNameWithExtStr;
@@ -40,29 +40,29 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
                                                          bool bMakeStatic,
                                                          bool bConvertToLeftHanded)
 {
-    std::unique_ptr<ModelImportContext> upImportContext =
+    const std::unique_ptr<ModelImportContext> pImportContext =
         ResourceImporter::ImportModel(path, bMakeStatic, bConvertToLeftHanded);
-    if (!upImportContext)
+    if (!pImportContext)
     {
         return nullptr;
     }
 
-    Path parentPath = path.GetParentPath();
-    std::string fileNameStr = path.GetFileName().ToString();
+    const Path parentPath = path.GetParentPath();
+    const std::string fileNameStr = path.GetFileName().ToString();
 
-    std::unique_ptr<ModelIR> upModelIR = std::make_unique<ModelIR>();
+    std::unique_ptr<ModelIR> pModelIR = std::make_unique<ModelIR>();
 
-    upModelIR->NameStr = nameStr;
+    pModelIR->NameStr = nameStr;
 
     // Load materials
     std::unordered_map<std::string, int32_t> matNameCount; // for handling duplicated name
-    matNameCount.reserve(upImportContext->pAssimpScene->mNumMaterials);
-    for (int32_t mi = 0; mi < static_cast<int32_t>(upImportContext->pAssimpScene->mNumMaterials); ++mi)
+    matNameCount.reserve(pImportContext->pAssimpScene->mNumMaterials);
+    for (int32_t mi = 0; mi < static_cast<int32_t>(pImportContext->pAssimpScene->mNumMaterials); ++mi)
     {
-        const aiMaterial* pAssimpMaterial = upImportContext->pAssimpScene->mMaterials[mi];
+        const aiMaterial* pAssimpMaterial = pImportContext->pAssimpScene->mMaterials[mi];
         HO_ASSERT(pAssimpMaterial,
                   "Assimp material mapping failed: Mesh refers to an invalid or non-existent material index.");
-        aiTexture** pAssimpEmbTextures = upImportContext->pAssimpScene->mTextures;
+        aiTexture** pAssimpEmbTextures = pImportContext->pAssimpScene->mTextures;
         std::string matNameStr;
         if (pAssimpMaterial->GetName().Empty())
         {
@@ -83,30 +83,30 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
             }
         }
 
-        std::unique_ptr<const MaterialIR> upMatIR =
-            loadMaterial(matNameStr, *pAssimpMaterial, pAssimpEmbTextures, parentPath, &(upModelIR->upTextureIRs));
-        HO_ASSERT(upMatIR, (std::string("Failed to load material of ") + matNameStr).c_str());
+        std::unique_ptr<const MaterialIR> pMatIR =
+            loadMaterial(matNameStr, *pAssimpMaterial, pAssimpEmbTextures, parentPath, &(pModelIR->pTextureIRs));
+        HO_ASSERT(pMatIR, (std::string("Failed to load material of ") + matNameStr).c_str());
 
-        upModelIR->upMaterialIRs.emplace_back(std::move(upMatIR));
+        pModelIR->pMaterialIRs.emplace_back(std::move(pMatIR));
     }
 
     // Load skeleton
-    std::unique_ptr<const SkeletonIR> upSkeletonIR = loadSkeleton(nameStr, *upImportContext);
-    HO_ASSERT(upSkeletonIR, (std::string("Failed to load skeleton of ") + fileNameStr).c_str());
-    upModelIR->upSkeletonIR = std::move(upSkeletonIR);
+    std::unique_ptr<const SkeletonIR> pSkeletonIR = loadSkeleton(nameStr, *pImportContext);
+    HO_ASSERT(pSkeletonIR, (std::string("Failed to load skeleton of ") + fileNameStr).c_str());
+    pModelIR->pSkeletonIR = std::move(pSkeletonIR);
 
     // Load mesh
-    std::unique_ptr<const MeshIR> upMeshIR =
-        loadMesh(nameStr, *upImportContext, *(upModelIR->upSkeletonIR), upModelIR->upMaterialIRs);
-    HO_ASSERT(upMeshIR, (std::string("Failed to load mesh of ") + fileNameStr).c_str());
-    upModelIR->upMeshIR = std::move(upMeshIR);
+    std::unique_ptr<const MeshIR> pMeshIR =
+        loadMesh(nameStr, *pImportContext, *(pModelIR->pSkeletonIR), pModelIR->pMaterialIRs);
+    HO_ASSERT(pMeshIR, (std::string("Failed to load mesh of ") + fileNameStr).c_str());
+    pModelIR->pMeshIR = std::move(pMeshIR);
 
     // Load animations
-    std::unordered_map<std::string, int> AnimNameCount;
-    AnimNameCount.reserve(upImportContext->pAssimpScene->mNumAnimations);
-    for (int32_t ai = 0; ai < static_cast<int32_t>(upImportContext->pAssimpScene->mNumAnimations); ++ai)
+    std::unordered_map<std::string, int> animNameCount;
+    animNameCount.reserve(pImportContext->pAssimpScene->mNumAnimations);
+    for (int32_t ai = 0; ai < static_cast<int32_t>(pImportContext->pAssimpScene->mNumAnimations); ++ai)
     {
-        const aiAnimation* pAssimpAnim = upImportContext->pAssimpScene->mAnimations[ai];
+        const aiAnimation* pAssimpAnim = pImportContext->pAssimpScene->mAnimations[ai];
         std::string animNameStr;
         if (pAssimpAnim->mName.Empty())
         {
@@ -115,10 +115,10 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
         else
         {
             animNameStr = pAssimpAnim->mName.C_Str();
-            auto it = AnimNameCount.find(animNameStr);
-            if (it == AnimNameCount.end())
+            auto it = animNameCount.find(animNameStr);
+            if (it == animNameCount.end())
             {
-                AnimNameCount.insert({animNameStr, 1});
+                animNameCount.insert({animNameStr, 1});
             }
             else
             {
@@ -126,32 +126,31 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
                 ++it->second;
             }
         }
-        std::unique_ptr<const AnimationIR> upAnimIR =
-            loadAnimation(animNameStr, *pAssimpAnim, *(upModelIR->upSkeletonIR));
-        HO_ASSERT(upAnimIR, (std::string("Failed to load animation of ") + fileNameStr).c_str());
-        upModelIR->upAnimationIRs.emplace_back(std::move(upAnimIR));
+        std::unique_ptr<const AnimationIR> pAnimIR = loadAnimation(animNameStr, *pAssimpAnim, *(pModelIR->pSkeletonIR));
+        HO_ASSERT(pAnimIR, (std::string("Failed to load animation of ") + fileNameStr).c_str());
+        pModelIR->pAnimationIRs.emplace_back(std::move(pAnimIR));
     }
 
     // Load Skin
-    std::unique_ptr<const SkinIR> upSkinIR = loadSkin(nameStr, *upImportContext, *(upModelIR->upSkeletonIR));
-    HO_ASSERT(upSkinIR, (std::string("Failed to load skin of ") + fileNameStr).c_str());
-    upModelIR->upSkinIR = std::move(upSkinIR);
+    std::unique_ptr<const SkinIR> pSkinIR = loadSkin(nameStr, *pImportContext, *(pModelIR->pSkeletonIR));
+    HO_ASSERT(pSkinIR, (std::string("Failed to load skin of ") + fileNameStr).c_str());
+    pModelIR->pSkinIR = std::move(pSkinIR);
 
-    return upModelIR;
+    return pModelIR;
 }
 
 std::unique_ptr<const TextureIR> ResourceLoader::LoadTexture(const std::string& nameStr, const Path& path)
 {
-    std::unique_ptr<Image> upImg = ResourceImporter::ImportImage(path);
+    std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path);
 
-    if (!upImg)
+    if (!pImg)
     {
         return nullptr;
     }
 
-    std::vector<std::unique_ptr<Image>> upImgs;
-    upImgs.emplace_back(std::move(upImg));
-    return std::make_unique<TextureIR>(std::string(nameStr), std::move(upImgs), TextureIR::eTextureType::Texture2D);
+    std::vector<std::unique_ptr<Image>> pImgs;
+    pImgs.emplace_back(std::move(pImg));
+    return std::make_unique<TextureIR>(std::string(nameStr), std::move(pImgs), TextureIR::eTextureType::Texture2D);
 }
 
 std::unique_ptr<const ShaderIR> ResourceLoader::LoadShader(const std::string& nameStr, const Path& path)
@@ -165,7 +164,7 @@ std::unique_ptr<const ShaderIR> ResourceLoader::LoadShader(const std::string& na
         return nullptr;
     }
 
-    std::streamsize size = shaderStream.tellg();
+    const std::streamsize size = shaderStream.tellg();
     shaderStream.seekg(0, std::ios::beg);
 
     shaderSourceStr.resize(static_cast<size_t>(size));
@@ -177,11 +176,11 @@ std::unique_ptr<const ShaderIR> ResourceLoader::LoadShader(const std::string& na
 
     shaderStream.close();
 
-    std::unique_ptr<ShaderIR> upShaderIR;
-    upShaderIR->NameStr = nameStr;
-    upShaderIR->SourceStr = std::move(shaderSourceStr);
+    std::unique_ptr<ShaderIR> pShaderIR;
+    pShaderIR->NameStr = nameStr;
+    pShaderIR->SourceStr = std::move(shaderSourceStr);
 
-    return upShaderIR;
+    return pShaderIR;
 }
 
 std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTexture& assimpTexture)
@@ -227,7 +226,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
         height = static_cast<int32_t>(assimpTexture.mHeight);
         numColorChannels = 4;
 
-        int32_t size = width * height * numColorChannels;
+        const int32_t size = width * height * numColorChannels;
         pStbiBitmapLDR = new std::uint8_t[size];
 
         for (int32_t y = 0; y < height; ++y)
@@ -235,7 +234,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
             for (int32_t x = 0; x < width; ++x)
             {
                 const aiTexel& assimpTexel = assimpTexture.pcData[y * width + x];
-                int32_t idx = (y * width + x) * numColorChannels;
+                const int32_t idx = (y * width + x) * numColorChannels;
                 pStbiBitmapLDR[idx + 0] = assimpTexel.r;
                 pStbiBitmapLDR[idx + 1] = assimpTexel.g;
                 pStbiBitmapLDR[idx + 2] = assimpTexel.b;
@@ -286,7 +285,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
 
     const std::uint8_t* pFinalBitmap = bHDR ? reinterpret_cast<const std::uint8_t*>(pStbiBitmapHDR) : pStbiBitmapLDR;
 
-    std::unique_ptr<Image> upImg = std::make_unique<Image>(
+    std::unique_ptr<Image> pImg = std::make_unique<Image>(
         Path(std::string()), assimpTexture.mFilename.C_Str(), format, width, height, pFinalBitmap);
 
     if (bHDR)
@@ -302,10 +301,10 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
         delete[] pStbiBitmapLDR;
     }
 
-    std::vector<std::unique_ptr<Image>> upImgs;
-    upImgs.emplace_back(std::move(upImg));
+    std::vector<std::unique_ptr<Image>> pImgs;
+    pImgs.emplace_back(std::move(pImg));
     return std::make_unique<TextureIR>(
-        std::string(assimpTexture.mFilename.C_Str()), std::move(upImgs), TextureIR::eTextureType::Texture2D);
+        std::string(assimpTexture.mFilename.C_Str()), std::move(pImgs), TextureIR::eTextureType::Texture2D);
 }
 
 std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
@@ -315,8 +314,8 @@ std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
     const Path& parentPath,
     std::vector<std::unique_ptr<const TextureIR>>* pOutTextureIRs)
 {
-    std::unique_ptr<MaterialIR> upMaterialIR = std::make_unique<MaterialIR>();
-    upMaterialIR->NameStr = nameStr;
+    std::unique_ptr<MaterialIR> pMaterialIR = std::make_unique<MaterialIR>();
+    pMaterialIR->NameStr = nameStr;
 
     aiColor3D color3D;
     aiColor4D color4D;
@@ -327,166 +326,166 @@ std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
     // Legacy / Phong Attributes
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_AMBIENT, color3D))
     {
-        upMaterialIR->Ambient = Color128(color3D.r, color3D.g, color3D.b);
+        pMaterialIR->Ambient = Color128(color3D.r, color3D.g, color3D.b);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_DIFFUSE, color3D))
     {
-        upMaterialIR->Diffuse = Color128(color3D.r, color3D.g, color3D.b);
+        pMaterialIR->Diffuse = Color128(color3D.r, color3D.g, color3D.b);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_SPECULAR, color3D))
     {
-        upMaterialIR->Specular = Color128(color3D.r, color3D.g, color3D.b);
+        pMaterialIR->Specular = Color128(color3D.r, color3D.g, color3D.b);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_SHININESS, fVal))
     {
-        upMaterialIR->Shininess = fVal;
+        pMaterialIR->Shininess = fVal;
     }
 
     // PBR Core Attributes
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_BASE_COLOR, color4D))
     {
-        upMaterialIR->Albedo = Color128(color4D.r, color4D.g, color4D.b, color4D.a);
+        pMaterialIR->Albedo = Color128(color4D.r, color4D.g, color4D.b, color4D.a);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_METALLIC_FACTOR, fVal))
     {
-        upMaterialIR->Metallic = fVal;
+        pMaterialIR->Metallic = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_ROUGHNESS_FACTOR, fVal))
     {
-        upMaterialIR->Roughness = fVal;
+        pMaterialIR->Roughness = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_REFRACTI, fVal))
     {
-        upMaterialIR->IndexOfRefraction = fVal;
+        pMaterialIR->IndexOfRefraction = fVal;
     }
 
     // Global / Transparency Attributes
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_OPACITY, fVal))
     {
-        upMaterialIR->Opacity = fVal;
+        pMaterialIR->Opacity = fVal;
     }
 
-    upMaterialIR->AlphaMode =
-        upMaterialIR->Opacity < 1.f ? MaterialIR::eAlphaMode::Blend : MaterialIR::eAlphaMode::Opaque;
-    upMaterialIR->AlphaThreshold = 0.5f;
+    pMaterialIR->AlphaMode =
+        pMaterialIR->Opacity < 1.f ? MaterialIR::eAlphaMode::Blend : MaterialIR::eAlphaMode::Opaque;
+    pMaterialIR->AlphaThreshold = 0.5f;
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_GLTF_ALPHAMODE, aiStr))
     {
-        std::string mode(aiStr.C_Str());
+        const std::string mode(aiStr.C_Str());
         if (mode == "MASK")
         {
-            upMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Mask;
+            pMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Mask;
         }
         else if (mode == "BLEND")
         {
-            upMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Blend;
+            pMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Blend;
         }
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_GLTF_ALPHACUTOFF, fVal))
     {
-        upMaterialIR->AlphaThreshold = fVal;
+        pMaterialIR->AlphaThreshold = fVal;
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_BLEND_FUNC, iVal))
     {
         if (static_cast<aiBlendMode>(iVal) == aiBlendMode::aiBlendMode_Default)
         {
-            upMaterialIR->BlendMode = MaterialIR::eAlphaBlendMode::Default;
+            pMaterialIR->BlendMode = MaterialIR::eAlphaBlendMode::Default;
         }
         if (static_cast<aiBlendMode>(iVal) == aiBlendMode::aiBlendMode_Additive)
         {
-            upMaterialIR->BlendMode = MaterialIR::eAlphaBlendMode::Additive;
+            pMaterialIR->BlendMode = MaterialIR::eAlphaBlendMode::Additive;
         }
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_EMISSIVE, color3D))
     {
-        upMaterialIR->Emissive = Color128(color3D.r, color3D.g, color3D.b);
+        pMaterialIR->Emissive = Color128(color3D.r, color3D.g, color3D.b);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_EMISSIVE_INTENSITY, fVal))
     {
-        upMaterialIR->EmissiveIntensity = fVal;
+        pMaterialIR->EmissiveIntensity = fVal;
     }
 
     // Advanced PBR Attributes
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_TRANSMISSION_FACTOR, fVal))
     {
-        upMaterialIR->TransmissionFactor = fVal;
+        pMaterialIR->TransmissionFactor = fVal;
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_CLEARCOAT_FACTOR, fVal))
     {
-        upMaterialIR->ClearcoatFactor = fVal;
+        pMaterialIR->ClearcoatFactor = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, fVal))
     {
-        upMaterialIR->ClearcoatRoughness = fVal;
+        pMaterialIR->ClearcoatRoughness = fVal;
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_SHEEN_COLOR_FACTOR, color3D))
     {
-        upMaterialIR->SheenColor = Color128(color3D.r, color3D.g, color3D.b);
+        pMaterialIR->SheenColor = Color128(color3D.r, color3D.g, color3D.b);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, fVal))
     {
-        upMaterialIR->SheenRoughnessFactor = fVal;
+        pMaterialIR->SheenRoughnessFactor = fVal;
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_VOLUME_THICKNESS_FACTOR, fVal))
     {
-        upMaterialIR->VolumeThicknessFactor = fVal;
+        pMaterialIR->VolumeThicknessFactor = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_VOLUME_ATTENUATION_DISTANCE, fVal))
     {
-        upMaterialIR->VolumeAttenuationDist = fVal;
+        pMaterialIR->VolumeAttenuationDist = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_VOLUME_ATTENUATION_COLOR, color3D))
     {
-        upMaterialIR->VolumeAttenuationColor = Color128(color3D.r, color3D.g, color3D.b);
+        pMaterialIR->VolumeAttenuationColor = Color128(color3D.r, color3D.g, color3D.b);
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_ANISOTROPY_FACTOR, fVal))
     {
-        upMaterialIR->AnisotropyFactor = fVal;
+        pMaterialIR->AnisotropyFactor = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_ANISOTROPY_ROTATION, fVal))
     {
-        upMaterialIR->AnisotropyRotation = fVal;
+        pMaterialIR->AnisotropyRotation = fVal;
     }
 
     // Texture Strength / Scale
     if (AI_SUCCESS == assimpMaterial.Get("$mat.gltf.normalScale", 0, 0, fVal))
     {
-        upMaterialIR->NormalScale = fVal;
+        pMaterialIR->NormalScale = fVal;
     }
     else if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_BUMPSCALING, fVal))
     {
-        upMaterialIR->ParallaxScale = fVal;
+        pMaterialIR->ParallaxScale = fVal;
     }
     if (AI_SUCCESS == assimpMaterial.Get("$mat.gltf.occlusionStrength", 0, 0, fVal))
     {
-        upMaterialIR->OcclusionStrength = fVal;
+        pMaterialIR->OcclusionStrength = fVal;
     }
 
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_BUMPSCALING, fVal))
     {
-        upMaterialIR->ParallaxScale = fVal;
+        pMaterialIR->ParallaxScale = fVal;
     }
 
     // Render States
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_ENABLE_WIREFRAME, iVal))
     {
-        upMaterialIR->bWireframe = (iVal != 0);
+        pMaterialIR->bWireframe = (iVal != 0);
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_TWOSIDED, iVal))
     {
-        upMaterialIR->bBackfaceCulling = (iVal == 0);
+        pMaterialIR->bBackfaceCulling = (iVal == 0);
     }
 
     // Texture Load Helper
     auto loadTextureToMaterial = [&](aiTextureType aiType, MaterialIR::eTextureUsage engineType)
     {
-        if (upMaterialIR->TextureIRIndices[static_cast<int32_t>(engineType)] != -1)
+        if (pMaterialIR->TextureIRIndices[static_cast<int32_t>(engineType)] != -1)
         {
             return;
         }
@@ -524,49 +523,49 @@ std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
 
         if (texIRIndex == -1)
         {
-            std::unique_ptr<const TextureIR> upTextureIR;
+            std::unique_ptr<const TextureIR> pTextureIR;
             if (bEmbedded)
             {
-                upTextureIR = loadEmbeddedTexture(*pAssimpEmbTextures[embTexIdx]);
+                pTextureIR = loadEmbeddedTexture(*pAssimpEmbTextures[embTexIdx]);
             }
             else if (!texFileNameStr.empty())
             {
-                Path texAbsPath = parentPath / Path(texFileNameStr);
-                upTextureIR = LoadTexture(texNameStr, texAbsPath);
+                const Path texAbsPath = parentPath / Path(texFileNameStr);
+                pTextureIR = LoadTexture(texNameStr, texAbsPath);
             }
 
-            if (upTextureIR)
+            if (pTextureIR)
             {
-                texIRIndex = pOutTextureIRs->size();
-                pOutTextureIRs->emplace_back(std::move(upTextureIR));
+                texIRIndex = static_cast<int32_t>(pOutTextureIRs->size());
+                pOutTextureIRs->emplace_back(std::move(pTextureIR));
             }
         }
 
-        upMaterialIR->TextureIRIndices[static_cast<int32_t>(engineType)] = texIRIndex;
-        upMaterialIR->UVChannels[static_cast<int32_t>(engineType)] = static_cast<int32_t>(uv);
+        pMaterialIR->TextureIRIndices[static_cast<int32_t>(engineType)] = texIRIndex;
+        pMaterialIR->UVChannels[static_cast<int32_t>(engineType)] = static_cast<int32_t>(uv);
 
         // UV Transform Matrix
         aiUVTransform aiTransform;
         if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_UVTRANSFORM(aiType, 0), aiTransform))
         {
-            Matrix3x3 T = Matrix3x3::sIdentity;
-            T.Data[0][2] = aiTransform.mTranslation.x;
-            T.Data[1][2] = aiTransform.mTranslation.y;
+            Matrix3x3 t = Matrix3x3::sIdentity;
+            t.Data[0][2] = aiTransform.mTranslation.x;
+            t.Data[1][2] = aiTransform.mTranslation.y;
 
-            Matrix3x3 R = Matrix3x3::sIdentity;
+            Matrix3x3 r = Matrix3x3::sIdentity;
             float sin = 0.f;
             float cos = 0.f;
             math::SinCos(&sin, &cos, aiTransform.mRotation);
-            R.Data[0][0] = cos;
-            R.Data[0][1] = -sin;
-            R.Data[1][0] = sin;
-            R.Data[1][1] = cos;
+            r.Data[0][0] = cos;
+            r.Data[0][1] = -sin;
+            r.Data[1][0] = sin;
+            r.Data[1][1] = cos;
 
-            Matrix3x3 S = Matrix3x3::sIdentity;
-            S.Data[0][0] = aiTransform.mScaling.x;
-            S.Data[1][1] = aiTransform.mScaling.y;
+            Matrix3x3 s = Matrix3x3::sIdentity;
+            s.Data[0][0] = aiTransform.mScaling.x;
+            s.Data[1][1] = aiTransform.mScaling.y;
 
-            upMaterialIR->UVTransforms[static_cast<int32_t>(engineType)] = T * R * S;
+            pMaterialIR->UVTransforms[static_cast<int32_t>(engineType)] = t * r * s;
         }
     };
 
@@ -597,7 +596,7 @@ std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
     loadTextureToMaterial(aiTextureType_TRANSMISSION, MaterialIR::eTextureUsage::Transmission);
     loadTextureToMaterial(aiTextureType_ANISOTROPY, MaterialIR::eTextureUsage::Anisotropy);
 
-    return upMaterialIR;
+    return pMaterialIR;
 }
 
 std::unique_ptr<const SkeletonIR> ResourceLoader::loadSkeleton(const std::string& nameStr,
@@ -643,11 +642,11 @@ std::unique_ptr<const SkeletonIR> ResourceLoader::loadSkeleton(const std::string
         boneNameStrs.push_back(boneNameStr);
 
         // bone local transform
-        aiMatrix4x4 aim = pAssimpNode->mTransformation;
-        Matrix4x4 m(Vector4(aim.a1, aim.b1, aim.c1, aim.d1),
-                    Vector4(aim.a2, aim.b2, aim.c2, aim.d2),
-                    Vector4(aim.a3, aim.b3, aim.c3, aim.d3),
-                    Vector4(aim.a4, aim.b4, aim.c4, aim.d4));
+        const aiMatrix4x4 aim = pAssimpNode->mTransformation;
+        const Matrix4x4 m(Vector4(aim.a1, aim.b1, aim.c1, aim.d1),
+                          Vector4(aim.a2, aim.b2, aim.c2, aim.d2),
+                          Vector4(aim.a3, aim.b3, aim.c3, aim.d3),
+                          Vector4(aim.a4, aim.b4, aim.c4, aim.d4));
         localTransforms.emplace_back(Transform3D(m));
 
         boneNameToIndex[boneNameStr] = i;
@@ -773,8 +772,8 @@ std::unique_ptr<const MeshIR> ResourceLoader::loadMesh(
             {
                 const aiVector3D& aiTangent = pAssimpMesh->mTangents[vi];
                 const aiVector3D& aiBitangent = pAssimpMesh->mBitangents[vi];
-                Vector3 tangent(aiTangent.x, aiTangent.y, aiTangent.z);
-                Vector3 bitangent(aiBitangent.x, aiBitangent.y, aiBitangent.z);
+                const Vector3 tangent(aiTangent.x, aiTangent.y, aiTangent.z);
+                const Vector3 bitangent(aiBitangent.x, aiBitangent.y, aiBitangent.z);
 
                 // calcuate handedness
                 float handedness = 1.0f;
@@ -954,8 +953,8 @@ std::unique_ptr<const MeshIR> ResourceLoader::loadMesh(
                 {
                     const aiVector3D& aiTangent = pAssimpAnimMesh->mTangents[vi];
                     const aiVector3D& aiBitangent = pAssimpAnimMesh->mBitangents[vi];
-                    Vector3 tangent(aiTangent.x, aiTangent.y, aiTangent.z);
-                    Vector3 bitangent(aiBitangent.x, aiBitangent.y, aiBitangent.z);
+                    const Vector3 tangent(aiTangent.x, aiTangent.y, aiTangent.z);
+                    const Vector3 bitangent(aiBitangent.x, aiBitangent.y, aiBitangent.z);
 
                     // calcuate handedness
                     float handedness = 1.0f;
@@ -968,7 +967,7 @@ std::unique_ptr<const MeshIR> ResourceLoader::loadMesh(
                 }
             }
 
-            float weight = pAssimpAnimMesh->mWeight;
+            const float weight = pAssimpAnimMesh->mWeight;
 
             MeshIR::MorphTarget morphTarget(std::move(mrphTargetNameStr),
                                             std::move(mtPositions),
@@ -989,7 +988,7 @@ std::unique_ptr<const MeshIR> ResourceLoader::loadMesh(
                                 std::move(boneWeights),
                                 std::move(indices),
                                 std::move(morphTargets),
-                                pAssimpMesh->mMaterialIndex);
+                                static_cast<int32_t>(pAssimpMesh->mMaterialIndex));
 
         subMeshes.push_back(std::move(subMesh));
     }
@@ -1003,8 +1002,8 @@ std::unique_ptr<const AnimationIR> ResourceLoader::loadAnimation(const std::stri
                                                                  const aiAnimation& assimpAnim,
                                                                  const SkeletonIR& skeletonIR)
 {
-    float duration = (assimpAnim.mDuration != 0.0) ? static_cast<float>(assimpAnim.mDuration) : 1.0f;
-    float ticksPerSecond =
+    const float duration = (assimpAnim.mDuration != 0.0) ? static_cast<float>(assimpAnim.mDuration) : 1.0f;
+    const float ticksPerSecond =
         (assimpAnim.mTicksPerSecond != 0.0) ? static_cast<float>(assimpAnim.mTicksPerSecond) : 25.0f; // fallback
 
     // Skeletal tracks
@@ -1018,8 +1017,8 @@ std::unique_ptr<const AnimationIR> ResourceLoader::loadAnimation(const std::stri
             continue;
         }
 
-        std::string boneNameStr = pAssimpChannel->mNodeName.C_Str();
-        int32_t boneIndex = skeletonIR.GetBoneIndex(boneNameStr);
+        const std::string boneNameStr = pAssimpChannel->mNodeName.C_Str();
+        const int32_t boneIndex = skeletonIR.GetBoneIndex(boneNameStr);
 
         std::vector<AnimationIR::TranslationKey> translationKeys;
         translationKeys.reserve(pAssimpChannel->mNumPositionKeys);
@@ -1170,8 +1169,8 @@ std::unique_ptr<const AnimationIR> ResourceLoader::loadAnimation(const std::stri
             continue;
         }
 
-        std::string boneNameStr = pAssimpChannel->mName.C_Str();
-        int32_t boneIndex = skeletonIR.GetBoneIndex(boneNameStr);
+        const std::string boneNameStr = pAssimpChannel->mName.C_Str();
+        const int32_t boneIndex = skeletonIR.GetBoneIndex(boneNameStr);
 
         std::vector<AnimationIR::MorphingKey> morphingKeys;
         morphingKeys.reserve(pAssimpChannel->mNumKeys);
@@ -1184,7 +1183,7 @@ std::unique_ptr<const AnimationIR> ResourceLoader::loadAnimation(const std::stri
             weights.reserve(key.mNumValuesAndWeights);
             for (int32_t vi = 0; vi < static_cast<int32_t>(key.mNumValuesAndWeights); ++vi)
             {
-                morphTargetIndices.push_back(key.mValues[vi]);
+                morphTargetIndices.push_back(static_cast<int32_t>(key.mValues[vi]));
                 weights.push_back(static_cast<float>(key.mWeights[vi]));
             }
             morphingKeys.emplace_back(
@@ -1210,13 +1209,13 @@ std::unique_ptr<SkinIR> ResourceLoader::loadSkin(const std::string& nameStr,
         const aiMesh* pAssimpMesh = importContext.pAssimpScene->mMeshes[mi];
         for (int32_t bi = 0; bi < static_cast<int32_t>(pAssimpMesh->mNumBones); ++bi)
         {
-            aiBone* pAssimpBone = pAssimpMesh->mBones[bi];
-            std::string boneNameStr = pAssimpBone->mName.C_Str();
+            const aiBone* pAssimpBone = pAssimpMesh->mBones[bi];
+            const std::string boneNameStr = pAssimpBone->mName.C_Str();
             const aiMatrix4x4& om = pAssimpBone->mOffsetMatrix;
-            Matrix4x4 m(Vector4(om.a1, om.b1, om.c1, om.d1),
-                        Vector4(om.a2, om.b2, om.c2, om.d2),
-                        Vector4(om.a3, om.b3, om.c3, om.d3),
-                        Vector4(om.a4, om.b4, om.c4, om.d4));
+            const Matrix4x4 m(Vector4(om.a1, om.b1, om.c1, om.d1),
+                              Vector4(om.a2, om.b2, om.c2, om.d2),
+                              Vector4(om.a3, om.b3, om.c3, om.d3),
+                              Vector4(om.a4, om.b4, om.c4, om.d4));
             offsetTransforms[skeletonIR.GetBoneIndex(boneNameStr)] = Transform3D(m);
         }
     }

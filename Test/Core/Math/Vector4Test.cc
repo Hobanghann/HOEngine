@@ -10,8 +10,8 @@
 
 using namespace ho;
 
-HO_DISABLE_COMPILER_WARNING_PUSH
-HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER
+HO_DISABLE_COMPILER_WARNING_PUSH();
+HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
 
 class Vector4Test : public ::testing::Test
 {
@@ -34,7 +34,7 @@ class Vector4Test : public ::testing::Test
     Vector4 vec1234, vec3456, vec1234Approx, vec01020304;
 };
 
-HO_DISABLE_COMPILER_WARNING_POP
+HO_DISABLE_COMPILER_WARNING_POP();
 
 TEST_F(Vector4Test, Constructor_DefaultAndAllParameters_InitializesCorrectly)
 {

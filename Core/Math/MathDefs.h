@@ -11,7 +11,7 @@ namespace math
 INLINE constexpr float FLOAT_MAX = std::numeric_limits<float>::max();
 INLINE constexpr float FLOAT_MIN = std::numeric_limits<float>::min();
 INLINE constexpr float FLOAT_INF = std::numeric_limits<float>::infinity();
-INLINE constexpr float FLOAT_NaN = std::numeric_limits<float>::quiet_NaN();
+INLINE constexpr float FLOAT_NAN = std::numeric_limits<float>::quiet_NaN();
 
 // Basic scalar/vector comparison epsilon.
 // Used for generic floating point equality checks where values are expected

@@ -8,7 +8,7 @@
 #endif
 
 #include "Core/Macros.h"
-#include "LogSink_imgui.h"
+#include "LogSinkImgui.h"
 
 namespace spdlog
 {
@@ -24,7 +24,7 @@ class Logger final
     static void Shutdown();
     static void Log(eLogLevel level, const char* file, int32_t line, const char* fmt, ...);
 
-    static LogSink_imgui* GetImGuiSink();
+    static LogSinkImgui* GetImGuiSink();
 
     static constexpr const char* GetFileName(const char* path)
     {

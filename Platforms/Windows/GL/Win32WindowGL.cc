@@ -60,31 +60,35 @@ int32_t Win32WindowGL::GetClientHeight() const
     return mClientHeight;
 }
 
-bool Win32WindowGL::Resize(int32_t clientWidth, int32_t clientHeight)
+void Win32WindowGL::Resize(int32_t clientWidth, int32_t clientHeight)
 {
     mClientWidth = clientWidth;
     mClientHeight = clientHeight;
-    return true;
 }
 
-bool Win32WindowGL::Present() const
+void Win32WindowGL::Present() const
 {
-    return ::SwapBuffers(mhDC);
+    if (!::SwapBuffers(mhDC))
+    {
+        HO_ASSERT(false, "Failed to swap buffers.");
+    }
 }
 
-bool Win32WindowGL::MakeCurrent() const
+void Win32WindowGL::MakeCurrent() const
 {
-    return wglMakeCurrent(mhDC, shGLRC);
+    if (!wglMakeCurrent(mhDC, shGLRC))
+    {
+        HO_ASSERT(false, "Failed to bind GL context.");
+    }
 }
 
 void Win32WindowGL::Hook_CreateWindow(ImGuiViewport* viewport)
 {
     HO_ASSERT(viewport->RendererUserData == nullptr, "");
 
-    Win32WindowGL* window = nullptr;
-    window = new Win32WindowGL(static_cast<HWND>(viewport->PlatformHandle),
-                               static_cast<int32_t>(viewport->Size.x),
-                               static_cast<int32_t>(viewport->Size.y));
+    Win32WindowGL* window = new Win32WindowGL(static_cast<HWND>(viewport->PlatformHandle),
+                                              static_cast<int32_t>(viewport->Size.x),
+                                              static_cast<int32_t>(viewport->Size.y));
     viewport->RendererUserData = static_cast<void*>(window);
 }
 

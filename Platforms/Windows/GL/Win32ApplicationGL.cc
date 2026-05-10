@@ -41,7 +41,7 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwW
 
     if (!RegisterClassExW(&stWndClass) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
     {
-        HO_ASSERT(false, "Failed to register window class.");
+        HO_ASSERT(false, "Failed to register main window class.");
         return false;
     }
 
@@ -70,18 +70,30 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwW
                               mhApp,
                               this);
 
-    HO_ASSERT(mhMainWnd, "Failed to create window.");
+    if (!mhMainWnd)
+    {
+        HO_ASSERT(false, "Failed to create main window.");
+        return false;
+    }
 
     pMainWindow = std::make_unique<Win32WindowGL>(mhMainWnd, sMainWindowWidth, sMainWindowHeight);
 
     // Create GL context
     pMainWindow->MakeCurrent();
-    gladLoadGL();
+    if (!gladLoadGL())
+    {
+        HO_ASSERT(false, "Failed to load GL functions.");
+        return false;
+    }
 
     // Init imgui
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    if (!ImGui::CreateContext())
+    {
+        HO_ASSERT(false, "Failed to create imgui context.");
+        return false;
+    }
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
@@ -106,8 +118,16 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwW
     }
 
     // Setup Platform/Renderer backends
-    ImGui_ImplWin32_InitForOpenGL(mhMainWnd);
-    ImGui_ImplOpenGL3_Init();
+    if (!ImGui_ImplWin32_InitForOpenGL(mhMainWnd))
+    {
+        HO_ASSERT(false, "Failed to initialize imgui backend.");
+        return false;
+    }
+    if (!ImGui_ImplOpenGL3_Init())
+    {
+        HO_ASSERT(false, "Failed to initialize imgui render backend.");
+        return false;
+    }
 
     // Win32+GL needs specific hooks for viewport, as there are specific things needed to tie Win32 and GL api.
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -133,15 +153,14 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwW
     return true;
 }
 
-bool Win32ApplicationGL::BeginFrame()
+void Win32ApplicationGL::BeginFrame()
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
-    return true;
 }
 
-bool Win32ApplicationGL::EndFrame()
+void Win32ApplicationGL::EndFrame()
 {
     const ImGuiIO& io = ImGui::GetIO();
     // Update and Render additional Platform Windows
@@ -156,20 +175,28 @@ bool Win32ApplicationGL::EndFrame()
 
     // Present
     pMainWindow->Present();
-
-    return true;
 }
 
-bool Win32ApplicationGL::Shutdown()
+void Win32ApplicationGL::Shutdown()
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
     pMainWindow.reset();
-    Win32WindowGL::DeleteGLContext();
-    ::DestroyWindow(mhMainWnd);
-    ::UnregisterClassW(mMainWindowName.c_str(), mhApp);
-    return true;
+    if (!Win32WindowGL::DeleteGLContext())
+    {
+        HO_ASSERT(false, "Failed to delete GL context.");
+    }
+
+    if (!::DestroyWindow(mhMainWnd))
+    {
+        HO_ASSERT(false, "Failed to destroy main window.");
+    }
+
+    if (!::UnregisterClassW(mMainWindowName.c_str(), mhApp))
+    {
+        HO_ASSERT(false, "Failed to unregister main window class.");
+    }
 }
 
 Win32ApplicationGL::Win32ApplicationGL(HINSTANCE hApp)

@@ -19,7 +19,7 @@ Win32WindowGL::Win32WindowGL(HWND hWnd, int32_t clientWidth, int32_t clientHeigh
     mhDC = ::GetDC(mhWnd);
     HO_ASSERT(mhWnd, "Failed to Get DC");
 
-    PIXELFORMATDESCRIPTOR pfd = {0};
+    PIXELFORMATDESCRIPTOR pfd{};
     pfd.nSize = sizeof(pfd);
     pfd.nVersion = 1;
     pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SWAP_EXCHANGE;
@@ -82,16 +82,17 @@ void Win32WindowGL::Hook_CreateWindow(ImGuiViewport* viewport)
     HO_ASSERT(viewport->RendererUserData == nullptr, "");
 
     Win32WindowGL* window = nullptr;
-    window = new Win32WindowGL(
-        (HWND)viewport->PlatformHandle, static_cast<int32_t>(viewport->Size.x), static_cast<int32_t>(viewport->Size.y));
-    viewport->RendererUserData = reinterpret_cast<void*>(window);
+    window = new Win32WindowGL(static_cast<HWND>(viewport->PlatformHandle),
+                               static_cast<int32_t>(viewport->Size.x),
+                               static_cast<int32_t>(viewport->Size.y));
+    viewport->RendererUserData = static_cast<void*>(window);
 }
 
 void Win32WindowGL::Hook_DestroyWindow(ImGuiViewport* viewport)
 {
     if (viewport->RendererUserData != nullptr)
     {
-        const Win32WindowGL* window = (Win32WindowGL*)viewport->RendererUserData;
+        const Win32WindowGL* window = static_cast<Win32WindowGL*>(viewport->RendererUserData);
         delete window;
         viewport->RendererUserData = nullptr;
     }
@@ -100,7 +101,7 @@ void Win32WindowGL::Hook_DestroyWindow(ImGuiViewport* viewport)
 void Win32WindowGL::Hook_RenderWindow(ImGuiViewport* viewport, void* unused)
 {
     // Activate the platform window DC in the OpenGL rendering context
-    if (const Win32WindowGL* window = (Win32WindowGL*)viewport->RendererUserData)
+    if (const Win32WindowGL* window = static_cast<const Win32WindowGL*>(viewport->RendererUserData))
     {
         window->MakeCurrent();
     }
@@ -109,7 +110,7 @@ void Win32WindowGL::Hook_RenderWindow(ImGuiViewport* viewport, void* unused)
 
 void Win32WindowGL::Hook_SwapBuffers(ImGuiViewport* viewport, void* unused)
 {
-    if (const Win32WindowGL* window = (Win32WindowGL*)viewport->RendererUserData)
+    if (const Win32WindowGL* window = static_cast<const Win32WindowGL*>(viewport->RendererUserData))
     {
         window->Present();
     }

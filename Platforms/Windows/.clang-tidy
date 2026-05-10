@@ -5,4 +5,4 @@ Checks: >
   -bugprone-reserved-identifier,
   -readability-identifier-naming,
   
-HeaderFilterRegex: '.*Core/IO/.*'
+HeaderFilterRegex: '.*Platforms/Windows/.*'

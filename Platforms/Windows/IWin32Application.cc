@@ -7,8 +7,6 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 namespace ho
 {
 
-IWin32Application::~IWin32Application() {}
-
 IWin32Application::IWin32Application(HINSTANCE hApp)
   : IPlatformApplication()
   , mhApp(hApp)
@@ -31,9 +29,12 @@ bool IWin32Application::ProcessPlatformMessages()
     return true;
 }
 
-bool IWin32Application::SetWindowTitle(std::wstring& title)
+void IWin32Application::SetWindowTitle(std::wstring& title)
 {
-    return SetWindowTextW(mhMainWnd, title.c_str());
+    if (!SetWindowTextW(mhMainWnd, title.c_str()))
+    {
+        HO_ASSERT(false, "Failed to set title text.");
+    }
 }
 
 LRESULT CALLBACK IWin32Application::wndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)

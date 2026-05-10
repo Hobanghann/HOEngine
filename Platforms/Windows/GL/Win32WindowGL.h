@@ -26,9 +26,9 @@ class Win32WindowGL final
 
     int32_t GetClientWidth() const;
     int32_t GetClientHeight() const;
-    bool Resize(int32_t clientWidth, int32_t clientHeight);
-    bool Present() const;
-    bool MakeCurrent() const;
+    void Resize(int32_t clientWidth, int32_t clientHeight);
+    void Present() const;
+    void MakeCurrent() const;
 
     static void Hook_CreateWindow(ImGuiViewport* viewport);
     static void Hook_DestroyWindow(ImGuiViewport* viewport);

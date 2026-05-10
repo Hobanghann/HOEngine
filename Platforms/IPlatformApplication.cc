@@ -34,13 +34,13 @@ void IPlatformApplication::initImGuiFonts()
 
     // load font
     const float fontSize = 16.0f;
-    const ImWchar* glyphRangesKorean = io.Fonts->GetGlyphRangesKorean();
+    const ImWchar* pGlyphRangesKorean = io.Fonts->GetGlyphRangesKorean();
     const std::filesystem::path fontPath =
         assetPath / std::filesystem::path(std::string("Fonts/Inter_18pt-Regular.ttf"));
-    const ImFont* mainFont =
-        io.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), fontSize, nullptr, glyphRangesKorean);
-    HO_ASSERT(mainFont, "");
-    (void)mainFont;
+    if (!io.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), fontSize, nullptr, pGlyphRangesKorean))
+    {
+        HO_ASSERT(false, "Failed to load font.");
+    }
 
     // load icon
     ImFontConfig config;
@@ -50,10 +50,14 @@ void IPlatformApplication::initImGuiFonts()
     config.GlyphOffset = ImVec2(0.0f, 2.0f);
     static const ImWchar sIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     const std::filesystem::path iconPath = assetPath / std::filesystem::path(std::string("Fonts/fa-solid-900.ttf"));
-    const ImFont* icon = io.Fonts->AddFontFromFileTTF(iconPath.string().c_str(), 16.0f, &config, sIconRanges);
-    HO_ASSERT(icon, "");
-    (void)icon;
+    if (!io.Fonts->AddFontFromFileTTF(iconPath.string().c_str(), 16.0f, &config, sIconRanges))
+    {
+        HO_ASSERT(false, "Failed to load font.");
+    }
 
-    io.Fonts->Build();
+    if (!io.Fonts->Build())
+    {
+        HO_ASSERT(false, "Failed to build font.");
+    }
 }
 } // namespace ho

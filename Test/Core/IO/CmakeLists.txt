@@ -1,4 +1,9 @@
 ################################################################################
+# define variables
+################################################################################
+set(HO_PROJECT_ROOT "${CMAKE_SOURCE_DIR}")
+set(HO_ASSET_ROOT "${CMAKE_SOURCE_DIR}/Assets")
+################################################################################
 # Read source files
 ################################################################################
 file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
@@ -40,10 +45,13 @@ set_target_properties(
 
 target_compile_definitions(
   ${IO_TEST_NAME} 
-  PUBLIC
+  PRIVATE
+  HO_PROJECT_ROOT="${HO_PROJECT_ROOT}"
+  HO_ASSET_ROOT="${HO_ASSET_ROOT}"
   TEST_HO_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
   TEST_HO_ASSET_ROOT="${CMAKE_SOURCE_DIR}/Assets"
 )
+
 if (MSVC)
     target_compile_definitions(
         ${IO_TEST_NAME} 

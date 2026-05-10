@@ -42,10 +42,9 @@ target_include_directories(
     ${CMAKE_SOURCE_DIR} 
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
-
 target_compile_definitions(
   ${CORE_NAME} 
-  PUBLIC
+  PRIVATE
   HO_PROJECT_ROOT="${HO_PROJECT_ROOT}"
   HO_ASSET_ROOT="${HO_ASSET_ROOT}"
 )

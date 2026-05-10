@@ -6,7 +6,7 @@
 #include <intrin.h>
 #endif
 
-#include "Core/Config.h"
+#include "Config.h"
 #include "Macros.h"
 #include "Thread.h"
 

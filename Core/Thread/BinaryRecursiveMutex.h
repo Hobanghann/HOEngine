@@ -3,7 +3,7 @@
 #include <mutex>
 #include <thread>
 
-#include "Core/Config.h"
+#include "Config.h"
 #include "Macros.h"
 #include "Mutex.h"
 

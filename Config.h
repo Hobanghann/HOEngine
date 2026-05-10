@@ -5,3 +5,5 @@
 #else
 #define THREAD_ENABLED
 #endif
+
+#define GRAPHICS_API_GL

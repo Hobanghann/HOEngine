@@ -42,7 +42,7 @@ jobs:
             echo "Checking format for: $TARGET_DIRS"
             find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \) | xargs -r clang-format-21 -i
             
-            if [ -n "$(git status --porcelain)" ]; then
+            if [ -n "$(git status --porcelain -uno)" ]; then
               echo "--------------------------------------------------"
               echo " !! FORMAT MISMATCH DETECTED !! "
               echo "--------------------------------------------------"
@@ -91,15 +91,11 @@ jobs:
       - name: Run clang-tidy
         shell: bash
         run: |
-          echo "Running clang-tidy check..."
+          TARGET_DIRS="Core"
+          
+          FILES=$(find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \))
 
-          for dir in Core; do
-            if [ -d "$dir" ]; then
-              echo "--- Running clang-tidy for directory: $dir ---"
-              
-              run-clang-tidy -p build -quiet -source-filter="([\\/]|^)$dir[\\/].*\.(h|cc)$"
-            fi
-          done
+          echo "$FILES" | xargs -r clang-tidy -p build --quiet
 
   build-test:
     name: Build And Test
@@ -152,29 +148,29 @@ jobs:
       - name: Test Core.Math
         working-directory: build
         run: |
-          ctest -R Core.Math
+          ctest -R Core.Math --output-on-failure
 
       - name: Test Core.Thread
         working-directory: build
         run: |
-          ctest -R Core.Thread
+          ctest -R Core.Thread --output-on-failure
 
       - name: Test Core.Templates
         working-directory: build
         run: |
-          ctest -R Core.Templates
+          ctest -R Core.Templates --output-on-failure
 
       - name: Test Core.Time
         working-directory: build
         run: |
-          ctest -R Core.Time
+          ctest -R Core.Time --output-on-failure
 
       - name: Test Core.IO
         working-directory: build
         run: |
-          ctest -R Core.IO
+          ctest -R Core.IO --output-on-failure
 
       - name: Test Core.Log
         working-directory: build
         run: |
-          ctest -R Core.Log
+          ctest -R Core.Log --output-on-failure

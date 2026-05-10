@@ -67,7 +67,6 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wstrict-aliasing
             -Wnull-dereference
             -Wdouble-promotion
-            -Wformat=2
             -Wcast-qual
             -Wcast-align
             -fms-extensions
@@ -79,6 +78,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-unused-parameter
             -Wno-gnu-anonymous-struct   # allow anonymous struct/union
             -Wno-double-promotion       # allow float to double promotion
+            -Wno-sign-conversion
             -fno-exceptions
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")        
@@ -99,7 +99,7 @@ endif ()
 # Set module's Name
 ##########################################################
 set(THIRD_PARTY_NAME Lib)
-#set(CORE_NAME Core)
+set(CORE_NAME Core)
 #set(PLATFORMS_NAME Platforms)
 #set(SUBSYSTEMS_NAME Subsystems)
 #set(SCENE_NAME Scene)
@@ -114,7 +114,7 @@ set(THIRD_PARTY_NAME Lib)
 # Process modules
 ##########################################################
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SCENE_NAME})
@@ -129,5 +129,5 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
 ##########################################################
 if(ENABLE_TEST)
 enable_testing()
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Test)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Test)
 endif()

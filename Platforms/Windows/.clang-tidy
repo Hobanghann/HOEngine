@@ -1,0 +1,8 @@
+InheritParentConfig: true
+
+Checks: >
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -bugprone-reserved-identifier,
+  -readability-identifier-naming,
+  
+HeaderFilterRegex: '.*Core/IO/.*'

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "ConditionVariable.h"
-#include "Core/Config.h"
+#include "Config.h"
 #include "Core/Templates/AtomicNumeric.h"
 #include "Macros.h"
 #include "Mutex.h"

@@ -4,7 +4,7 @@
 #include <string>
 #include <thread>
 
-#include "Core/Config.h"
+#include "Config.h"
 #include "Macros.h"
 
 namespace ho

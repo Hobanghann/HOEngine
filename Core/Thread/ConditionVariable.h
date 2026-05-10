@@ -3,7 +3,7 @@
 #include <condition_variable>
 
 #include "BinaryRecursiveMutex.h"
-#include "Core/Config.h"
+#include "Config.h"
 #include "Mutex.h"
 
 namespace ho

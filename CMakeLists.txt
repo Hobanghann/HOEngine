@@ -99,30 +99,15 @@ endif ()
 # Set module's Name
 ##########################################################
 set(THIRD_PARTY_NAME Lib)
+set(PLATFORMS_NAME Platforms)
 set(CORE_NAME Core)
-#set(PLATFORMS_NAME Platforms)
-#set(SUBSYSTEMS_NAME Subsystems)
-#set(SCENE_NAME Scene)
-#set(UI_NAME UI)
-#set(APPLICATION_NAME Application)
-#set(ENGINE_NAME Engine)
-#set(MAIN_NAME Main)
-#set(ENTRY_NAME Entry)
-
 
 ##########################################################
 # Process modules
 ##########################################################
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SCENE_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${UI_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${APPLICATION_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENTRY_NAME})
 
 ##########################################################
 # Process tests

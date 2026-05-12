@@ -30,7 +30,7 @@ class ResourceImporter final
   public:
     ResourceImporter() = default;
 
-    [[nodiscard]] static std::unique_ptr<Image> ImportImage(const Path& path);
+    [[nodiscard]] static std::unique_ptr<Image> ImportImage(const Path& path, uint32_t desiredChannels = 0);
     [[nodiscard]] static std::unique_ptr<ModelImportContext> ImportModel(const Path& path,
                                                                          bool bMakeStatic,
                                                                          bool bConvertToLeftHanded);

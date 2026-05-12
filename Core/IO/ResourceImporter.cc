@@ -9,7 +9,7 @@
 
 namespace ho
 {
-std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
+std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path, uint32_t desiredChannels)
 {
     Image::eFormat format = Image::eFormat::RGBA32F;
     int32_t width = 0;
@@ -20,7 +20,7 @@ std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
 
     if (stbi_is_hdr(path.ToString().c_str()) != 0)
     {
-        float* pStbiBitmap = stbi_loadf(path.ToString().c_str(), &width, &height, &numColorChannels, 0);
+        float* pStbiBitmap = stbi_loadf(path.ToString().c_str(), &width, &height, &numColorChannels, desiredChannels);
 
         if (pStbiBitmap == nullptr)
         {
@@ -46,13 +46,13 @@ std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
                 return nullptr;
         }
         pImg = std::make_unique<Image>(
-            path, path.GetFileName().ToString(), format, width, height, reinterpret_cast<const uint8_t*>(pStbiBitmap));
+            path, path.GetFileName().ToString(), format, width, height, numColorChannels, reinterpret_cast<const uint8_t*>(pStbiBitmap));
         stbi_image_free(pStbiBitmap);
     }
     else
     {
-        std::uint8_t* pStbiBitmap =
-            reinterpret_cast<std::uint8_t*>(stbi_load(path.ToString().c_str(), &width, &height, &numColorChannels, 0));
+        std::uint8_t* pStbiBitmap = reinterpret_cast<std::uint8_t*>(
+            stbi_load(path.ToString().c_str(), &width, &height, &numColorChannels, desiredChannels));
 
         if (pStbiBitmap == nullptr)
         {
@@ -77,7 +77,7 @@ std::unique_ptr<Image> ResourceImporter::ImportImage(const Path& path)
                 stbi_image_free(pStbiBitmap);
                 return nullptr;
         }
-        pImg = std::make_unique<Image>(path, path.GetFileName().ToString(), format, width, height, pStbiBitmap);
+        pImg = std::make_unique<Image>(path, path.GetFileName().ToString(), format, width, height, numColorChannels, pStbiBitmap);
         stbi_image_free(pStbiBitmap);
     }
 

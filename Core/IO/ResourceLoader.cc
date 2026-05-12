@@ -141,7 +141,8 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
 
 std::unique_ptr<const TextureIR> ResourceLoader::LoadTexture(const std::string& nameStr, const Path& path)
 {
-    const std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path);
+    const int32_t desiredChannel = 4; // for BCn compression.(AMD Compressonator requires 4 channels.)
+    const std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path, desiredChannel);
 
     if (!pImg)
     {
@@ -186,6 +187,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
     int32_t width = 0;
     int32_t height = 0;
     int32_t numColorChannels = 0;
+    const int32_t desiredChannel = 4; // for BCn compression.(AMD Compressonator requires 4 channels.)
 
     std::uint8_t* pStbiBitmapLDR = nullptr;
     float* pStbiBitmapHDR = nullptr;
@@ -200,8 +202,8 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
         if (stbi_is_hdr_from_memory(pCompressedData, compressedSize))
         {
             bHDR = true;
-            pStbiBitmapHDR =
-                stbi_loadf_from_memory(pCompressedData, compressedSize, &width, &height, &numColorChannels, 0);
+            pStbiBitmapHDR = stbi_loadf_from_memory(
+                pCompressedData, compressedSize, &width, &height, &numColorChannels, desiredChannel);
             if (!pStbiBitmapHDR)
             {
                 return nullptr;
@@ -209,8 +211,8 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
         }
         else
         {
-            pStbiBitmapLDR =
-                stbi_load_from_memory(pCompressedData, compressedSize, &width, &height, &numColorChannels, 0);
+            pStbiBitmapLDR = stbi_load_from_memory(
+                pCompressedData, compressedSize, &width, &height, &numColorChannels, desiredChannel);
             if (!pStbiBitmapLDR)
             {
                 return nullptr;
@@ -284,7 +286,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
     const std::uint8_t* pFinalBitmap = bHDR ? reinterpret_cast<const std::uint8_t*>(pStbiBitmapHDR) : pStbiBitmapLDR;
 
     const std::unique_ptr<Image> pImg = std::make_unique<Image>(
-        Path(std::string()), assimpTexture.mFilename.C_Str(), format, width, height, pFinalBitmap);
+        Path(std::string()), assimpTexture.mFilename.C_Str(), format, width, height, numColorChannels, pFinalBitmap);
 
     if (bHDR)
     {

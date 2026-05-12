@@ -141,7 +141,7 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
 
 std::unique_ptr<const TextureIR> ResourceLoader::LoadTexture(const std::string& nameStr, const Path& path)
 {
-    std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path);
+    const std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path);
 
     if (!pImg)
     {
@@ -283,7 +283,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
 
     const std::uint8_t* pFinalBitmap = bHDR ? reinterpret_cast<const std::uint8_t*>(pStbiBitmapHDR) : pStbiBitmapLDR;
 
-    std::unique_ptr<Image> pImg = std::make_unique<Image>(
+    const std::unique_ptr<Image> pImg = std::make_unique<Image>(
         Path(std::string()), assimpTexture.mFilename.C_Str(), format, width, height, pFinalBitmap);
 
     if (bHDR)

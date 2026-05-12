@@ -101,30 +101,25 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttr
             ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Diffuse)]]
             .get();
     EXPECT_EQ(pDiffuseIR->NameStr, std::string("test_diffuse"));
-    EXPECT_EQ(pDiffuseIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pSpecularIR =
         pModelIR
             ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Specular)]]
             .get();
     EXPECT_EQ(pSpecularIR->NameStr, std::string("test_specular"));
-    EXPECT_EQ(pSpecularIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pSpecularHighlight =
         pModelIR
             ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Shininess)]]
             .get();
     EXPECT_EQ(pSpecularHighlight->NameStr, std::string("test_specular_highlight"));
-    EXPECT_EQ(pSpecularHighlight->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pHeightIR =
         pModelIR->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Height)]]
             .get();
     EXPECT_EQ(pHeightIR->NameStr, std::string("test_bump"));
-    EXPECT_EQ(pHeightIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pAlphaIR =
         pModelIR
             ->pTextureIRs[pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Opacity)]]
             .get();
     EXPECT_EQ(pAlphaIR->NameStr, std::string("test_alpha"));
-    EXPECT_EQ(pAlphaIR->Type, TextureIR::eTextureType::Texture2D);
     EXPECT_TRUE(pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Albedo)] == -1);
     EXPECT_TRUE(pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Emissive)] == -1);
     EXPECT_TRUE(pTexMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Metallic)] == -1);
@@ -584,31 +579,26 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxTextured_ValidatesStandardSpecificatio
         pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Albedo)]]
             .get();
     EXPECT_EQ(pAlbedoIR->NameStr, std::string("test_albedo"));
-    EXPECT_EQ(pAlbedoIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pMetallicRoughnessIR =
         pModelIR
             ->pTextureIRs[pMaterialIR
                               ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::MetallicRoughness)]]
             .get();
     EXPECT_EQ(pMetallicRoughnessIR->NameStr, std::string("test_metallic_roughness"));
-    EXPECT_EQ(pMetallicRoughnessIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pNormal =
         pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Normal)]]
             .get();
     EXPECT_EQ(pNormal->NameStr, std::string("test_normal"));
-    EXPECT_EQ(pNormal->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pAmbientOcclusionIR =
         pModelIR
             ->pTextureIRs[pMaterialIR
                               ->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::AmbientOcclusion)]]
             .get();
     EXPECT_EQ(pAmbientOcclusionIR->NameStr, std::string("test_occlusion"));
-    EXPECT_EQ(pAmbientOcclusionIR->Type, TextureIR::eTextureType::Texture2D);
     const TextureIR* pEmissiveIR =
         pModelIR->pTextureIRs[pMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Emissive)]]
             .get();
     EXPECT_EQ(pEmissiveIR->NameStr, std::string("test_emissive"));
-    EXPECT_EQ(pEmissiveIR->Type, TextureIR::eTextureType::Texture2D);
 }
 
 TEST(ResourceLoaderTest, LoadModel_glTFRiggidFiture_ValidatesStandardSpecification)

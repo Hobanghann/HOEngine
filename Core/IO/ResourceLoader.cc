@@ -141,16 +141,14 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
 
 std::unique_ptr<const TextureIR> ResourceLoader::LoadTexture(const std::string& nameStr, const Path& path)
 {
-    std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path);
+    const std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path);
 
     if (!pImg)
     {
         return nullptr;
     }
 
-    std::vector<std::unique_ptr<Image>> pImgs;
-    pImgs.emplace_back(std::move(pImg));
-    return std::make_unique<TextureIR>(std::string(nameStr), std::move(pImgs), TextureIR::eTextureType::Texture2D);
+    return std::make_unique<TextureIR>(std::string(nameStr), std::move(*pImg));
 }
 
 std::unique_ptr<const ShaderIR> ResourceLoader::LoadShader(const std::string& nameStr, const Path& path)
@@ -285,7 +283,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
 
     const std::uint8_t* pFinalBitmap = bHDR ? reinterpret_cast<const std::uint8_t*>(pStbiBitmapHDR) : pStbiBitmapLDR;
 
-    std::unique_ptr<Image> pImg = std::make_unique<Image>(
+    const std::unique_ptr<Image> pImg = std::make_unique<Image>(
         Path(std::string()), assimpTexture.mFilename.C_Str(), format, width, height, pFinalBitmap);
 
     if (bHDR)
@@ -301,10 +299,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
         delete[] pStbiBitmapLDR;
     }
 
-    std::vector<std::unique_ptr<Image>> pImgs;
-    pImgs.emplace_back(std::move(pImg));
-    return std::make_unique<TextureIR>(
-        std::string(assimpTexture.mFilename.C_Str()), std::move(pImgs), TextureIR::eTextureType::Texture2D);
+    return std::make_unique<TextureIR>(std::string(assimpTexture.mFilename.C_Str()), std::move(*pImg));
 }
 
 std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(

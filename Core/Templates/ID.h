@@ -56,14 +56,14 @@ class ID
         return *this;
     }
 
-    static const ID sNull;
+    static const ID sNULL;
 
   private:
     uint64_t mID;
 };
 
 template <typename T>
-INLINE const ID<T> ID<T>::sNull{};
+INLINE const ID<T> ID<T>::sNULL{};
 
 } // namespace ho
 

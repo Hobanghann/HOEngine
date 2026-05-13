@@ -35,7 +35,7 @@ class GlobalPoolIndex
         return GlobalPoolIndex(sPool.Emplace(std::forward<Args>(args)...));
     }
 
-    static const GlobalPoolIndex sNull;
+    static const GlobalPoolIndex sNULL;
 
     [[nodiscard]] bool operator==(const GlobalPoolIndex& rhs) const
     {
@@ -107,7 +107,7 @@ class GlobalPoolIndex
 };
 
 template <typename ValueType, template <typename> class PoolType>
-INLINE const GlobalPoolIndex<ValueType, PoolType> GlobalPoolIndex<ValueType, PoolType>::sNull{};
+INLINE const GlobalPoolIndex<ValueType, PoolType> GlobalPoolIndex<ValueType, PoolType>::sNULL{};
 
 using StringHandle = GlobalPoolIndex<std::string, UniqueObjectPool>;
 } // namespace ho

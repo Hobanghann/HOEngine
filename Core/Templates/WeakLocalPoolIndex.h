@@ -65,7 +65,7 @@ class WeakLocalPoolIndex
         return mIndex;
     }
 
-    static const WeakLocalPoolIndex sNull;
+    static const WeakLocalPoolIndex sNULL;
 
   private:
     uint32_t mIndex = 0;
@@ -73,7 +73,7 @@ class WeakLocalPoolIndex
 };
 
 template <typename ValueType, template <typename> class PoolType>
-INLINE const WeakLocalPoolIndex<ValueType, PoolType> WeakLocalPoolIndex<ValueType, PoolType>::sNull =
+INLINE const WeakLocalPoolIndex<ValueType, PoolType> WeakLocalPoolIndex<ValueType, PoolType>::sNULL =
     WeakLocalPoolIndex<ValueType, PoolType>(nullptr, 0);
 } // namespace ho
 

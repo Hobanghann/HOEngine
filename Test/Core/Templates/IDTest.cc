@@ -16,7 +16,7 @@ TEST(IDTest, Constructor_Default_ValidInitialState)
 {
     TestID id;
 
-    EXPECT_EQ(id, TestID::sNull);
+    EXPECT_EQ(id, TestID::sNULL);
 }
 
 TEST(IDTest, Increment_MultipleTimes_AccumulatesValueCorrectly)

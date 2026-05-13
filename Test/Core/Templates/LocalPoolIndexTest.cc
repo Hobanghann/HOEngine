@@ -57,7 +57,7 @@ TEST(LocalPoolIndexTest, Constructor_Default_InitialIndexIsNull)
     EXPECT_TRUE(nullIdx.IsNULL());
     EXPECT_FALSE(nullIdx.IsValid());
     EXPECT_EQ(nullIdx.GetIndex(), 0);
-    EXPECT_EQ(nullIdx, Index::sNull);
+    EXPECT_EQ(nullIdx, Index::sNULL);
 }
 
 TEST(LocalPoolIndexTest, Constructor_CopyInitialValue_AddValueInPool)
@@ -227,5 +227,5 @@ TEST(LocalPoolIndexTest, Hash_AsKey_WorksWithStlMap)
 
     EXPECT_EQ(indexMap.size(), 2);
     EXPECT_TRUE(indexMap.find(idx1) != indexMap.end());
-    EXPECT_TRUE(indexMap.find(Index::sNull) == indexMap.end());
+    EXPECT_TRUE(indexMap.find(Index::sNULL) == indexMap.end());
 }

@@ -215,5 +215,5 @@ TEST_F(GlobalPoolIndexTest, Hash_AsKey_WorksWithStlMap)
 
     EXPECT_EQ(indexMap.size(), 2);
     EXPECT_TRUE(indexMap.find(idx1) != indexMap.end());
-    EXPECT_TRUE(indexMap.find(GlobalIndex::sNull) == indexMap.end());
+    EXPECT_TRUE(indexMap.find(GlobalIndex::sNULL) == indexMap.end());
 }

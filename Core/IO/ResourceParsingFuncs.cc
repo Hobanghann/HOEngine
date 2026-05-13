@@ -38,7 +38,7 @@ struct ModelParsingContext
 //  Private Function Declarations
 // ===========================================================================
 
-[[nodiscard]] std::unique_ptr<Image> readImageFile(const Path& path, uint32_t desiredChannels = 0);
+[[nodiscard]] std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels = 0);
 [[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path,
                                                                         bool bMakeStatic,
                                                                         bool bConvertToLeftHanded);
@@ -222,7 +222,7 @@ std::unique_ptr<const ShaderIR> parseShader(const std::string& nameStr, const Pa
 //  Private Function Definitions
 // ===========================================================================
 
-std::unique_ptr<Image> readImageFile(const Path& path, uint32_t desiredChannels)
+std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels)
 {
     Image::eFormat format = Image::eFormat::RGBA32F;
     int32_t width = 0;

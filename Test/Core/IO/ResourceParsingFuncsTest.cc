@@ -1,5 +1,3 @@
-#include "Core/IO/ResourceLoader.h"
-
 #include <gtest/gtest.h>
 #include <unordered_set>
 
@@ -7,19 +5,20 @@
 #include "Core/IO/MaterialIR.h"
 #include "Core/IO/MeshIR.h"
 #include "Core/IO/ModelIR.h"
-#include "Core/IO/ResourceImporter.h"
+#include "Core/IO/ResourceParseFuncs.h"
 #include "Core/IO/ShaderIR.h"
 #include "Core/IO/SkeletonIR.h"
 #include "Core/IO/SkinIR.h"
 #include "Core/IO/TextureIR.h"
 
 using namespace ho;
+using namespace ho::parser;
 
-TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttributes)
+TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMaterialAttributes)
 {
     Path path(std::string("TestAssets/TestObj/Cube/cube.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestCube"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -191,11 +190,11 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_VerifiesFullSceneHierarchyAndMaterialAttr
     EXPECT_TRUE(pAttrMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Anisotropy)] == -1);
 }
 
-TEST(ResourceLoaderTest, LoadModel_OBJ_DeduplicatesIdenticalTextures)
+TEST(ResourceParseFuncsTest, parseModelFile_OBJ_DeduplicatesIdenticalTextures)
 {
     Path path(std::string("TestAssets/TestObj/CubeWithDuplicatedTexture/cube.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestCube"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
 
     EXPECT_EQ(pModelIR->pTextureIRs.size(), 1);
@@ -224,11 +223,11 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_DeduplicatesIdenticalTextures)
     EXPECT_EQ(pDiffuseIR, pAlphaIR);
 }
 
-TEST(ResourceLoaderTest, LoadModel_OBJ_CorrectlyParsesMultipleSubMeshes)
+TEST(ResourceParseFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMeshes)
 {
     Path path(std::string("TestAssets/TestObj/MultipleMesh/multi_mesh.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestCube"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -300,11 +299,11 @@ TEST(ResourceLoaderTest, LoadModel_OBJ_CorrectlyParsesMultipleSubMeshes)
     EXPECT_NE(pMetalMaterialIR->Specular, pPlasticMaterialIR->Specular);
 }
 
-TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/Box/glTF/Box.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("TestBox"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestBox"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -402,12 +401,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFBox_ValidatesStandardSpecification)
 
 // FIXME: Temporarily disabled due to Assimp error in BoxInterleaved.gltf.
 // Check if Assimp's post-processing flags need adjustment for interleaved data.
-TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/BoxInterleaved/glTF/BoxInterleaved.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR =
-        ResourceLoader::LoadModel(std::string("BoxInterleaved"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("BoxInterleaved"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -501,12 +499,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxInterleaved_ValidatesStandardSpecifica
     EXPECT_EQ(pSkinIR->OffsetTransforms[0], Transform3D());
 }
 
-TEST(ResourceLoaderTest, LoadModel_glTFBoxVertexColors_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxVertexColors_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/BoxVertexColors/glTF/BoxVertexColors.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR =
-        ResourceLoader::LoadModel(std::string("BoxVertexColors"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("BoxVertexColors"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -520,11 +517,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxVertexColors_ValidatesStandardSpecific
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
 }
 
-TEST(ResourceLoaderTest, LoadModel_glTFBoxTextured_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/BoxTextured/glTF/BoxTextured.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = ResourceLoader::LoadModel(std::string("BoxTextured"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("BoxTextured"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -601,12 +598,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFBoxTextured_ValidatesStandardSpecificatio
     EXPECT_EQ(pEmissiveIR->NameStr, std::string("test_emissive"));
 }
 
-TEST(ResourceLoaderTest, LoadModel_glTFRiggidFiture_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/RiggedFigure/glTF/RiggedFigure.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR =
-        ResourceLoader::LoadModel(std::string("RiggedFigure"), path, false, false);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("RiggedFigure"), path, false, false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
@@ -1055,12 +1051,11 @@ TEST(ResourceLoaderTest, LoadModel_glTFRiggidFiture_ValidatesStandardSpecificati
     TestSkeletalTrack("leg_joint_L_5");
 }
 
-TEST(ResourceLoaderTest, LoadModel_glTFAnimatedMorphCube_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR =
-        ResourceLoader::LoadModel(std::string("AnimatedMorphCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("AnimatedMorphCube"), path, false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();

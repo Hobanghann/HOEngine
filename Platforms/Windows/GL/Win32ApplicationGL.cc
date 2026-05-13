@@ -12,9 +12,11 @@ void Win32ApplicationGL::CreateInstance(HINSTANCE hApp)
     spInstance = new Win32ApplicationGL(hApp);
 }
 
-bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwWindowWidth, int32_t mainwWindowHeight)
+bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
+                              int32_t mainwWindowWidth,
+                              int32_t mainwWindowHeight)
 {
-    mMainWindowName = mainWindowName;
+    mMainWindowNameStr = mainWindowNameStr;
     sMainWindowWidth = mainwWindowWidth;
     sMainWindowHeight = mainwWindowHeight;
 
@@ -31,7 +33,7 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwW
     stWndClass.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
     stWndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
     stWndClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH));
-    stWndClass.lpszClassName = mMainWindowName.c_str();
+    stWndClass.lpszClassName = mMainWindowNameStr.c_str();
     stWndClass.hIconSm = static_cast<HICON>(LoadImage(mhApp,
                                                       MAKEINTRESOURCE(5),
                                                       IMAGE_ICON,
@@ -59,7 +61,7 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowName, int32_t mainwW
 
     // Create window
     mhMainWnd = CreateWindowW(stWndClass.lpszClassName,
-                              mMainWindowName.c_str(),
+                              mMainWindowNameStr.c_str(),
                               dwStyle,
                               CW_USEDEFAULT,
                               CW_USEDEFAULT,
@@ -193,7 +195,7 @@ void Win32ApplicationGL::Shutdown()
         HO_ASSERT(false, "Failed to destroy main window.");
     }
 
-    if (!::UnregisterClassW(mMainWindowName.c_str(), mhApp))
+    if (!::UnregisterClassW(mMainWindowNameStr.c_str(), mhApp))
     {
         HO_ASSERT(false, "Failed to unregister main window class.");
     }

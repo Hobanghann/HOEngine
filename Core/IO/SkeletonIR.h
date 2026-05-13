@@ -8,6 +8,8 @@
 
 namespace ho
 {
+namespace parser
+{
 struct SkeletonIR
 {
     SkeletonIR(std::string&& nameStr,
@@ -41,11 +43,11 @@ struct SkeletonIR
         }
     }
 
-    SkeletonIR(SkeletonIR&& rhs) noexcept = default;
-    SkeletonIR& operator=(SkeletonIR&& rhs) noexcept = default;
-
     SkeletonIR(const SkeletonIR&) = delete;
     SkeletonIR& operator=(const SkeletonIR&) = delete;
+
+    SkeletonIR(SkeletonIR&& rhs) noexcept = default;
+    SkeletonIR& operator=(SkeletonIR&& rhs) noexcept = default;
 
     FORCE_INLINE int32_t GetBoneCount() const
     {
@@ -119,4 +121,5 @@ struct SkeletonIR
     std::vector<std::vector<int32_t>> Children;
     std::unordered_map<std::string, int32_t> BoneNameToIndex;
 };
+} // namespace parser
 } // namespace ho

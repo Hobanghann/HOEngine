@@ -35,17 +35,29 @@ class Image final
       , mFormat(eFormat::RGB8)
       , mWidth(0)
       , mHeight(0)
+      , mChannelCount(0)
       , mBitmap(std::vector<uint8_t>())
     {
     }
 
     Image(const Image& img) = delete;
+
     FORCE_INLINE Image(const Path& path,
                        const std::string& nameStr,
                        eFormat format,
                        int32_t width,
                        int32_t height,
-                       const uint8_t* bitmap);
+                       int32_t channelCount,
+                       const uint8_t* bitmap)
+      : mPath(path)
+      , mNameStr(nameStr)
+      , mFormat(format)
+      , mWidth(width)
+      , mHeight(height)
+      , mChannelCount(channelCount)
+      , mBitmap(bitmap, bitmap + width * height * GetPixelBytes(format))
+    {
+    }
 
     FORCE_INLINE Image(Image&& other) noexcept
       : mPath(std::move(other.mPath))
@@ -53,6 +65,7 @@ class Image final
       , mFormat(other.mFormat)
       , mWidth(other.mWidth)
       , mHeight(other.mHeight)
+      , mChannelCount(other.mChannelCount)
       , mBitmap(std::move(other.mBitmap))
     {
     }
@@ -66,6 +79,7 @@ class Image final
             mFormat = other.mFormat;
             mWidth = other.mWidth;
             mHeight = other.mHeight;
+            mChannelCount = other.mChannelCount;
             mBitmap = std::move(other.mBitmap);
         }
         return *this;
@@ -79,6 +93,7 @@ class Image final
     [[nodiscard]] FORCE_INLINE eFormat GetFormat() const;
     [[nodiscard]] FORCE_INLINE int32_t GetWidth() const;
     [[nodiscard]] FORCE_INLINE int32_t GetHeight() const;
+    [[nodiscard]] FORCE_INLINE int32_t GetChannelCount() const;
 
     [[nodiscard]] FORCE_INLINE Color32 GetColor32(int32_t x, int32_t y) const;
     [[nodiscard]] FORCE_INLINE Color128 GetColor128(int32_t x, int32_t y) const;
@@ -93,6 +108,7 @@ class Image final
     eFormat mFormat;
     int32_t mWidth;
     int32_t mHeight;
+    int32_t mChannelCount;
     std::vector<uint8_t> mBitmap;
 };
 
@@ -122,17 +138,6 @@ FORCE_INLINE int32_t Image::GetPixelBytes(eFormat format)
     }
 }
 
-Image::Image(
-    const Path& path, const std::string& nameStr, eFormat format, int32_t width, int32_t height, const uint8_t* bitmap)
-  : mPath(path)
-  , mNameStr(nameStr)
-  , mFormat(format)
-  , mWidth(width)
-  , mHeight(height)
-  , mBitmap(bitmap, bitmap + width * height * GetPixelBytes(format))
-{
-}
-
 const Path& Image::GetPath() const
 {
     return mPath;
@@ -156,6 +161,11 @@ int32_t Image::GetWidth() const
 int32_t Image::GetHeight() const
 {
     return mHeight;
+}
+
+int32_t Image::GetChannelCount() const
+{
+    return mChannelCount;
 }
 
 Color32 Image::GetColor32(int32_t x, int32_t y) const

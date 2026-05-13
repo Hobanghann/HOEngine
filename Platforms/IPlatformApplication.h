@@ -25,7 +25,7 @@ class IPlatformApplication
     IPlatformApplication(const IPlatformApplication&) = delete;
     IPlatformApplication& operator=(const IPlatformApplication&) = delete;
 
-    virtual bool Init(const std::wstring& mainWindowName, int32_t mainWindowWidth, int32_t mainWindowHeight) = 0;
+    virtual bool Init(const std::wstring& mainWindowNameStr, int32_t mainWindowWidth, int32_t mainWindowHeight) = 0;
 
     virtual void BeginFrame() = 0;
 
@@ -38,7 +38,7 @@ class IPlatformApplication
     int32_t GetMainWindowWidth() const;
     int32_t GetMainWindowHeight() const;
 
-    virtual void SetWindowTitle(std::wstring& title) = 0;
+    virtual void SetWindowTitle(std::wstring& titleStr) = 0;
 
   protected:
     IPlatformApplication() = default;

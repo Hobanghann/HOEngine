@@ -29,9 +29,9 @@ bool IWin32Application::ProcessPlatformMessages()
     return true;
 }
 
-void IWin32Application::SetWindowTitle(std::wstring& title)
+void IWin32Application::SetWindowTitle(std::wstring& titleStr)
 {
-    if (!SetWindowTextW(mhMainWnd, title.c_str()))
+    if (!SetWindowTextW(mhMainWnd, titleStr.c_str()))
     {
         HO_ASSERT(false, "Failed to set title text.");
     }

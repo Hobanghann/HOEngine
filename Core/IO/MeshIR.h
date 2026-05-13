@@ -15,6 +15,8 @@
 
 namespace ho
 {
+namespace parser
+{
 struct MeshIR
 {
     static const int32_t sMaxUVChannel = 2;
@@ -55,13 +57,11 @@ struct MeshIR
                       "Invalid MorphTarget format.");
         }
 
-        MorphTarget(MorphTarget&& rhs) noexcept = default;
-        MorphTarget& operator=(MorphTarget&& rhs) noexcept = default;
-
         MorphTarget(const MorphTarget&) = delete;
         MorphTarget& operator=(const MorphTarget&) = delete;
 
-        ~MorphTarget() = default;
+        MorphTarget(MorphTarget&& rhs) noexcept = default;
+        MorphTarget& operator=(MorphTarget&& rhs) noexcept = default;
 
         std::string NameStr;
         std::vector<Vector3> Positions;
@@ -114,13 +114,11 @@ struct MeshIR
             }
         }
 
-        SubMesh(SubMesh&& rhs) noexcept = default;
-        SubMesh& operator=(SubMesh&& rhs) noexcept = default;
-
         SubMesh(const SubMesh&) = delete;
         SubMesh& operator=(const SubMesh&) = delete;
 
-        ~SubMesh() = default;
+        SubMesh(SubMesh&& rhs) noexcept = default;
+        SubMesh& operator=(SubMesh&& rhs) noexcept = default;
 
         FORCE_INLINE const MorphTarget& GetMorphTarget(const std::string& nameStr) const
         {
@@ -239,5 +237,6 @@ struct MeshIR
 
     std::unordered_map<std::string, int32_t> SubMeshNameToIndex;
 };
+} // namespace parser
 
 } // namespace ho

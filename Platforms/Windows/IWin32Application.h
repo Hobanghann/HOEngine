@@ -21,7 +21,7 @@ class IWin32Application : public IPlatformApplication
     IWin32Application(const IWin32Application&) = delete;
     IWin32Application& operator=(const IWin32Application&) = delete;
 
-    bool Init(const std::wstring& mainWindowName, int32_t mainWindowWidth, int32_t mainWindowHeigh) override = 0;
+    bool Init(const std::wstring& mainWindowNameStr, int32_t mainWindowWidth, int32_t mainWindowHeigh) override = 0;
 
     void BeginFrame() override = 0;
 
@@ -31,7 +31,7 @@ class IWin32Application : public IPlatformApplication
 
     void Shutdown() override = 0;
 
-    void SetWindowTitle(std::wstring& title) override;
+    void SetWindowTitle(std::wstring& titleStr) override;
 
   protected:
     IWin32Application(HINSTANCE hApp);
@@ -41,7 +41,7 @@ class IWin32Application : public IPlatformApplication
 
     HINSTANCE mhApp;
 
-    std::wstring mMainWindowName;
+    std::wstring mMainWindowNameStr;
     HWND mhMainWnd;
 };
 } // namespace ho

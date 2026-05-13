@@ -4,9 +4,11 @@
 #include <string>
 #include <vector>
 
-#include "Core/IO/Image.h"
+#include "Image.h"
 
 namespace ho
+{
+namespace parser
 {
 struct TextureIR
 {
@@ -16,13 +18,14 @@ struct TextureIR
     {
     }
 
-    TextureIR(TextureIR&& rhs) noexcept = default;
-    TextureIR& operator=(TextureIR&& rhs) noexcept = default;
-
     TextureIR(const TextureIR&) = delete;
     TextureIR& operator=(const TextureIR&) = delete;
+
+    TextureIR(TextureIR&& rhs) noexcept = default;
+    TextureIR& operator=(TextureIR&& rhs) noexcept = default;
 
     std::string NameStr;
     Image Img;
 };
+} // namespace parser
 } // namespace ho

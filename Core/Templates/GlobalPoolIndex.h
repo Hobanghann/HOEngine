@@ -109,7 +109,7 @@ class GlobalPoolIndex
 template <typename ValueType, template <typename> class PoolType>
 INLINE const GlobalPoolIndex<ValueType, PoolType> GlobalPoolIndex<ValueType, PoolType>::sNull{};
 
-using StringIndex = GlobalPoolIndex<std::string, UniqueObjectPool>;
+using StringHandle = GlobalPoolIndex<std::string, UniqueObjectPool>;
 } // namespace ho
 
 namespace std

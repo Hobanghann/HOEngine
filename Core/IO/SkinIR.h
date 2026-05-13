@@ -12,9 +12,12 @@ namespace parser
 {
 struct SkinIR
 {
-    SkinIR(std::string&& nameStr, std::vector<Transform3D>&& offsetTransforms) noexcept
+    SkinIR(std::string&& nameStr,
+           std::vector<Transform3D>&& offsetTransforms,
+           std::vector<std::vector<int32_t>>&& boneToSubMeshMap) noexcept
       : NameStr(std::move(nameStr))
       , OffsetTransforms(std::move(offsetTransforms))
+      , BindSubMeshIndices(boneToSubMeshMap)
     {
     }
 
@@ -24,14 +27,9 @@ struct SkinIR
     SkinIR(SkinIR&& rhs) noexcept = default;
     SkinIR& operator=(SkinIR&& rhs) noexcept = default;
 
-    FORCE_INLINE const Transform3D& GetOffsetTransform(int32_t index) const
-    {
-        HO_ASSERT(index < static_cast<int32_t>(OffsetTransforms.size()), "out of bound.");
-        return OffsetTransforms[index];
-    }
-
     std::string NameStr;
     std::vector<Transform3D> OffsetTransforms;
+    std::vector<std::vector<int32_t>> BindSubMeshIndices;
 };
 } // namespace parser
 } // namespace ho

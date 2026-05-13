@@ -764,6 +764,8 @@ std::unique_ptr<const MaterialIR> parseMaterial(const std::string& nameStr,
 
 std::unique_ptr<const SkeletonIR> parseSkeleton(const std::string& nameStr, const ModelParsingContext& parsingContext)
 {
+    std::string skeletonNameStr = nameStr;
+
     std::vector<std::string> boneNameStrs;
     std::vector<Transform3D> localTransforms;
     std::vector<int32_t> parents;
@@ -830,7 +832,7 @@ std::unique_ptr<const SkeletonIR> parseSkeleton(const std::string& nameStr, cons
     }
 
     return std::make_unique<SkeletonIR>(
-        std::string(nameStr), std::move(boneNameStrs), std::move(localTransforms), std::move(parents));
+        std::move(skeletonNameStr), std::move(boneNameStrs), std::move(localTransforms), std::move(parents));
 }
 
 std::unique_ptr<const MeshIR> parseMesh(const std::string& nameStr,
@@ -838,6 +840,8 @@ std::unique_ptr<const MeshIR> parseMesh(const std::string& nameStr,
                                         const SkeletonIR& skeletonIR,
                                         const std::vector<std::unique_ptr<const MaterialIR>>& materialIRs)
 {
+    std::string meshNameStr = nameStr;
+
     std::vector<MeshIR::SubMesh> subMeshes;
     subMeshes.reserve(parsingContext.pAssimpScene->mNumMeshes);
 
@@ -995,7 +999,7 @@ std::unique_ptr<const MeshIR> parseMesh(const std::string& nameStr,
             for (int32_t bi = 0; bi < static_cast<int32_t>(pAssimpMesh->mNumBones); ++bi)
             {
                 const aiBone* pAssimpBone = pAssimpMesh->mBones[bi];
-                const int32_t boneIndex = skeletonIR.GetBoneIndex(pAssimpBone->mName.C_Str());
+                const int32_t boneIndex = skeletonIR.BoneNameToIndexMap.at(pAssimpBone->mName.C_Str());
 
                 for (int32_t wi = 0; wi < static_cast<int32_t>(pAssimpBone->mNumWeights); ++wi)
                 {
@@ -1154,8 +1158,6 @@ std::unique_ptr<const MeshIR> parseMesh(const std::string& nameStr,
         subMeshes.push_back(std::move(subMesh));
     }
 
-    std::string meshNameStr = nameStr;
-
     return std::make_unique<MeshIR>(std::move(meshNameStr), std::move(subMeshes));
 }
 
@@ -1163,6 +1165,8 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
                                                   const aiAnimation& assimpAnim,
                                                   const SkeletonIR& skeletonIR)
 {
+    std::string animNameStr = nameStr;
+
     const float duration = (assimpAnim.mDuration != 0.0) ? static_cast<float>(assimpAnim.mDuration) : 1.0f;
     const float ticksPerSecond =
         (assimpAnim.mTicksPerSecond != 0.0) ? static_cast<float>(assimpAnim.mTicksPerSecond) : 25.0f; // fallback
@@ -1179,7 +1183,7 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
         }
 
         const std::string boneNameStr = pAssimpChannel->mNodeName.C_Str();
-        const int32_t boneIndex = skeletonIR.GetBoneIndex(boneNameStr);
+        const int32_t boneIndex = skeletonIR.BoneNameToIndexMap.at(boneNameStr);
 
         std::vector<AnimationIR::TranslationKey> translationKeys;
         translationKeys.reserve(pAssimpChannel->mNumPositionKeys);
@@ -1343,7 +1347,7 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
         }
 
         const std::string boneNameStr = pAssimpChannel->mName.C_Str();
-        const int32_t boneIndex = skeletonIR.GetBoneIndex(boneNameStr);
+        const int32_t boneIndex = skeletonIR.BoneNameToIndexMap.at(boneNameStr);
 
         std::vector<AnimationIR::MorphingKey> morphingKeys;
         morphingKeys.reserve(pAssimpChannel->mNumKeys);
@@ -1370,7 +1374,6 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
         morphTargetTracks.emplace_back(boneIndex, std::move(morphingKeys));
     }
 
-    std::string animNameStr = nameStr;
     return std::make_unique<AnimationIR>(
         std::move(animNameStr), duration / ticksPerSecond, std::move(skeletalTracks), std::move(morphTargetTracks));
 }
@@ -1379,7 +1382,9 @@ std::unique_ptr<SkinIR> parseSkin(const std::string& nameStr,
                                   const ModelParsingContext& parsingContext,
                                   const SkeletonIR& skeletonIR)
 {
-    std::vector<Transform3D> offsetTransforms(skeletonIR.GetBoneCount(), Transform3D());
+    std::string skinNameStr = nameStr;
+
+    std::vector<Transform3D> offsetTransforms(skeletonIR.BoneNameStrs.size(), Transform3D());
 
     for (int32_t mi = 0; mi < static_cast<int32_t>(parsingContext.pAssimpScene->mNumMeshes); ++mi)
     {
@@ -1393,12 +1398,22 @@ std::unique_ptr<SkinIR> parseSkin(const std::string& nameStr,
                               Vector4(om.a2, om.b2, om.c2, om.d2),
                               Vector4(om.a3, om.b3, om.c3, om.d3),
                               Vector4(om.a4, om.b4, om.c4, om.d4));
-            offsetTransforms[skeletonIR.GetBoneIndex(boneNameStr)] = Transform3D(m);
+            offsetTransforms[skeletonIR.BoneNameToIndexMap.at(boneNameStr)] = Transform3D(m);
         }
     }
 
-    std::string skinNameStr = nameStr;
-    return std::make_unique<SkinIR>(std::move(skinNameStr), std::move(offsetTransforms));
+    std::vector<std::vector<int32_t>> boneToSubMeshMap(parsingContext.pFlattedScene.size());
+
+    for (int32_t bi = 0; bi < static_cast<int32_t>(parsingContext.pFlattedScene.size()); ++bi)
+    {
+        const aiNode* aiNode = parsingContext.pFlattedScene[bi];
+        for (int32_t mi = 0; mi < static_cast<int32_t>(aiNode->mNumMeshes); ++mi)
+        {
+            boneToSubMeshMap[bi].push_back(static_cast<int32_t>(aiNode->mMeshes[mi]));
+        }
+    }
+
+    return std::make_unique<SkinIR>(std::move(skinNameStr), std::move(offsetTransforms), std::move(boneToSubMeshMap));
 }
 
 std::string extractFileName(const std::string& fileNameWithExtStr)

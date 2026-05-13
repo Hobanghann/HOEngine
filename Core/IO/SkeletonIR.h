@@ -39,7 +39,7 @@ struct SkeletonIR
 
         for (int32_t i = 0; i < static_cast<int32_t>(BoneNameStrs.size()); i++)
         {
-            BoneNameToIndex[BoneNameStrs[i]] = i;
+            BoneNameToIndexMap[BoneNameStrs[i]] = i;
         }
     }
 
@@ -49,69 +49,28 @@ struct SkeletonIR
     SkeletonIR(SkeletonIR&& rhs) noexcept = default;
     SkeletonIR& operator=(SkeletonIR&& rhs) noexcept = default;
 
-    FORCE_INLINE int32_t GetBoneCount() const
+    const Transform3D& GetLocalTransformByBoneName(const std::string& nameStr) const
     {
-        return static_cast<int32_t>(BoneNameStrs.size());
+        auto it = BoneNameToIndexMap.find(nameStr);
+        HO_ASSERT(it != BoneNameToIndexMap.end(), "Invalid bone name.");
+        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(LocalTransforms.size()), "Invalid bone name.");
+        return LocalTransforms[it->second];
     }
 
-    FORCE_INLINE int32_t GetBoneIndex(const std::string& nameStr) const
+    int32_t GetParentIndexByBoneName(const std::string& nameStr) const
     {
-        auto it = BoneNameToIndex.find(nameStr);
-        HO_ASSERT(it != BoneNameToIndex.end(),
-                  (std::string("There is no bone ") + nameStr + "in skeleton " + NameStr).c_str());
-        return it->second;
+        auto it = BoneNameToIndexMap.find(nameStr);
+        HO_ASSERT(it != BoneNameToIndexMap.end(), "Invalid bone name.");
+        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(Parents.size()), "Invalid bone name.");
+        return Parents[it->second];
     }
 
-    FORCE_INLINE const std::string& GetBoneName(int32_t boneIndex) const
+    const std::vector<int32_t>& GetChildIndicesByBoneName(const std::string& nameStr) const
     {
-        HO_ASSERT(boneIndex < static_cast<int32_t>(BoneNameStrs.size()), "out of bound.");
-        return BoneNameStrs[boneIndex];
-    }
-
-    FORCE_INLINE const Transform3D& GetLocalTransform(const std::string& nameStr) const
-    {
-        const int32_t index = GetBoneIndex(nameStr);
-        return GetLocalTransform(index);
-    }
-
-    FORCE_INLINE const Transform3D& GetLocalTransform(int32_t boneIndex) const
-    {
-        HO_ASSERT(boneIndex < static_cast<int32_t>(LocalTransforms.size()), "out of bound.");
-        return LocalTransforms[boneIndex];
-    }
-
-    FORCE_INLINE int32_t GetParentIndex(const std::string& nameStr) const
-    {
-        return GetParentIndex(GetBoneIndex(nameStr));
-    }
-
-    FORCE_INLINE int32_t GetParentIndex(int32_t boneIndex) const
-    {
-        HO_ASSERT(boneIndex < static_cast<int32_t>(Parents.size()), "out of bound.");
-        return Parents[boneIndex];
-    }
-
-    FORCE_INLINE int32_t GetChildCount(const std::string& nameStr) const
-    {
-        return GetChildCount(GetBoneIndex(nameStr));
-    }
-
-    FORCE_INLINE int32_t GetChildCount(int32_t index) const
-    {
-        HO_ASSERT(index < static_cast<int32_t>(Children.size()), "out of bound.");
-        return static_cast<int32_t>(Children[index].size());
-    }
-
-    FORCE_INLINE int32_t GetChildIndex(const std::string& parentNameStr, int32_t childIndex) const
-    {
-        return GetChildIndex(GetBoneIndex(parentNameStr), childIndex);
-    }
-
-    FORCE_INLINE int32_t GetChildIndex(int32_t parentIndex, int32_t childIndex) const
-    {
-        HO_ASSERT(parentIndex < static_cast<int32_t>(Children.size()), "out of bound.");
-        HO_ASSERT(childIndex < static_cast<int32_t>(Children[parentIndex].size()), "out of bound.");
-        return Children[parentIndex][childIndex];
+        auto it = BoneNameToIndexMap.find(nameStr);
+        HO_ASSERT(it != BoneNameToIndexMap.end(), "Invalid bone name.");
+        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(Children.size()), "Invalid bone name.");
+        return Children[it->second];
     }
 
     std::string NameStr;
@@ -119,7 +78,7 @@ struct SkeletonIR
     std::vector<Transform3D> LocalTransforms;
     std::vector<int32_t> Parents;
     std::vector<std::vector<int32_t>> Children;
-    std::unordered_map<std::string, int32_t> BoneNameToIndex;
+    std::unordered_map<std::string, int32_t> BoneNameToIndexMap;
 };
 } // namespace parser
 } // namespace ho

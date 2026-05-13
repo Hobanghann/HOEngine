@@ -8,8 +8,6 @@ namespace parser
 {
 struct ShaderIR
 {
-    ShaderIR() = default;
-
     ShaderIR(std::string&& nameStr, std::string&& sourceStr) noexcept
       : NameStr(std::move(nameStr))
       , SourceStr(std::move(sourceStr))

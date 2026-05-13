@@ -4,6 +4,8 @@
 
 namespace ho
 {
+namespace parser
+{
 struct ShaderIR
 {
     ShaderIR() = default;
@@ -14,14 +16,15 @@ struct ShaderIR
     {
     }
 
-    ShaderIR(ShaderIR&& rhs) noexcept = default;
-    ShaderIR& operator=(ShaderIR&& rhs) noexcept = default;
-
     ShaderIR(const ShaderIR&) = delete;
     ShaderIR& operator=(const ShaderIR&) = delete;
+
+    ShaderIR(ShaderIR&& rhs) noexcept = default;
+    ShaderIR& operator=(ShaderIR&& rhs) noexcept = default;
 
     std::string NameStr;
 
     std::string SourceStr;
 };
+} // namespace parser
 } // namespace ho

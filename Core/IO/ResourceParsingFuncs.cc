@@ -1,13 +1,13 @@
-#include "ResourceLoader.h"
+#include "ResourceParsingFuncs.h"
 
+#include <assimp/Importer.hpp>
 #include <assimp/pbrmaterial.h>
+#include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stb_image.h>
-#include <string>
-#include <unordered_map>
 
 #include "AnimationIR.h"
 #include "Core/Math/Transform3D.h"
@@ -16,7 +16,6 @@
 #include "MeshIR.h"
 #include "ModelIR.h"
 #include "Path.h"
-#include "ResourceImporter.h"
 #include "ShaderIR.h"
 #include "SkeletonIR.h"
 #include "SkinIR.h"
@@ -24,25 +23,61 @@
 
 namespace ho
 {
-
-static std::string extractFileName(const std::string& fileNameWithExtStr)
+namespace parser
 {
-    const size_t dotIdx = fileNameWithExtStr.rfind('.');
-    if (dotIdx == std::string::npos)
-    {
-        return fileNameWithExtStr;
-    }
-    return fileNameWithExtStr.substr(0, dotIdx);
-}
 
-std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& nameStr,
-                                                         const Path& path,
-                                                         bool bMakeStatic,
-                                                         bool bConvertToLeftHanded)
+struct ModelParsingContext
 {
-    const std::unique_ptr<ModelImportContext> pImportContext =
-        ResourceImporter::ImportModel(path, bMakeStatic, bConvertToLeftHanded);
-    if (!pImportContext)
+    const aiScene* pAssimpScene = nullptr;
+    std::deque<aiNode*> pFlattedScene;
+    std::unordered_map<aiNode*, int32_t> NodeToIndex;
+    Assimp::Importer Importer;
+};
+
+// ===========================================================================
+//  Private Function Declarations
+// ===========================================================================
+
+[[nodiscard]] std::unique_ptr<Image> readImageFile(const Path& path, uint32_t desiredChannels = 0);
+[[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path,
+                                                                        bool bMakeStatic,
+                                                                        bool bConvertToLeftHanded);
+static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOutFlattedScene);
+
+[[nodiscard]] static std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTexture);
+[[nodiscard]] static std::unique_ptr<const MaterialIR> parseMaterial(
+    const std::string& nameStr,
+    const aiMaterial& assimpMaterial,
+    aiTexture** pAssimpEmbTextures,
+    const Path& parentPath,
+    std::vector<std::unique_ptr<const TextureIR>>* pOutTextureIRs); // this parameter for texture loading
+[[nodiscard]] static std::unique_ptr<const SkeletonIR> parseSkeleton(const std::string& nameStr,
+                                                                     const ModelParsingContext& parsingContext);
+[[nodiscard]] static std::unique_ptr<const MeshIR> parseMesh(
+    const std::string& nameStr,
+    const ModelParsingContext& parsingContext,
+    const SkeletonIR& skeletonIR,
+    const std::vector<std::unique_ptr<const MaterialIR>>& materialIRs);
+[[nodiscard]] static std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
+                                                                       const aiAnimation& assimpAnim,
+                                                                       const SkeletonIR& skeletonIR);
+[[nodiscard]] static std::unique_ptr<SkinIR> parseSkin(const std::string& nameStr,
+                                                       const ModelParsingContext& parsingContext,
+                                                       const SkeletonIR& skeletonIR);
+
+[[nodiscard]] static std::string extractFileName(const std::string& fileNameWithExtStr);
+
+// ===========================================================================
+//  Public Function Definitions
+// ===========================================================================
+
+std::unique_ptr<const ModelIR> parseModelFile(const std::string& nameStr,
+                                              const Path& path,
+                                              bool bMakeStatic,
+                                              bool bConvertToLeftHanded)
+{
+    const std::unique_ptr<ModelParsingContext> pParsingContext = readModelFile(path, bMakeStatic, bConvertToLeftHanded);
+    if (!pParsingContext)
     {
         return nullptr;
     }
@@ -56,13 +91,13 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
 
     // Load materials
     std::unordered_map<std::string, int32_t> matNameCount; // for handling duplicated name
-    matNameCount.reserve(pImportContext->pAssimpScene->mNumMaterials);
-    for (int32_t mi = 0; mi < static_cast<int32_t>(pImportContext->pAssimpScene->mNumMaterials); ++mi)
+    matNameCount.reserve(pParsingContext->pAssimpScene->mNumMaterials);
+    for (int32_t mi = 0; mi < static_cast<int32_t>(pParsingContext->pAssimpScene->mNumMaterials); ++mi)
     {
-        const aiMaterial* pAssimpMaterial = pImportContext->pAssimpScene->mMaterials[mi];
+        const aiMaterial* pAssimpMaterial = pParsingContext->pAssimpScene->mMaterials[mi];
         HO_ASSERT(pAssimpMaterial,
                   "Assimp material mapping failed: Mesh refers to an invalid or non-existent material index.");
-        aiTexture** pAssimpEmbTextures = pImportContext->pAssimpScene->mTextures;
+        aiTexture** pAssimpEmbTextures = pParsingContext->pAssimpScene->mTextures;
         std::string matNameStr;
         if (pAssimpMaterial->GetName().Empty())
         {
@@ -84,29 +119,29 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
         }
 
         std::unique_ptr<const MaterialIR> pMatIR =
-            loadMaterial(matNameStr, *pAssimpMaterial, pAssimpEmbTextures, parentPath, &(pModelIR->pTextureIRs));
-        HO_ASSERT(pMatIR, (std::string("Failed to load material of ") + matNameStr).c_str());
+            parseMaterial(matNameStr, *pAssimpMaterial, pAssimpEmbTextures, parentPath, &(pModelIR->pTextureIRs));
+        HO_ASSERT(pMatIR, (std::string("Failed to parse material of ") + matNameStr).c_str());
 
         pModelIR->pMaterialIRs.emplace_back(std::move(pMatIR));
     }
 
     // Load skeleton
-    std::unique_ptr<const SkeletonIR> pSkeletonIR = loadSkeleton(nameStr, *pImportContext);
-    HO_ASSERT(pSkeletonIR, (std::string("Failed to load skeleton of ") + fileNameStr).c_str());
+    std::unique_ptr<const SkeletonIR> pSkeletonIR = parseSkeleton(nameStr, *pParsingContext);
+    HO_ASSERT(pSkeletonIR, (std::string("Failed to parse skeleton of ") + fileNameStr).c_str());
     pModelIR->pSkeletonIR = std::move(pSkeletonIR);
 
     // Load mesh
     std::unique_ptr<const MeshIR> pMeshIR =
-        loadMesh(nameStr, *pImportContext, *(pModelIR->pSkeletonIR), pModelIR->pMaterialIRs);
-    HO_ASSERT(pMeshIR, (std::string("Failed to load mesh of ") + fileNameStr).c_str());
+        parseMesh(nameStr, *pParsingContext, *(pModelIR->pSkeletonIR), pModelIR->pMaterialIRs);
+    HO_ASSERT(pMeshIR, (std::string("Failed to parse mesh of ") + fileNameStr).c_str());
     pModelIR->pMeshIR = std::move(pMeshIR);
 
     // Load animations
     std::unordered_map<std::string, int> animNameCount;
-    animNameCount.reserve(pImportContext->pAssimpScene->mNumAnimations);
-    for (int32_t ai = 0; ai < static_cast<int32_t>(pImportContext->pAssimpScene->mNumAnimations); ++ai)
+    animNameCount.reserve(pParsingContext->pAssimpScene->mNumAnimations);
+    for (int32_t ai = 0; ai < static_cast<int32_t>(pParsingContext->pAssimpScene->mNumAnimations); ++ai)
     {
-        const aiAnimation* pAssimpAnim = pImportContext->pAssimpScene->mAnimations[ai];
+        const aiAnimation* pAssimpAnim = pParsingContext->pAssimpScene->mAnimations[ai];
         std::string animNameStr;
         if (pAssimpAnim->mName.Empty())
         {
@@ -126,23 +161,24 @@ std::unique_ptr<const ModelIR> ResourceLoader::LoadModel(const std::string& name
                 ++it->second;
             }
         }
-        std::unique_ptr<const AnimationIR> pAnimIR = loadAnimation(animNameStr, *pAssimpAnim, *(pModelIR->pSkeletonIR));
-        HO_ASSERT(pAnimIR, (std::string("Failed to load animation of ") + fileNameStr).c_str());
+        std::unique_ptr<const AnimationIR> pAnimIR =
+            parseAnimation(animNameStr, *pAssimpAnim, *(pModelIR->pSkeletonIR));
+        HO_ASSERT(pAnimIR, (std::string("Failed to parse animation of ") + fileNameStr).c_str());
         pModelIR->pAnimationIRs.emplace_back(std::move(pAnimIR));
     }
 
     // Load Skin
-    std::unique_ptr<const SkinIR> pSkinIR = loadSkin(nameStr, *pImportContext, *(pModelIR->pSkeletonIR));
-    HO_ASSERT(pSkinIR, (std::string("Failed to load skin of ") + fileNameStr).c_str());
+    std::unique_ptr<const SkinIR> pSkinIR = parseSkin(nameStr, *pParsingContext, *(pModelIR->pSkeletonIR));
+    HO_ASSERT(pSkinIR, (std::string("Failed to parse skin of ") + fileNameStr).c_str());
     pModelIR->pSkinIR = std::move(pSkinIR);
 
     return pModelIR;
 }
 
-std::unique_ptr<const TextureIR> ResourceLoader::LoadTexture(const std::string& nameStr, const Path& path)
+std::unique_ptr<const TextureIR> parseTexture(const std::string& nameStr, const Path& path)
 {
     const int32_t desiredChannel = 4; // for BCn compression.(AMD Compressonator requires 4 channels.)
-    const std::unique_ptr<Image> pImg = ResourceImporter::ImportImage(path, desiredChannel);
+    const std::unique_ptr<Image> pImg = readImageFile(path, desiredChannel);
 
     if (!pImg)
     {
@@ -152,7 +188,7 @@ std::unique_ptr<const TextureIR> ResourceLoader::LoadTexture(const std::string& 
     return std::make_unique<TextureIR>(std::string(nameStr), std::move(*pImg));
 }
 
-std::unique_ptr<const ShaderIR> ResourceLoader::LoadShader(const std::string& nameStr, const Path& path)
+std::unique_ptr<const ShaderIR> parseShader(const std::string& nameStr, const Path& path)
 {
     std::string shaderSourceStr;
 
@@ -182,7 +218,138 @@ std::unique_ptr<const ShaderIR> ResourceLoader::LoadShader(const std::string& na
     return pShaderIR;
 }
 
-std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTexture& assimpTexture)
+// ===========================================================================
+//  Private Function Definitions
+// ===========================================================================
+
+std::unique_ptr<Image> readImageFile(const Path& path, uint32_t desiredChannels)
+{
+    Image::eFormat format = Image::eFormat::RGBA32F;
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t numColorChannels = 0;
+
+    std::unique_ptr<Image> pImg = nullptr;
+
+    if (stbi_is_hdr(path.ToString().c_str()) != 0)
+    {
+        float* pStbiBitmap = stbi_loadf(path.ToString().c_str(), &width, &height, &numColorChannels, desiredChannels);
+
+        if (pStbiBitmap == nullptr)
+        {
+            return nullptr;
+        }
+
+        switch (numColorChannels)
+        {
+            case 1:
+                format = Image::eFormat::R32F;
+                break;
+            case 2:
+                format = Image::eFormat::RG32F;
+                break;
+            case 3:
+                format = Image::eFormat::RGB32F;
+                break;
+            case 4:
+                format = Image::eFormat::RGBA32F;
+                break;
+            default:
+                stbi_image_free(pStbiBitmap);
+                return nullptr;
+        }
+        pImg = std::make_unique<Image>(path,
+                                       path.GetFileName().ToString(),
+                                       format,
+                                       width,
+                                       height,
+                                       numColorChannels,
+                                       reinterpret_cast<const uint8_t*>(pStbiBitmap));
+        stbi_image_free(pStbiBitmap);
+    }
+    else
+    {
+        std::uint8_t* pStbiBitmap = reinterpret_cast<std::uint8_t*>(
+            stbi_load(path.ToString().c_str(), &width, &height, &numColorChannels, desiredChannels));
+
+        if (pStbiBitmap == nullptr)
+        {
+            return nullptr;
+        }
+
+        switch (numColorChannels)
+        {
+            case 1:
+                format = Image::eFormat::R8;
+                break;
+            case 2:
+                format = Image::eFormat::RG8;
+                break;
+            case 3:
+                format = Image::eFormat::RGB8;
+                break;
+            case 4:
+                format = Image::eFormat::RGBA8;
+                break;
+            default:
+                stbi_image_free(pStbiBitmap);
+                return nullptr;
+        }
+        pImg = std::make_unique<Image>(
+            path, path.GetFileName().ToString(), format, width, height, numColorChannels, pStbiBitmap);
+        stbi_image_free(pStbiBitmap);
+    }
+
+    return pImg;
+}
+
+std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic, bool bConvertToLeftHanded)
+{
+    std::unique_ptr<ModelParsingContext> pParsingContext = std::make_unique<ModelParsingContext>();
+
+    unsigned int importFlag = static_cast<unsigned int>(
+        aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs |
+        aiProcess_GenSmoothNormals | aiProcess_ImproveCacheLocality | aiProcess_RemoveRedundantMaterials |
+        aiProcess_FindInstances | aiProcess_OptimizeMeshes | aiProcess_LimitBoneWeights |
+        aiProcess_ValidateDataStructure | aiProcess_FindDegenerates | aiProcess_FindInvalidData |
+        aiProcess_SortByPType | aiProcess_GenUVCoords | aiProcess_GenBoundingBoxes);
+    if (bMakeStatic)
+    {
+        importFlag |= static_cast<unsigned int>(aiProcess_PreTransformVertices);
+    }
+    else
+    {
+        importFlag |= static_cast<unsigned int>(aiProcess_OptimizeGraph);
+    }
+    if (bConvertToLeftHanded)
+    {
+        importFlag |= static_cast<unsigned int>(aiProcess_ConvertToLeftHanded);
+    }
+
+    pParsingContext->Importer.ReadFile(path.ToString(), importFlag);
+    pParsingContext->pAssimpScene = pParsingContext->Importer.GetScene();
+    if (!pParsingContext->pAssimpScene)
+    {
+        return nullptr;
+    }
+    topologicalSortSceneRecursive(*pParsingContext->pAssimpScene->mRootNode, &pParsingContext->pFlattedScene);
+    for (int32_t i = 0; i < static_cast<int32_t>(pParsingContext->pFlattedScene.size()); ++i)
+    {
+        pParsingContext->NodeToIndex[pParsingContext->pFlattedScene[i]] = i;
+    }
+    return pParsingContext;
+}
+
+void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* outFlattedScene)
+{
+    for (int32_t i = 0; i < static_cast<int32_t>(root.mNumChildren); ++i)
+    {
+        topologicalSortSceneRecursive(*(root.mChildren[i]), outFlattedScene);
+    }
+    outFlattedScene->push_front(&root);
+}
+
+std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTexture)
 {
     int32_t width = 0;
     int32_t height = 0;
@@ -304,12 +471,11 @@ std::unique_ptr<const TextureIR> ResourceLoader::loadEmbeddedTexture(const aiTex
     return std::make_unique<TextureIR>(std::string(assimpTexture.mFilename.C_Str()), std::move(*pImg));
 }
 
-std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
-    const std::string& nameStr,
-    const aiMaterial& assimpMaterial,
-    aiTexture** pAssimpEmbTextures,
-    const Path& parentPath,
-    std::vector<std::unique_ptr<const TextureIR>>* pOutTextureIRs)
+std::unique_ptr<const MaterialIR> parseMaterial(const std::string& nameStr,
+                                                const aiMaterial& assimpMaterial,
+                                                aiTexture** pAssimpEmbTextures,
+                                                const Path& parentPath,
+                                                std::vector<std::unique_ptr<const TextureIR>>* pOutTextureIRs)
 {
     std::unique_ptr<MaterialIR> pMaterialIR = std::make_unique<MaterialIR>();
     pMaterialIR->NameStr = nameStr;
@@ -523,12 +689,12 @@ std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
             std::unique_ptr<const TextureIR> pTextureIR;
             if (bEmbedded)
             {
-                pTextureIR = loadEmbeddedTexture(*pAssimpEmbTextures[embTexIdx]);
+                pTextureIR = parseEmbeddedTexture(*pAssimpEmbTextures[embTexIdx]);
             }
             else if (!texFileNameStr.empty())
             {
                 const Path texAbsPath = parentPath / Path(texFileNameStr);
-                pTextureIR = LoadTexture(texNameStr, texAbsPath);
+                pTextureIR = parseTexture(texNameStr, texAbsPath);
             }
 
             if (pTextureIR)
@@ -596,24 +762,23 @@ std::unique_ptr<const MaterialIR> ResourceLoader::loadMaterial(
     return pMaterialIR;
 }
 
-std::unique_ptr<const SkeletonIR> ResourceLoader::loadSkeleton(const std::string& nameStr,
-                                                               const ModelImportContext& importContext)
+std::unique_ptr<const SkeletonIR> parseSkeleton(const std::string& nameStr, const ModelParsingContext& parsingContext)
 {
     std::vector<std::string> boneNameStrs;
     std::vector<Transform3D> localTransforms;
     std::vector<int32_t> parents;
     std::unordered_map<std::string, int32_t> boneNameToIndex;
 
-    boneNameStrs.reserve(importContext.pFlattedScene.size());
-    localTransforms.reserve(importContext.pFlattedScene.size());
-    parents.reserve(importContext.pFlattedScene.size());
-    boneNameToIndex.reserve(importContext.pFlattedScene.size());
+    boneNameStrs.reserve(parsingContext.pFlattedScene.size());
+    localTransforms.reserve(parsingContext.pFlattedScene.size());
+    parents.reserve(parsingContext.pFlattedScene.size());
+    boneNameToIndex.reserve(parsingContext.pFlattedScene.size());
 
     std::unordered_map<std::string, int32_t> boneNameCount; // for handling duplicated bone name
-    boneNameCount.reserve(importContext.pFlattedScene.size());
-    for (int32_t i = 0; i < static_cast<int32_t>(importContext.pFlattedScene.size()); ++i)
+    boneNameCount.reserve(parsingContext.pFlattedScene.size());
+    for (int32_t i = 0; i < static_cast<int32_t>(parsingContext.pFlattedScene.size()); ++i)
     {
-        const aiNode* pAssimpNode = importContext.pFlattedScene[i];
+        const aiNode* pAssimpNode = parsingContext.pFlattedScene[i];
 
         // bone name
         std::string boneNameStr;
@@ -651,8 +816,8 @@ std::unique_ptr<const SkeletonIR> ResourceLoader::loadSkeleton(const std::string
         // parent bone
         if (pAssimpNode->mParent)
         {
-            auto it = importContext.NodeToIndex.find(pAssimpNode->mParent);
-            if (it == importContext.NodeToIndex.end())
+            auto it = parsingContext.NodeToIndex.find(pAssimpNode->mParent);
+            if (it == parsingContext.NodeToIndex.end())
             {
                 return nullptr;
             }
@@ -668,21 +833,20 @@ std::unique_ptr<const SkeletonIR> ResourceLoader::loadSkeleton(const std::string
         std::string(nameStr), std::move(boneNameStrs), std::move(localTransforms), std::move(parents));
 }
 
-std::unique_ptr<const MeshIR> ResourceLoader::loadMesh(
-    const std::string& nameStr,
-    const ModelImportContext& importContext,
-    const SkeletonIR& skeletonIR,
-    const std::vector<std::unique_ptr<const MaterialIR>>& materialIRs)
+std::unique_ptr<const MeshIR> parseMesh(const std::string& nameStr,
+                                        const ModelParsingContext& parsingContext,
+                                        const SkeletonIR& skeletonIR,
+                                        const std::vector<std::unique_ptr<const MaterialIR>>& materialIRs)
 {
     std::vector<MeshIR::SubMesh> subMeshes;
-    subMeshes.reserve(importContext.pAssimpScene->mNumMeshes);
+    subMeshes.reserve(parsingContext.pAssimpScene->mNumMeshes);
 
     // submeshes
     std::unordered_map<std::string, int> subMeshNameCount; // for handling duplicated submesh name
-    subMeshNameCount.reserve(importContext.pAssimpScene->mNumMeshes);
-    for (int32_t mi = 0; mi < static_cast<int32_t>(importContext.pAssimpScene->mNumMeshes); ++mi)
+    subMeshNameCount.reserve(parsingContext.pAssimpScene->mNumMeshes);
+    for (int32_t mi = 0; mi < static_cast<int32_t>(parsingContext.pAssimpScene->mNumMeshes); ++mi)
     {
-        const aiMesh* pAssimpMesh = importContext.pAssimpScene->mMeshes[mi];
+        const aiMesh* pAssimpMesh = parsingContext.pAssimpScene->mMeshes[mi];
         if (!pAssimpMesh)
         {
             continue;
@@ -995,9 +1159,9 @@ std::unique_ptr<const MeshIR> ResourceLoader::loadMesh(
     return std::make_unique<MeshIR>(std::move(meshNameStr), std::move(subMeshes));
 }
 
-std::unique_ptr<const AnimationIR> ResourceLoader::loadAnimation(const std::string& nameStr,
-                                                                 const aiAnimation& assimpAnim,
-                                                                 const SkeletonIR& skeletonIR)
+std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
+                                                  const aiAnimation& assimpAnim,
+                                                  const SkeletonIR& skeletonIR)
 {
     const float duration = (assimpAnim.mDuration != 0.0) ? static_cast<float>(assimpAnim.mDuration) : 1.0f;
     const float ticksPerSecond =
@@ -1195,15 +1359,15 @@ std::unique_ptr<const AnimationIR> ResourceLoader::loadAnimation(const std::stri
         std::move(animNameStr), duration / ticksPerSecond, std::move(skeletalTracks), std::move(morphTargetTracks));
 }
 
-std::unique_ptr<SkinIR> ResourceLoader::loadSkin(const std::string& nameStr,
-                                                 const ModelImportContext& importContext,
-                                                 const SkeletonIR& skeletonIR)
+std::unique_ptr<SkinIR> parseSkin(const std::string& nameStr,
+                                  const ModelParsingContext& parsingContext,
+                                  const SkeletonIR& skeletonIR)
 {
     std::vector<Transform3D> offsetTransforms(skeletonIR.GetBoneCount(), Transform3D());
 
-    for (int32_t mi = 0; mi < static_cast<int32_t>(importContext.pAssimpScene->mNumMeshes); ++mi)
+    for (int32_t mi = 0; mi < static_cast<int32_t>(parsingContext.pAssimpScene->mNumMeshes); ++mi)
     {
-        const aiMesh* pAssimpMesh = importContext.pAssimpScene->mMeshes[mi];
+        const aiMesh* pAssimpMesh = parsingContext.pAssimpScene->mMeshes[mi];
         for (int32_t bi = 0; bi < static_cast<int32_t>(pAssimpMesh->mNumBones); ++bi)
         {
             const aiBone* pAssimpBone = pAssimpMesh->mBones[bi];
@@ -1220,4 +1384,16 @@ std::unique_ptr<SkinIR> ResourceLoader::loadSkin(const std::string& nameStr,
     std::string skinNameStr = nameStr;
     return std::make_unique<SkinIR>(std::move(skinNameStr), std::move(offsetTransforms));
 }
+
+std::string extractFileName(const std::string& fileNameWithExtStr)
+{
+    const size_t dotIdx = fileNameWithExtStr.rfind('.');
+    if (dotIdx == std::string::npos)
+    {
+        return fileNameWithExtStr;
+    }
+    return fileNameWithExtStr.substr(0, dotIdx);
+}
+
+} // namespace parser
 } // namespace ho

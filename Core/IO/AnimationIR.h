@@ -11,7 +11,8 @@
 
 namespace ho
 {
-
+namespace parser
+{
 struct AnimationIR
 {
     enum class eExtrapolationMode
@@ -88,11 +89,11 @@ struct AnimationIR
             HO_ASSERT(MorphTargetIndices.size() == Weights.size(), "Invalid MorphingKey format.");
         }
 
-        MorphingKey(MorphingKey&& rhs) noexcept = default;
-        MorphingKey& operator=(MorphingKey&& rhs) noexcept = default;
-
         MorphingKey(const MorphingKey& rhs) = delete;
         MorphingKey& operator=(const MorphingKey& rhs) = delete;
+
+        MorphingKey(MorphingKey&& rhs) noexcept = default;
+        MorphingKey& operator=(MorphingKey&& rhs) noexcept = default;
 
         float Time;
         std::vector<int32_t> MorphTargetIndices;
@@ -124,11 +125,11 @@ struct AnimationIR
         {
         }
 
-        SkeletalTrack(SkeletalTrack&& rhs) noexcept = default;
-        SkeletalTrack& operator=(SkeletalTrack&& rhs) noexcept = default;
-
         SkeletalTrack(const SkeletalTrack& rhs) = delete;
         SkeletalTrack& operator=(const SkeletalTrack& rhs) = delete;
+
+        SkeletalTrack(SkeletalTrack&& rhs) noexcept = default;
+        SkeletalTrack& operator=(SkeletalTrack&& rhs) noexcept = default;
 
         int32_t BoneIndex;
         std::vector<TranslationKey> TranslationKeySequence;
@@ -151,11 +152,11 @@ struct AnimationIR
         {
         }
 
-        MorphTargetTrack(MorphTargetTrack&& rhs) noexcept = default;
-        MorphTargetTrack& operator=(MorphTargetTrack&& rhs) noexcept = default;
-
         MorphTargetTrack(const MorphTargetTrack& rhs) = delete;
         MorphTargetTrack& operator=(const MorphTargetTrack& rhs) = delete;
+
+        MorphTargetTrack(MorphTargetTrack&& rhs) noexcept = default;
+        MorphTargetTrack& operator=(MorphTargetTrack&& rhs) noexcept = default;
 
         int32_t BoneIndex;
         std::vector<MorphingKey> KeySequance;
@@ -184,11 +185,11 @@ struct AnimationIR
         }
     }
 
-    AnimationIR(AnimationIR&& rhs) noexcept = default;
-    AnimationIR& operator=(AnimationIR&& rhs) noexcept = default;
-
     AnimationIR(const AnimationIR&) = delete;
     AnimationIR& operator=(const AnimationIR&) = delete;
+
+    AnimationIR(AnimationIR&& rhs) noexcept = default;
+    AnimationIR& operator=(AnimationIR&& rhs) noexcept = default;
 
     FORCE_INLINE int32_t GetSkeletalTrackCount() const
     {
@@ -234,5 +235,5 @@ struct AnimationIR
     std::unordered_map<int32_t, int32_t> BoneIndexToSkeletalTrack;
     std::unordered_map<int32_t, int32_t> BoneIndexToMorphTargetTrack;
 };
-
+} // namespace parser
 } // namespace ho

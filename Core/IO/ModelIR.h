@@ -6,6 +6,8 @@
 
 namespace ho
 {
+namespace parser
+{
 struct MeshIR;
 struct SkeletonIR;
 struct SkinIR;
@@ -23,4 +25,5 @@ struct ModelIR
     std::vector<std::unique_ptr<const MaterialIR>> pMaterialIRs;
     std::vector<std::unique_ptr<const TextureIR>> pTextureIRs;
 };
+} // namespace parser
 } // namespace ho

@@ -8,6 +8,8 @@
 
 namespace ho
 {
+namespace parser
+{
 struct SkinIR
 {
     SkinIR(std::string&& nameStr, std::vector<Transform3D>&& offsetTransforms) noexcept
@@ -16,11 +18,11 @@ struct SkinIR
     {
     }
 
-    SkinIR(SkinIR&& rhs) noexcept = default;
-    SkinIR& operator=(SkinIR&& rhs) noexcept = default;
-
     SkinIR(const SkinIR&) = delete;
     SkinIR& operator=(const SkinIR&) = delete;
+
+    SkinIR(SkinIR&& rhs) noexcept = default;
+    SkinIR& operator=(SkinIR&& rhs) noexcept = default;
 
     FORCE_INLINE const Transform3D& GetOffsetTransform(int32_t index) const
     {
@@ -31,4 +33,5 @@ struct SkinIR
     std::string NameStr;
     std::vector<Transform3D> OffsetTransforms;
 };
+} // namespace parser
 } // namespace ho

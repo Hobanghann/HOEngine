@@ -21,7 +21,7 @@ add_executable(
 target_link_libraries(
     ${THREAD_FALLBACK_TEST_NAME} 
     PRIVATE 
-    COMPILER_WARNING_FLAGS
+    COMPILER_FLAGS
     ${THIRD_PARTY_NAME} 
     ${CORE_NAME} 
     GTest::gtest_main

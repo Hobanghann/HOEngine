@@ -19,6 +19,8 @@ set(IMGUI_NAME imgui)
 set(IM_VIEW_GUIZMO_NAME ImViewGuizmo)
 set(FONT_AWESOME_NAME icons_font_awesome7)
 set(SPDLOG_NAME spdlog)
+set(IMAGE_COMPRESSOR_NAME bc7enc_rdo)
+set(HALF_NAME half)
 
 ##########################################################
 # Download and fetch external libraries
@@ -84,6 +86,14 @@ FetchContent_Declare(
     GIT_SHALLOW ON
 )
 
+# bc7enc
+FetchContent_Declare(
+    ${IMAGE_COMPRESSOR_NAME}
+    GIT_REPOSITORY https://github.com/richgel999/bc7enc_rdo
+    GIT_TAG dbe416d28a5530b4e8cc45b14bf034dc6b96bbde
+    SOURCE_SUBDIR "dummy_folder"
+)
+
 # Download
 
 message (STATUS "[Download] Start to Download " ${ASSIMP_NAME} "...")
@@ -110,9 +120,15 @@ message (STATUS "[Download] Start to Download " ${SPDLOG_NAME} "...")
 FetchContent_MakeAvailable(${SPDLOG_NAME})
 message (STATUS "[Download] Downloading " ${SPDLOG_NAME} " finished.")
 
+message (STATUS "[Download] Start to Download " ${IMAGE_COMPRESSOR_NAME} "...")
+FetchContent_MakeAvailable(${IMAGE_COMPRESSOR_NAME})
+message (STATUS "[Download] Downloading " ${IMAGE_COMPRESSOR_NAME} " finished.")
+
+
 ##########################################################
 # Add target for raw external libraries
 ##########################################################
+# glad
 add_library(
     ${GLAD_NAME} 
     STATIC 
@@ -122,6 +138,7 @@ target_include_directories(
     PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
+# iconsFontAwesome7
 add_library(
     ${FONT_AWESOME_NAME} 
     INTERFACE
@@ -131,6 +148,16 @@ target_include_directories(
     INTERFACE 
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
+
+# half
+add_library(
+    ${HALF_NAME}
+    INTERFACE
+    )
+target_include_directories(
+    ${HALF_NAME}
+    INTERFACE 
+    ${CMAKE_CURRENT_SOURCE_DIR})
 
 ################################################################################
 # Set library properties
@@ -170,8 +197,7 @@ endif()
 
 foreach(target IN LISTS ALL_ASSIMP_TARGETS)
     set_target_properties(
-        ${target} 
-        PROPERTIES 
+        ${target} PROPERTIES 
         FOLDER "ThirdParty/${ASSIMP_NAME}"
         SYSTEM TRUE
     )
@@ -190,8 +216,7 @@ target_include_directories(
     ${${IMAGE_LOADER_NAME}_SOURCE_DIR}
     )    
 set_target_properties(
-    ${IMAGE_LOADER_NAME} 
-    PROPERTIES 
+    ${IMAGE_LOADER_NAME} PROPERTIES 
     FOLDER "ThirdParty/${IMAGE_LOADER_NAME}"
     SYSTEM TRUE
     )
@@ -208,13 +233,15 @@ endif()
     
 
 # ini parser
-set_target_properties(${INI_PARSER_NAME} PROPERTIES 
+set_target_properties(
+    ${INI_PARSER_NAME} PROPERTIES 
     FOLDER "ThirdParty/${INI_PARSER_NAME}"
     SYSTEM TRUE
     )
 
 # glad
-set_target_properties(${GLAD_NAME} PROPERTIES 
+set_target_properties(
+    ${GLAD_NAME} PROPERTIES 
     FOLDER "ThirdParty/${GLAD_NAME}"
     SYSTEM TRUE
     )
@@ -237,14 +264,12 @@ source_group(
     ${IMGUI_CORE_SOURCES} 
     ${IMGUI_CORE_HEADERS}
     )
-
 source_group(
     "backends" 
     FILES 
     ${IMGUI_BACKEND_SOURCES} 
     ${IMGUI_BACKEND_HEADERS}
     )
-
 add_library(
     ${IMGUI_NAME} 
     STATIC 
@@ -253,15 +278,14 @@ add_library(
     ${IMGUI_BACKEND_SOURCES} 
     ${IMGUI_BACKEND_HEADERS}
     )
-
 target_include_directories(
     ${IMGUI_NAME} 
     PUBLIC 
     ${${IMGUI_NAME}_SOURCE_DIR}
     ${${IMGUI_NAME}_SOURCE_DIR}/backends
     )
-
-set_target_properties(${IMGUI_NAME} PROPERTIES 
+set_target_properties(
+    ${IMGUI_NAME} PROPERTIES 
     FOLDER "ThirdParty/${IMGUI_NAME}"
     SYSTEM TRUE
     )
@@ -276,25 +300,51 @@ target_include_directories(
     INTERFACE 
     ${${IM_VIEW_GUIZMO_NAME}_SOURCE_DIR}
     )
-
-if (TARGET ${IM_VIEW_GUIZMO_NAME})
-    set_target_properties(${IM_VIEW_GUIZMO_NAME} PROPERTIES 
-        FOLDER "ThirdParty/${IM_VIEW_GUIZMO_NAME}"
-        SYSTEM TRUE
+set_target_properties(
+    ${IM_VIEW_GUIZMO_NAME} PROPERTIES 
+    FOLDER "ThirdParty/${IM_VIEW_GUIZMO_NAME}"
+    SYSTEM TRUE
     )
-endif()
 
 # font awesome
-set_target_properties(${FONT_AWESOME_NAME} PROPERTIES 
+set_target_properties(
+    ${FONT_AWESOME_NAME} PROPERTIES 
     FOLDER "ThirdParty/${FONT_AWESOME_NAME}"
     SYSTEM TRUE
     )
 
 # spdlog
-set_target_properties(${SPDLOG_NAME} PROPERTIES 
+set_target_properties(
+    ${SPDLOG_NAME} PROPERTIES 
     FOLDER "ThirdParty/${SPDLOG_NAME}"
     SYSTEM TRUE
     )
+
+# bc7enc_rdo
+add_library(
+    ${IMAGE_COMPRESSOR_NAME} 
+    STATIC
+    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/rgbcx.cpp"
+    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/bc7enc.cpp"
+    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/bc7decomp.cpp"
+)
+target_include_directories(
+    ${IMAGE_COMPRESSOR_NAME} 
+    PUBLIC
+    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}")
+set_target_properties(
+    ${IMAGE_COMPRESSOR_NAME} PROPERTIES 
+    FOLDER "ThirdParty/${IMAGE_COMPRESSOR_NAME}"
+    SYSTEM TRUE
+)
+
+# half
+set_target_properties(
+    half PROPERTIES 
+    FOLDER "ThirdParty/half"
+    SYSTEM TRUE
+    )
+
 
 ################################################################################
 # Add library target
@@ -311,6 +361,8 @@ target_link_libraries(
     ${IM_VIEW_GUIZMO_NAME}
     ${FONT_AWESOME_NAME}
     ${SPDLOG_NAME}
+    ${IMAGE_COMPRESSOR_NAME}
+    ${HALF_NAME}
     )
     
 target_include_directories(

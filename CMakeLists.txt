@@ -3,6 +3,8 @@
 ##########################################################
 
 cmake_minimum_required(VERSION 3.30)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
+
 include(FetchContent)
 
 set(MAIN_PROJECT_NAME HOEngine)
@@ -21,11 +23,11 @@ option(ENABLE_TEST "Enable test" ON)
 ##########################################################
 # Set Compiler Options
 ##########################################################
-add_library(COMPILER_WARNING_FLAGS INTERFACE)
+add_library(COMPILER_FLAGS INTERFACE)
 
 if (MSVC)
     target_compile_options(
-        COMPILER_WARNING_FLAGS
+        COMPILER_FLAGS
         INTERFACE
         /WX             # -Werror
         /W4             # -Wall -Wextra        
@@ -53,7 +55,7 @@ if (MSVC)
 
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(
-            COMPILER_WARNING_FLAGS
+            COMPILER_FLAGS
             INTERFACE
             -Werror
             -Wall
@@ -101,6 +103,11 @@ endif ()
 set(THIRD_PARTY_NAME Lib)
 set(PLATFORMS_NAME Platforms)
 set(CORE_NAME Core)
+#set(SUBSYSTEMS_NAME Subsystems)
+#set(SCENE_NAME Scene)
+#set(UI_NAME UI)
+#set(ENGINE_APPLICATION_NAME EngineApplication)
+#set(ENGINE_NAME Engine)
 set(MAIN_NAME Main)
 
 ##########################################################
@@ -109,6 +116,11 @@ set(MAIN_NAME Main)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SCENE_NAME})
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${UI_NAME})
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_APPLICATION_NAME})
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_NAME})
 
 ##########################################################

@@ -32,7 +32,7 @@ add_library(
 target_link_libraries(
     ${CORE_NAME} 
     PRIVATE 
-    COMPILER_WARNING_FLAGS
+    COMPILER_FLAGS
     PUBLIC 
     ${THIRD_PARTY_NAME}
     )

@@ -38,7 +38,7 @@ struct ModelParsingContext
 //  Private Function Declarations
 // ===========================================================================
 
-[[nodiscard]] std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels = 0);
+[[nodiscard]] static std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels = 0);
 [[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path,
                                                                         bool bMakeStatic,
                                                                         bool bConvertToLeftHanded);
@@ -175,9 +175,9 @@ std::unique_ptr<const ModelIR> parseModelFile(const std::string& nameStr,
     return pModelIR;
 }
 
-std::unique_ptr<const TextureIR> parseTexture(const std::string& nameStr, const Path& path)
+std::unique_ptr<const TextureIR> parseTextureFile(const std::string& nameStr, const Path& path)
 {
-    const int32_t desiredChannel = 4; // for BCn compression.(AMD Compressonator requires 4 channels.)
+    const int32_t desiredChannel = 4; // for BCn compression.
     const std::unique_ptr<Image> pImg = readImageFile(path, desiredChannel);
 
     if (!pImg)
@@ -188,7 +188,7 @@ std::unique_ptr<const TextureIR> parseTexture(const std::string& nameStr, const 
     return std::make_unique<TextureIR>(std::string(nameStr), std::move(*pImg));
 }
 
-std::unique_ptr<const ShaderIR> parseShader(const std::string& nameStr, const Path& path)
+std::unique_ptr<const ShaderIR> parseShaderFile(const std::string& nameStr, const Path& path)
 {
     std::string shaderSourceStr;
 
@@ -694,7 +694,7 @@ std::unique_ptr<const MaterialIR> parseMaterial(const std::string& nameStr,
             else if (!texFileNameStr.empty())
             {
                 const Path texAbsPath = parentPath / Path(texFileNameStr);
-                pTextureIR = parseTexture(texNameStr, texAbsPath);
+                pTextureIR = parseTextureFile(texNameStr, texAbsPath);
             }
 
             if (pTextureIR)

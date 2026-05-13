@@ -54,7 +54,7 @@ class LocalPoolIndex
 
     [[nodiscard]] constexpr bool IsNULL() const
     {
-        return mIndex == 0ull || mPool == nullptr;
+        return mIndex == 0ull || (mPool == nullptr ? true : mPool->Get(mIndex) == nullptr);
     }
 
     [[nodiscard]] constexpr bool IsValid() const

@@ -20,19 +20,19 @@ class GlobalPoolIndex
     }
 
     explicit GlobalPoolIndex(const ValueType& val)
-      : mIndex(mPool.Add(val))
+      : mIndex(sPool.Add(val))
     {
     }
 
     explicit GlobalPoolIndex(ValueType&& val)
-      : mIndex(mPool.Add(std::move(val)))
+      : mIndex(sPool.Add(std::move(val)))
     {
     }
 
     template <typename... Args>
     [[nodiscard]] static GlobalPoolIndex Emplace(Args&&... args)
     {
-        return GlobalPoolIndex(mPool.Emplace(std::forward<Args>(args)...));
+        return GlobalPoolIndex(sPool.Emplace(std::forward<Args>(args)...));
     }
 
     static const GlobalPoolIndex sNull;
@@ -49,7 +49,7 @@ class GlobalPoolIndex
 
     [[nodiscard]] constexpr bool IsNULL() const
     {
-        return mIndex == 0ull;
+        return mIndex == 0ull || sPool.Get(mIndex) == nullptr;
     }
 
     [[nodiscard]] constexpr bool IsValid() const
@@ -59,12 +59,12 @@ class GlobalPoolIndex
 
     [[nodiscard]] ValueType* Get()
     {
-        return mPool.Get(mIndex);
+        return sPool.Get(mIndex);
     }
 
     [[nodiscard]] const ValueType* Get() const
     {
-        return mPool.Get(mIndex);
+        return sPool.Get(mIndex);
     }
 
     bool Release()
@@ -74,7 +74,7 @@ class GlobalPoolIndex
             return false;
         }
 
-        const bool result = mPool.Remove(mIndex);
+        const bool result = sPool.Remove(mIndex);
 
         mIndex = 0;
 
@@ -88,12 +88,12 @@ class GlobalPoolIndex
 
     [[nodiscard]] static PoolType<ValueType>& GetMutablePool()
     {
-        return mPool;
+        return sPool;
     }
 
     [[nodiscard]] static const PoolType<ValueType>& GetPool()
     {
-        return mPool;
+        return sPool;
     }
 
   private:
@@ -103,7 +103,7 @@ class GlobalPoolIndex
     }
 
     uint32_t mIndex = 0;
-    INLINE static PoolType<ValueType> mPool;
+    INLINE static PoolType<ValueType> sPool;
 };
 
 template <typename ValueType, template <typename> class PoolType>

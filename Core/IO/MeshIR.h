@@ -107,10 +107,10 @@ struct MeshIR
                 Aabb = AABB::FromPositions(Positions.data(), static_cast<int32_t>(Positions.size()));
                 Sphere = Sphere::FromPositionsRitter(Positions.data(), static_cast<int32_t>(Positions.size()));
             }
-            MorphNameToIndex.reserve(MorphTargets.size());
+            MorphNameToIndexMap.reserve(MorphTargets.size());
             for (int32_t i = 0; i < static_cast<int32_t>(MorphTargets.size()); ++i)
             {
-                MorphNameToIndex[MorphTargets[i].NameStr] = i;
+                MorphNameToIndexMap[MorphTargets[i].NameStr] = i;
             }
         }
 
@@ -120,25 +120,13 @@ struct MeshIR
         SubMesh(SubMesh&& rhs) noexcept = default;
         SubMesh& operator=(SubMesh&& rhs) noexcept = default;
 
-        FORCE_INLINE const MorphTarget& GetMorphTarget(const std::string& nameStr) const
+        const MorphTarget& GetMorphTargetByName(const std::string& nameStr) const
         {
-            auto it = MorphNameToIndex.find(nameStr);
-            HO_ASSERT(it != MorphNameToIndex.end(),
-                      (std::string("There is no morph target ") + nameStr + "in submesh " + NameStr).c_str());
+            auto it = MorphNameToIndexMap.find(nameStr);
+            HO_ASSERT(it != MorphNameToIndexMap.end(), "Invalid morph target name.");
+            HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(MorphTargets.size()),
+                      "Invalid morph target name.");
             return MorphTargets[it->second];
-        }
-
-        FORCE_INLINE int32_t GetMorphTargetIndex(const std::string& nameStr) const
-        {
-            auto it = MorphNameToIndex.find(nameStr);
-            HO_ASSERT(it != MorphNameToIndex.end(),
-                      (std::string("There is no morph target ") + nameStr + "in submesh " + NameStr).c_str());
-            return it->second;
-        }
-
-        FORCE_INLINE int32_t GetMorphTargetCount() const
-        {
-            return static_cast<int32_t>(MorphTargets.size());
         }
 
         std::string NameStr;
@@ -162,7 +150,7 @@ struct MeshIR
         AABB Aabb;
         Sphere Sphere;
 
-        std::unordered_map<std::string, int32_t> MorphNameToIndex;
+        std::unordered_map<std::string, int32_t> MorphNameToIndexMap;
     };
 
     MeshIR(std::string&& nameStr, std::vector<SubMesh>&& subMeshes) noexcept
@@ -194,10 +182,10 @@ struct MeshIR
                 Sphere = Sphere::FromPositionsRitter(allPositions.data(), static_cast<int32_t>(allPositions.size()));
             }
         }
-        SubMeshNameToIndex.reserve(SubMeshes.size());
+        SubMeshNameToIndexMap.reserve(SubMeshes.size());
         for (int32_t i = 0; i < static_cast<int32_t>(SubMeshes.size()); ++i)
         {
-            SubMeshNameToIndex[SubMeshes[i].NameStr] = i;
+            SubMeshNameToIndexMap[SubMeshes[i].NameStr] = i;
         }
     }
 
@@ -207,25 +195,12 @@ struct MeshIR
     MeshIR(const MeshIR&) = delete;
     MeshIR& operator=(const MeshIR&) = delete;
 
-    FORCE_INLINE const SubMesh& GetSubMesh(const std::string& nameStr) const
+    const SubMesh& GetSubMeshByName(const std::string& nameStr) const
     {
-        auto it = SubMeshNameToIndex.find(nameStr);
-        HO_ASSERT(it != SubMeshNameToIndex.end(),
-                  (std::string("There is no submesh ") + nameStr + "in mesh " + NameStr).c_str());
+        auto it = SubMeshNameToIndexMap.find(nameStr);
+        HO_ASSERT(it != SubMeshNameToIndexMap.end(), "Invalid submesh name.");
+        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(SubMeshes.size()), "Invalid submesh name.");
         return SubMeshes[it->second];
-    }
-
-    FORCE_INLINE int32_t GetSubMeshIndex(const std::string& nameStr) const
-    {
-        auto it = SubMeshNameToIndex.find(nameStr);
-        HO_ASSERT(it != SubMeshNameToIndex.end(),
-                  (std::string("There is no submesh ") + nameStr + "in mesh " + NameStr).c_str());
-        return it->second;
-    }
-
-    FORCE_INLINE int32_t GetSubMeshCount() const
-    {
-        return static_cast<int32_t>(SubMeshes.size());
     }
 
     std::string NameStr;
@@ -235,7 +210,7 @@ struct MeshIR
     AABB Aabb;
     Sphere Sphere;
 
-    std::unordered_map<std::string, int32_t> SubMeshNameToIndex;
+    std::unordered_map<std::string, int32_t> SubMeshNameToIndexMap;
 };
 } // namespace parser
 

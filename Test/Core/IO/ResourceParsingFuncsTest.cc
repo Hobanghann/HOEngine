@@ -45,7 +45,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
         EXPECT_EQ(subMeshIR.PrimitiveType, MeshIR::ePrimitiveType::Triangle);
         EXPECT_EQ(subMeshIR.Indices.size() % 3, 0);
 
-        EXPECT_EQ(subMeshIR.MorphTargets.size(), subMeshIR.MorphNameToIndex.size());
+        EXPECT_EQ(subMeshIR.MorphTargets.size(), subMeshIR.MorphNameToIndexMap.size());
 
         EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
         EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
@@ -55,7 +55,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
         EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
     }
 
-    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndex.size());
+    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
     EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
     EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
@@ -233,7 +233,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMeshes
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), 2);
 
-    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndex.size());
+    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
     std::vector<const MaterialIR*> pMetalMaterialIRs;
     std::vector<const MaterialIR*> pPlasticMaterialIRs;
@@ -334,7 +334,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
     EXPECT_EQ(subMeshIR.Indices.size() % 3, 0);
 
     EXPECT_TRUE(subMeshIR.MorphTargets.empty());
-    EXPECT_TRUE(subMeshIR.MorphNameToIndex.empty());
+    EXPECT_TRUE(subMeshIR.MorphNameToIndexMap.empty());
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
@@ -344,7 +344,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
 
     EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
-    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndex.size());
+    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
     EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
     EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
@@ -382,7 +382,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
     EXPECT_EQ(pSkeletonIR->LocalTransforms.size(), 1);
     EXPECT_EQ(pSkeletonIR->Parents.size(), 1);
     EXPECT_EQ(pSkeletonIR->Children.size(), 1);
-    EXPECT_EQ(pSkeletonIR->BoneNameToIndex.size(), 1);
+    EXPECT_EQ(pSkeletonIR->BoneNameToIndexMap.size(), 1);
 
     EXPECT_EQ(pSkeletonIR->Parents[0], -1);
     EXPECT_EQ(pSkeletonIR->Children[0].size(), 0);
@@ -435,7 +435,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
     EXPECT_EQ(subMeshIR.Indices.size() % 3, 0);
 
     EXPECT_TRUE(subMeshIR.MorphTargets.empty());
-    EXPECT_TRUE(subMeshIR.MorphNameToIndex.empty());
+    EXPECT_TRUE(subMeshIR.MorphNameToIndexMap.empty());
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
@@ -445,7 +445,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
 
     EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
-    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndex.size());
+    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
     EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
     EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
@@ -483,7 +483,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
     EXPECT_EQ(pSkeletonIR->LocalTransforms.size(), 1);
     EXPECT_EQ(pSkeletonIR->Parents.size(), 1);
     EXPECT_EQ(pSkeletonIR->Children.size(), 1);
-    EXPECT_EQ(pSkeletonIR->BoneNameToIndex.size(), 1);
+    EXPECT_EQ(pSkeletonIR->BoneNameToIndexMap.size(), 1);
 
     EXPECT_EQ(pSkeletonIR->Parents[0], -1);
     EXPECT_EQ(pSkeletonIR->Children[0].size(), 0);
@@ -550,7 +550,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpe
     EXPECT_EQ(subMeshIR.Indices.size() % 3, 0);
 
     EXPECT_TRUE(subMeshIR.MorphTargets.empty());
-    EXPECT_TRUE(subMeshIR.MorphNameToIndex.empty());
+    EXPECT_TRUE(subMeshIR.MorphNameToIndexMap.empty());
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
@@ -560,7 +560,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpe
 
     EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
-    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndex.size());
+    EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
     EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
     EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
@@ -627,102 +627,134 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), pSkeletonIR->LocalTransforms.size());
     EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), pSkeletonIR->Parents.size());
     EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), pSkeletonIR->Children.size());
-    EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), pSkeletonIR->BoneNameToIndex.size());
+    EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), pSkeletonIR->BoneNameToIndexMap.size());
     EXPECT_EQ(pSkeletonIR->BoneNameStrs.size(), pSkinIR->OffsetTransforms.size());
 
     // Check Bone Hierarchy
 
     // Torso
-    EXPECT_EQ(pSkeletonIR->GetChildCount("torso_joint_1"), 3);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("torso_joint_1").size(), 3);
     {
         std::unordered_set<std::string> expectedChildren = {"torso_joint_2", "leg_joint_L_1", "leg_joint_R_1"};
 
         for (uint32_t i = 0; i < 3; ++i)
         {
-            const std::string& childNameStr = pSkeletonIR->BoneNameStrs[pSkeletonIR->GetChildIndex("torso_joint_1", i)];
+            const std::string& childNameStr =
+                pSkeletonIR->BoneNameStrs[pSkeletonIR->GetChildIndicesByBoneName("torso_joint_1")[i]];
             EXPECT_TRUE(expectedChildren.find(childNameStr) != expectedChildren.end());
         }
     }
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("torso_joint_2"), pSkeletonIR->GetBoneIndex("torso_joint_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("torso_joint_2"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("torso_joint_2", 0), pSkeletonIR->GetBoneIndex("torso_joint_3"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("torso_joint_2"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("torso_joint_2").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("torso_joint_2")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_3")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("torso_joint_3"), pSkeletonIR->GetBoneIndex("torso_joint_2"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("torso_joint_3"), 3);
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("torso_joint_3"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_2")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("torso_joint_3").size(), 3);
     {
         std::unordered_set<std::string> expectedChildren = {"arm_joint_R_1", "arm_joint_L_1", "neck_joint_1"};
 
         for (uint32_t i = 0; i < 3; ++i)
         {
-            const std::string& childNameStr = pSkeletonIR->BoneNameStrs[pSkeletonIR->GetChildIndex("torso_joint_3", i)];
+            const std::string& childNameStr =
+                pSkeletonIR->BoneNameStrs[pSkeletonIR->GetChildIndicesByBoneName("torso_joint_3")[0]];
             EXPECT_TRUE(expectedChildren.find(childNameStr) != expectedChildren.end());
         }
     }
 
     // Neck
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("neck_joint_1"), pSkeletonIR->GetBoneIndex("torso_joint_3"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("neck_joint_1"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("neck_joint_1", 0), pSkeletonIR->GetBoneIndex("neck_joint_2"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("neck_joint_1"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_3")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("neck_joint_1").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("neck_joint_1")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("neck_joint_2")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("neck_joint_2"), pSkeletonIR->GetBoneIndex("neck_joint_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("neck_joint_2"), 0);
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("neck_joint_2"),
+              pSkeletonIR->BoneNameToIndexMap.find("neck_joint_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("neck_joint_2").size(), 0);
 
     // Right Arm
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("arm_joint_R_1"), pSkeletonIR->GetBoneIndex("torso_joint_3"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("arm_joint_R_1"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("arm_joint_R_1", 0), pSkeletonIR->GetBoneIndex("arm_joint_R_2"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("arm_joint_R_1"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_3")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_R_1").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_R_1")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_R_2")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("arm_joint_R_2"), pSkeletonIR->GetBoneIndex("arm_joint_R_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("arm_joint_R_2"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("arm_joint_R_2", 0), pSkeletonIR->GetBoneIndex("arm_joint_R_3"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("arm_joint_R_2"),
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_R_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_R_2").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_R_2")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_R_3")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("arm_joint_R_3"), pSkeletonIR->GetBoneIndex("arm_joint_R_2"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("arm_joint_R_3"), 0u);
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("arm_joint_R_3"),
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_R_2")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_R_3").size(), 0u);
 
     // Left Arm
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("arm_joint_L_1"), pSkeletonIR->GetBoneIndex("torso_joint_3"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("arm_joint_L_1"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("arm_joint_L_1", 0), pSkeletonIR->GetBoneIndex("arm_joint_L_2"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("arm_joint_L_1"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_3")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_L_1").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_L_1")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_L_2")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("arm_joint_L_2"), pSkeletonIR->GetBoneIndex("arm_joint_L_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("arm_joint_L_2"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("arm_joint_L_2", 0), pSkeletonIR->GetBoneIndex("arm_joint_L_3"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("arm_joint_L_2"),
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_L_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_L_2").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_L_2")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_L_3")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("arm_joint_L_3"), pSkeletonIR->GetBoneIndex("arm_joint_L_2"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("arm_joint_L_3"), 0);
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("arm_joint_L_3"),
+              pSkeletonIR->BoneNameToIndexMap.find("arm_joint_L_2")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("arm_joint_L_3").size(), 0);
 
     // Right Leg
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_R_1"), pSkeletonIR->GetBoneIndex("torso_joint_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_R_1"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("leg_joint_R_1", 0), pSkeletonIR->GetBoneIndex("leg_joint_R_2"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_R_1"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_1").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_1")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_R_2")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_R_2"), pSkeletonIR->GetBoneIndex("leg_joint_R_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_R_2"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("leg_joint_R_2", 0), pSkeletonIR->GetBoneIndex("leg_joint_R_3"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_R_2"),
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_R_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_2").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_2")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_R_3")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_R_3"), pSkeletonIR->GetBoneIndex("leg_joint_R_2"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_R_3"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("leg_joint_R_3", 0), pSkeletonIR->GetBoneIndex("leg_joint_R_5"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_R_3"),
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_R_2")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_3").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_3")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_R_5")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_R_5"), pSkeletonIR->GetBoneIndex("leg_joint_R_3"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_R_5"), 0);
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_R_5"),
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_R_3")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_R_5").size(), 0);
 
     // Left Leg
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_L_1"), pSkeletonIR->GetBoneIndex("torso_joint_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_L_1"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("leg_joint_L_1", 0), pSkeletonIR->GetBoneIndex("leg_joint_L_2"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_L_1"),
+              pSkeletonIR->BoneNameToIndexMap.find("torso_joint_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_1").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_1")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_L_2")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_L_2"), pSkeletonIR->GetBoneIndex("leg_joint_L_1"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_L_2"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("leg_joint_L_2", 0), pSkeletonIR->GetBoneIndex("leg_joint_L_3"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_L_2"),
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_L_1")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_2").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_2")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_L_3")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_L_3"), pSkeletonIR->GetBoneIndex("leg_joint_L_2"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_L_3"), 1);
-    EXPECT_EQ(pSkeletonIR->GetChildIndex("leg_joint_L_3", 0), pSkeletonIR->GetBoneIndex("leg_joint_L_5"));
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_L_3"),
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_L_2")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_3").size(), 1);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_3")[0],
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_L_5")->second);
 
-    EXPECT_EQ(pSkeletonIR->GetParentIndex("leg_joint_L_5"), pSkeletonIR->GetBoneIndex("leg_joint_L_3"));
-    EXPECT_EQ(pSkeletonIR->GetChildCount("leg_joint_L_5"), 0);
+    EXPECT_EQ(pSkeletonIR->GetParentIndexByBoneName("leg_joint_L_5"),
+              pSkeletonIR->BoneNameToIndexMap.find("leg_joint_L_3")->second);
+    EXPECT_EQ(pSkeletonIR->GetChildIndicesByBoneName("leg_joint_L_5").size(), 0);
 
     // Check Bone Local Transform
     Matrix3x3 scale;
@@ -739,7 +771,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(2.7939699442924854e-9f, -1.4156600514070309e-7f, 0.6860002279281616f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("torso_joint_1").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_1").Matrix;
     Matrix3x3 temp = localTransform.ToMatrix3x3();
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale)) << "Expected:\n"
                                                                          << rotateScale.ToString() << "\nActural:\n"
@@ -756,7 +788,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-0.06845717132091522f, 0.004460853058844805f, -0.07147114723920822f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_R_1").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -770,7 +802,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.2661120891571045f, 1.4901200273698124e-8f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_R_2").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -784,7 +816,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-7.450579708745408e-9f, 0.27582409977912905f, -3.725289854372704e-9f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_R_3").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -800,7 +832,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-0.0014585329918190837f, -0.06619873642921448f, 0.027856800705194474f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_R_5").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_5").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -816,7 +848,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.06761927157640457f, 0.004461091011762619f, -0.07226461172103882f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_L_1").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -832,7 +864,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.2661122083663941f, 0.0f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_L_2").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -846,7 +878,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.27582401037216189f, 0.0f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_L_3").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -861,7 +893,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-0.0023464928381145f, -0.06617330759763718f, 0.02785675972700119f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("leg_joint_L_5").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_5").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -876,7 +908,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0009999809553846717f, -4.842879874900064e-8f, 0.1714905947446823f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("torso_joint_2").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -890,7 +922,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.21801769733428956f, 3.725289854372704e-9f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("torso_joint_3").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -905,7 +937,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-0.08800055086612702f, -0.0001992879988392815f, -0.0009773969650268557f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("arm_joint_R_1").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -921,7 +953,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-7.450579708745408e-9f, 0.24452559649944304f, -5.96045985901128e-8f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("arm_joint_R_2").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -936,7 +968,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(-5.96045985901128e-8f, 0.1855168044567108f, 0.0f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("arm_joint_R_3").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -951,7 +983,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.08800055086612702f, -0.0001992879988392815f, -0.0009773969650268557f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("arm_joint_L_1").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -965,7 +997,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(1.8626500342122655e-9f, 0.24452590942382813f, -5.96045985901128e-8f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("arm_joint_L_2").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -980,7 +1012,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.1855167001485825f, 0.0f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("arm_joint_L_3").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -994,7 +1026,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 7.450579886381094e-8f, 0.05255972966551781f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("neck_joint_1").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
@@ -1008,20 +1040,22 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.06650590896606446f, 0.0f);
 
-    localTransform = pSkeletonIR->GetLocalTransform("neck_joint_2").Matrix;
+    localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
     // Check Animation
     EXPECT_EQ(pModelIR->pAnimationIRs.size(), 1);
-    EXPECT_LE(pModelIR->pAnimationIRs[0]->GetSkeletalTrackCount(), pSkeletonIR->GetBoneCount());
+    EXPECT_LE(pModelIR->pAnimationIRs[0]->SkeletalTracks.size(), pSkeletonIR->BoneNameStrs.size());
 
     auto TestSkeletalTrack = [&](const char* boneName)
     {
-        EXPECT_TRUE(pModelIR->pAnimationIRs[0]->HasSkeletalTrack(pSkeletonIR->GetBoneIndex(boneName)));
-        const AnimationIR::SkeletalTrack& torso_joint_1Track =
-            pModelIR->pAnimationIRs[0]->GetSkeletalTrack(pSkeletonIR->GetBoneIndex(boneName));
+        EXPECT_TRUE(pModelIR->pAnimationIRs[0]->BoneIndexToSkeletalTrackIndexMap.find(
+                        pSkeletonIR->BoneNameToIndexMap.find(boneName)->second) !=
+                    pModelIR->pAnimationIRs[0]->BoneIndexToSkeletalTrackIndexMap.end());
+        const AnimationIR::SkeletalTrack& torso_joint_1Track = pModelIR->pAnimationIRs[0]->GetSkeletalTrackByBoneIndex(
+            pSkeletonIR->BoneNameToIndexMap.find(boneName)->second);
         EXPECT_EQ(torso_joint_1Track.TranslationInterpMode, AnimationIR::eInterpolationMode::Linear);
         EXPECT_GT(torso_joint_1Track.TranslationKeySequence.size(), 0);
         EXPECT_EQ(torso_joint_1Track.RotationInterpMode, AnimationIR::eInterpolationMode::Linear);
@@ -1061,8 +1095,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
 
     // Check Morph Target
-    const MeshIR::SubMesh& subMeshIR = pMeshIR->GetSubMesh("Cube");
-    EXPECT_EQ(subMeshIR.GetMorphTargetCount(), 2);
+    const MeshIR::SubMesh& subMeshIR = pMeshIR->GetSubMeshByName("Cube");
+    EXPECT_EQ(subMeshIR.MorphTargets.size(), 2);
     for (const MeshIR::MorphTarget& morphTarget : subMeshIR.MorphTargets)
     {
         EXPECT_LE(0, subMeshIR.Positions.size());
@@ -1073,10 +1107,11 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
 
     // Check AnimationIR
     EXPECT_EQ(pModelIR->pAnimationIRs.size(), 1);
-    EXPECT_EQ(pModelIR->pAnimationIRs[0]->GetMorphTargetTrackCount(), 1);
-    EXPECT_TRUE(pModelIR->pAnimationIRs[0]->HasMorphTargetTrack(0));
-    const AnimationIR::MorphTargetTrack& track =
-        pModelIR->pAnimationIRs[0]->GetMorphTargetTrack(pSkeletonIR->GetBoneIndex("AnimatedMorphCube"));
+    EXPECT_EQ(pModelIR->pAnimationIRs[0]->MorphTargetTracks.size(), 1);
+    EXPECT_TRUE(pModelIR->pAnimationIRs[0]->BoneIndexToMorphTargetTrackIndexMap.find(0) !=
+                pModelIR->pAnimationIRs[0]->BoneIndexToMorphTargetTrackIndexMap.end());
+    const AnimationIR::MorphTargetTrack& track = pModelIR->pAnimationIRs[0]->GetMorphTargetTrackByBoneIndex(
+        pSkeletonIR->BoneNameToIndexMap.find("AnimatedMorphCube")->second);
     EXPECT_EQ(track.KeySequance.size(), 127);
     for (const AnimationIR::MorphingKey& key : track.KeySequance)
     {

@@ -79,8 +79,6 @@ struct AnimationIR
 
     struct MorphingKey
     {
-        MorphingKey() = default;
-
         MorphingKey(float time, std::vector<int32_t>&& morphTargetIndices, std::vector<float>&& weights) noexcept
           : Time(time)
           , MorphTargetIndices(std::move(morphTargetIndices))
@@ -102,8 +100,6 @@ struct AnimationIR
 
     struct SkeletalTrack
     {
-        SkeletalTrack() = default;
-
         SkeletalTrack(int32_t boneIndex,
                       std::vector<TranslationKey>&& translationKeySequence,
                       eInterpolationMode translationInterpMode,
@@ -144,8 +140,6 @@ struct AnimationIR
 
     struct MorphTargetTrack
     {
-        MorphTargetTrack() = default;
-
         MorphTargetTrack(int32_t boneIndex, std::vector<MorphingKey>&& keySequence) noexcept
           : BoneIndex(boneIndex)
           , KeySequance(std::move(keySequence))
@@ -162,8 +156,6 @@ struct AnimationIR
         std::vector<MorphingKey> KeySequance;
     };
 
-    AnimationIR() = default;
-
     AnimationIR(std::string&& nameStr,
                 float duration,
                 std::vector<SkeletalTrack>&& skeletalTracks,
@@ -173,15 +165,15 @@ struct AnimationIR
       , SkeletalTracks(std::move(skeletalTracks))
       , MorphTargetTracks(std::move(morphTargetTracks))
     {
-        BoneIndexToSkeletalTrack.reserve(SkeletalTracks.size());
+        BoneIndexToSkeletalTrackIndexMap.reserve(SkeletalTracks.size());
         for (int32_t i = 0; i < static_cast<int32_t>(SkeletalTracks.size()); ++i)
         {
-            BoneIndexToSkeletalTrack[SkeletalTracks[i].BoneIndex] = i;
+            BoneIndexToSkeletalTrackIndexMap[SkeletalTracks[i].BoneIndex] = i;
         }
-        BoneIndexToMorphTargetTrack.reserve(MorphTargetTracks.size());
+        BoneIndexToMorphTargetTrackIndexMap.reserve(MorphTargetTracks.size());
         for (int32_t i = 0; i < static_cast<int32_t>(MorphTargetTracks.size()); ++i)
         {
-            BoneIndexToMorphTargetTrack[MorphTargetTracks[i].BoneIndex] = i;
+            BoneIndexToMorphTargetTrackIndexMap[MorphTargetTracks[i].BoneIndex] = i;
         }
     }
 
@@ -191,40 +183,20 @@ struct AnimationIR
     AnimationIR(AnimationIR&& rhs) noexcept = default;
     AnimationIR& operator=(AnimationIR&& rhs) noexcept = default;
 
-    FORCE_INLINE int32_t GetSkeletalTrackCount() const
+    const SkeletalTrack& GetSkeletalTrackByBoneIndex(int32_t boneIndex) const
     {
-        return static_cast<int32_t>(SkeletalTracks.size());
-    }
-
-    FORCE_INLINE bool HasSkeletalTrack(int32_t boneIndex) const
-    {
-        return BoneIndexToSkeletalTrack.find(boneIndex) != BoneIndexToSkeletalTrack.end();
-    }
-
-    FORCE_INLINE const SkeletalTrack& GetSkeletalTrack(int32_t boneIndex) const
-    {
-        auto it = BoneIndexToSkeletalTrack.find(boneIndex);
-        HO_ASSERT(it != BoneIndexToSkeletalTrack.end(),
-                  (std::string("There is no SkeletalTrack bound to bone index") + std::to_string(boneIndex)).c_str());
+        auto it = BoneIndexToSkeletalTrackIndexMap.find(boneIndex);
+        HO_ASSERT(it != BoneIndexToSkeletalTrackIndexMap.end(), "Invalid bone index.");
+        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(SkeletalTracks.size()), "Invalid bone index.");
         return SkeletalTracks[it->second];
     }
 
-    FORCE_INLINE int32_t GetMorphTargetTrackCount() const
+    const MorphTargetTrack& GetMorphTargetTrackByBoneIndex(int32_t boneIndex) const
     {
-        return static_cast<int32_t>(MorphTargetTracks.size());
-    }
-
-    FORCE_INLINE bool HasMorphTargetTrack(int32_t boneIndex) const
-    {
-        return BoneIndexToMorphTargetTrack.find(boneIndex) != BoneIndexToMorphTargetTrack.end();
-    }
-
-    FORCE_INLINE const MorphTargetTrack& GetMorphTargetTrack(int32_t boneIndex) const
-    {
-        auto it = BoneIndexToMorphTargetTrack.find(boneIndex);
-        HO_ASSERT(
-            it != BoneIndexToMorphTargetTrack.end(),
-            (std::string("There is no MorphTargetTrack bound to bone index") + std::to_string(boneIndex)).c_str());
+        auto it = BoneIndexToMorphTargetTrackIndexMap.find(boneIndex);
+        HO_ASSERT(it != BoneIndexToMorphTargetTrackIndexMap.end(), "Invalid bone index.");
+        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(MorphTargetTracks.size()),
+                  "Invalid bone index.");
         return MorphTargetTracks[it->second];
     }
 
@@ -232,8 +204,8 @@ struct AnimationIR
     float Duration;
     std::vector<SkeletalTrack> SkeletalTracks;
     std::vector<MorphTargetTrack> MorphTargetTracks;
-    std::unordered_map<int32_t, int32_t> BoneIndexToSkeletalTrack;
-    std::unordered_map<int32_t, int32_t> BoneIndexToMorphTargetTrack;
+    std::unordered_map<int32_t, int32_t> BoneIndexToSkeletalTrackIndexMap;
+    std::unordered_map<int32_t, int32_t> BoneIndexToMorphTargetTrackIndexMap;
 };
 } // namespace parser
 } // namespace ho

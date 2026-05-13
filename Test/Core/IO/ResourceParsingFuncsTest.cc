@@ -1,5 +1,3 @@
-#include "Core/IO/ResourceParsingFuncs.h"
-
 #include <gtest/gtest.h>
 #include <unordered_set>
 
@@ -7,6 +5,7 @@
 #include "Core/IO/MaterialIR.h"
 #include "Core/IO/MeshIR.h"
 #include "Core/IO/ModelIR.h"
+#include "Core/IO/ResourceParseFuncs.h"
 #include "Core/IO/ShaderIR.h"
 #include "Core/IO/SkeletonIR.h"
 #include "Core/IO/SkinIR.h"
@@ -15,7 +14,7 @@
 using namespace ho;
 using namespace ho::parser;
 
-TEST(ResourceParsingFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMaterialAttributes)
+TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMaterialAttributes)
 {
     Path path(std::string("TestAssets/TestObj/Cube/cube.obj"));
     path.ResolveAssetPath();
@@ -191,7 +190,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndM
     EXPECT_TRUE(pAttrMaterialIR->TextureIRIndices[static_cast<int32_t>(MaterialIR::eTextureUsage::Anisotropy)] == -1);
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_OBJ_DeduplicatesIdenticalTextures)
+TEST(ResourceParseFuncsTest, parseModelFile_OBJ_DeduplicatesIdenticalTextures)
 {
     Path path(std::string("TestAssets/TestObj/CubeWithDuplicatedTexture/cube.obj"));
     path.ResolveAssetPath();
@@ -224,7 +223,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_OBJ_DeduplicatesIdenticalTextures)
     EXPECT_EQ(pDiffuseIR, pAlphaIR);
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMeshes)
+TEST(ResourceParseFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMeshes)
 {
     Path path(std::string("TestAssets/TestObj/MultipleMesh/multi_mesh.obj"));
     path.ResolveAssetPath();
@@ -300,7 +299,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMesh
     EXPECT_NE(pMetalMaterialIR->Specular, pPlasticMaterialIR->Specular);
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/Box/glTF/Box.gltf"));
     path.ResolveAssetPath();
@@ -402,7 +401,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecifica
 
 // FIXME: Temporarily disabled due to Assimp error in BoxInterleaved.gltf.
 // Check if Assimp's post-processing flags need adjustment for interleaved data.
-TEST(ResourceParsingFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/BoxInterleaved/glTF/BoxInterleaved.gltf"));
     path.ResolveAssetPath();
@@ -500,7 +499,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStanda
     EXPECT_EQ(pSkinIR->OffsetTransforms[0], Transform3D());
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_glTFBoxVertexColors_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxVertexColors_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/BoxVertexColors/glTF/BoxVertexColors.gltf"));
     path.ResolveAssetPath();
@@ -518,7 +517,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_glTFBoxVertexColors_ValidatesStand
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/BoxTextured/glTF/BoxTextured.gltf"));
     path.ResolveAssetPath();
@@ -599,7 +598,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardS
     EXPECT_EQ(pEmissiveIR->NameStr, std::string("test_emissive"));
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/RiggedFigure/glTF/RiggedFigure.gltf"));
     path.ResolveAssetPath();
@@ -1052,7 +1051,7 @@ TEST(ResourceParsingFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandard
     TestSkeletalTrack("leg_joint_L_5");
 }
 
-TEST(ResourceParsingFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStandardSpecification)
+TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStandardSpecification)
 {
     Path path(std::string("TestAssets/TestGltf/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf"));
     path.ResolveAssetPath();

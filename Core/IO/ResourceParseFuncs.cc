@@ -1,4 +1,4 @@
-#include "ResourceParsingFuncs.h"
+#include "ResourceParseFuncs.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/pbrmaterial.h>
@@ -354,7 +354,7 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTex
     int32_t width = 0;
     int32_t height = 0;
     int32_t numColorChannels = 0;
-    const int32_t desiredChannel = 4; // for BCn compression.(AMD Compressonator requires 4 channels.)
+    const int32_t desiredChannel = 4; // for BCn compression.
 
     std::uint8_t* pStbiBitmapLDR = nullptr;
     float* pStbiBitmapHDR = nullptr;
@@ -1210,6 +1210,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
             translationKeys.push_back(
                 {static_cast<float>(key.mTime) / ticksPerSecond, Vector3(key.mValue.x, key.mValue.y, key.mValue.z)});
         }
+        std::sort(translationKeys.begin(),
+                  translationKeys.end(),
+                  [](const AnimationIR::TranslationKey& a, const AnimationIR::TranslationKey& b)
+                  { return a.Time < b.Time; });
 
         std::vector<AnimationIR::RotationKey> rotationKeys;
         rotationKeys.reserve(pAssimpChannel->mNumRotationKeys);
@@ -1241,6 +1245,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
                                     Quaternion(key.mValue.x, key.mValue.y, key.mValue.z, key.mValue.w)});
         }
 
+        std::sort(rotationKeys.begin(),
+                  rotationKeys.end(),
+                  [](const AnimationIR::RotationKey& a, const AnimationIR::RotationKey& b) { return a.Time < b.Time; });
+
         std::vector<AnimationIR::ScalingKey> scalingKeys;
         scalingKeys.reserve(pAssimpChannel->mNumScalingKeys);
         AnimationIR::eInterpolationMode scalingInterpMode = AnimationIR::eInterpolationMode::Step;
@@ -1270,6 +1278,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
             scalingKeys.push_back(
                 {static_cast<float>(key.mTime) / ticksPerSecond, Vector3(key.mValue.x, key.mValue.y, key.mValue.z)});
         }
+
+        std::sort(scalingKeys.begin(),
+                  scalingKeys.end(),
+                  [](const AnimationIR::ScalingKey& a, const AnimationIR::ScalingKey& b) { return a.Time < b.Time; });
 
         AnimationIR::eExtrapolationMode preExtrapMode;
         switch (pAssimpChannel->mPreState)
@@ -1350,6 +1362,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const std::string& nameStr,
             morphingKeys.emplace_back(
                 static_cast<float>(key.mTime) / ticksPerSecond, std::move(morphTargetIndices), std::move(weights));
         }
+
+        std::sort(morphingKeys.begin(),
+                  morphingKeys.end(),
+                  [](const AnimationIR::MorphingKey& a, const AnimationIR::MorphingKey& b) { return a.Time < b.Time; });
 
         morphTargetTracks.emplace_back(boneIndex, std::move(morphingKeys));
     }

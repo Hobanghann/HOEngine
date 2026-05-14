@@ -19,7 +19,9 @@ struct ShaderIR;
                                                             bool bMakeStatic,
                                                             bool bConvertToLeftHanded);
 
-[[nodiscard]] std::unique_ptr<const TextureIR> parseTextureFile(const std::string& nameStr, const Path& path);
+[[nodiscard]] std::unique_ptr<const TextureIR> parseTextureFile(const std::string& nameStr,
+                                                                const Path& path,
+                                                                bool bIsLinear);
 
 [[nodiscard]] std::unique_ptr<const ShaderIR> parseShaderFile(const std::string& nameStr, const Path& path);
 } // namespace parser

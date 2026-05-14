@@ -16,23 +16,27 @@ class Image final
   public:
     enum class eFormat
     {
-        // Uncompressed formats
-        R8,
-        RG8,
-        RGB8,
-        RGBA8,
+        None,
 
-        // High-Precision / HDR formats
-        R32F,
-        RG32F,
-        RGB32F,
-        RGBA32F
+        R8_UNORM,
+        R8_SRGB,
+        R8G8_UNORM,
+        R8G8_SRGB,
+        R8G8B8_UNORM,
+        R8G8B8_SRGB,
+        R8G8B8A8_UNORM,
+        R8G8B8A8_SRGB,
+
+        R32_FLOAT,
+        R32G32_FLOAT,
+        R32G32B32_FLOAT,
+        R32G32B32A32_FLOAT,
     };
 
     FORCE_INLINE Image()
       : mPath(std::string())
       , mNameStr(std::string())
-      , mFormat(eFormat::RGB8)
+      , mFormat(eFormat::R8G8B8A8_SRGB)
       , mWidth(0)
       , mHeight(0)
       , mChannelCount(0)
@@ -100,7 +104,7 @@ class Image final
 
     [[nodiscard]] FORCE_INLINE const uint8_t* GetBitmap() const;
 
-    FORCE_INLINE static int32_t GetPixelBytes(eFormat format);
+    [[nodiscard]] FORCE_INLINE static int32_t GetPixelBytes(eFormat format);
 
   private:
     Path mPath;
@@ -116,20 +120,24 @@ FORCE_INLINE int32_t Image::GetPixelBytes(eFormat format)
 {
     switch (format)
     {
-        case eFormat::R8:
+        case eFormat::R8_UNORM:
+        case eFormat::R8_SRGB:
             return 1;
-        case eFormat::RG8:
+        case eFormat::R8G8_UNORM:
+        case eFormat::R8G8_SRGB:
             return 2;
-        case eFormat::RGB8:
+        case eFormat::R8G8B8_UNORM:
+        case eFormat::R8G8B8_SRGB:
             return 3;
-        case eFormat::RGBA8:
-        case eFormat::R32F:
+        case eFormat::R8G8B8A8_UNORM:
+        case eFormat::R8G8B8A8_SRGB:
+        case eFormat::R32_FLOAT:
             return 4;
-        case eFormat::RG32F:
+        case eFormat::R32G32_FLOAT:
             return 8;
-        case eFormat::RGB32F:
+        case eFormat::R32G32B32_FLOAT:
             return 12;
-        case eFormat::RGBA32F:
+        case eFormat::R32G32B32A32_FLOAT:
             return 16;
 
         default:
@@ -172,10 +180,10 @@ Color32 Image::GetColor32(int32_t x, int32_t y) const
 {
     switch (mFormat)
     {
-        case eFormat::R32F:
-        case eFormat::RG32F:
-        case eFormat::RGB32F:
-        case eFormat::RGBA32F:
+        case eFormat::R32_FLOAT:
+        case eFormat::R32G32_FLOAT:
+        case eFormat::R32G32B32_FLOAT:
+        case eFormat::R32G32B32A32_FLOAT:
             return Color32(GetColor128(x, y));
         default:
             break;
@@ -186,15 +194,20 @@ Color32 Image::GetColor32(int32_t x, int32_t y) const
     const std::uint8_t* px = mBitmap.data() + idx * GetPixelBytes(mFormat);
     switch (mFormat)
     {
-        case eFormat::R8:
+        case eFormat::R8_UNORM:
+        case eFormat::R8_SRGB:
             return Color32(px[0], px[0], px[0], 255);
-        case eFormat::RG8:
+        case eFormat::R8G8_UNORM:
+        case eFormat::R8G8_SRGB:
             return Color32(px[0], px[1], 0, 255);
-        case eFormat::RGB8:
+        case eFormat::R8G8B8_UNORM:
+        case eFormat::R8G8B8_SRGB:
             return Color32(px[0], px[1], px[2], 255);
-        case eFormat::RGBA8:
+        case eFormat::R8G8B8A8_UNORM:
+        case eFormat::R8G8B8A8_SRGB:
             return Color32(px[0], px[1], px[2], px[3]);
         default:
+            HO_ASSERT(false, "Invalid format.");
             return Color32(255, 0, 255, 255); // magenta = unsupported
     }
 }
@@ -203,10 +216,14 @@ Color128 Image::GetColor128(int32_t x, int32_t y) const
 {
     switch (mFormat)
     {
-        case eFormat::R8:
-        case eFormat::RG8:
-        case eFormat::RGB8:
-        case eFormat::RGBA8:
+        case eFormat::R8_UNORM:
+        case eFormat::R8_SRGB:
+        case eFormat::R8G8_UNORM:
+        case eFormat::R8G8_SRGB:
+        case eFormat::R8G8B8_UNORM:
+        case eFormat::R8G8B8_SRGB:
+        case eFormat::R8G8B8A8_UNORM:
+        case eFormat::R8G8B8A8_SRGB:
             return Color128(GetColor32(x, y));
         default:
             break;
@@ -218,16 +235,17 @@ Color128 Image::GetColor128(int32_t x, int32_t y) const
     const float* px = reinterpret_cast<const float*>(mBitmap.data() + idx * GetPixelBytes(mFormat));
     switch (mFormat)
     {
-        case eFormat::R32F:
-            return Color128(px[0], px[0], px[0], 255.f);
-        case eFormat::RG32F:
-            return Color128(px[0], px[1], 0.f, 255.f);
-        case eFormat::RGB32F:
-            return Color128(px[0], px[1], px[2], 255.f);
-        case eFormat::RGBA32F:
+        case eFormat::R32_FLOAT:
+            return Color128(px[0], px[0], px[0], 1.f);
+        case eFormat::R32G32_FLOAT:
+            return Color128(px[0], px[1], 0.f, 1.f);
+        case eFormat::R32G32B32_FLOAT:
+            return Color128(px[0], px[1], px[2], 1.f);
+        case eFormat::R32G32B32A32_FLOAT:
             return Color128(px[0], px[1], px[2], px[3]);
         default:
-            return Color128(255.f, 0, 255.f, 255.f); // magenta = unsupported
+            HO_ASSERT(false, "Invalid format.");
+            return Color128(1.f, 0, 1.f, 1.f); // magenta = unsupported
     }
 }
 
@@ -235,5 +253,4 @@ const uint8_t* Image::GetBitmap() const
 {
     return mBitmap.data();
 }
-
 } // namespace ho

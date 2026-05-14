@@ -38,13 +38,16 @@ struct ModelParsingContext
 //  Private Function Declarations
 // ===========================================================================
 
-[[nodiscard]] static std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels = 0);
+[[nodiscard]] static std::unique_ptr<Image> readImageFile(const Path& path,
+                                                          bool bIsLinear,
+                                                          int32_t desiredChannels = 0);
 [[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path,
                                                                         bool bMakeStatic,
                                                                         bool bConvertToLeftHanded);
 static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOutFlattedScene);
 
-[[nodiscard]] static std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTexture);
+[[nodiscard]] static std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTexture,
+                                                                           bool bIsLinear);
 [[nodiscard]] static std::unique_ptr<const MaterialIR> parseMaterial(
     const std::string& nameStr,
     const aiMaterial& assimpMaterial,
@@ -175,10 +178,10 @@ std::unique_ptr<const ModelIR> parseModelFile(const std::string& nameStr,
     return pModelIR;
 }
 
-std::unique_ptr<const TextureIR> parseTextureFile(const std::string& nameStr, const Path& path)
+std::unique_ptr<const TextureIR> parseTextureFile(const std::string& nameStr, const Path& path, bool bIsLinear)
 {
     const int32_t desiredChannel = 4; // for BCn compression.
-    const std::unique_ptr<Image> pImg = readImageFile(path, desiredChannel);
+    const std::unique_ptr<Image> pImg = readImageFile(path, desiredChannel, bIsLinear);
 
     if (!pImg)
     {
@@ -222,9 +225,9 @@ std::unique_ptr<const ShaderIR> parseShaderFile(const std::string& nameStr, cons
 //  Private Function Definitions
 // ===========================================================================
 
-std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels)
+std::unique_ptr<Image> readImageFile(const Path& path, bool bIsLinear, int32_t desiredChannels = 0)
 {
-    Image::eFormat format = Image::eFormat::RGBA32F;
+    Image::eFormat format = Image::eFormat::None;
     int32_t width = 0;
     int32_t height = 0;
     int32_t numColorChannels = 0;
@@ -243,16 +246,16 @@ std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels)
         switch (numColorChannels)
         {
             case 1:
-                format = Image::eFormat::R32F;
+                format = Image::eFormat::R32_FLOAT;
                 break;
             case 2:
-                format = Image::eFormat::RG32F;
+                format = Image::eFormat::R32G32_FLOAT;
                 break;
             case 3:
-                format = Image::eFormat::RGB32F;
+                format = Image::eFormat::R32G32B32_FLOAT;
                 break;
             case 4:
-                format = Image::eFormat::RGBA32F;
+                format = Image::eFormat::R32G32B32A32_FLOAT;
                 break;
             default:
                 stbi_image_free(pStbiBitmap);
@@ -280,16 +283,16 @@ std::unique_ptr<Image> readImageFile(const Path& path, int32_t desiredChannels)
         switch (numColorChannels)
         {
             case 1:
-                format = Image::eFormat::R8;
+                format = bIsLinear ? Image::eFormat::R8_UNORM : Image::eFormat::R8_SRGB;
                 break;
             case 2:
-                format = Image::eFormat::RG8;
+                format = bIsLinear ? Image::eFormat::R8G8_UNORM : Image::eFormat::R8G8_SRGB;
                 break;
             case 3:
-                format = Image::eFormat::RGB8;
+                format = bIsLinear ? Image::eFormat::R8G8B8_UNORM : Image::eFormat::R8G8B8_SRGB;
                 break;
             case 4:
-                format = Image::eFormat::RGBA8;
+                format = bIsLinear ? Image::eFormat::R8G8B8A8_UNORM : Image::eFormat::R8G8B8A8_SRGB;
                 break;
             default:
                 stbi_image_free(pStbiBitmap);
@@ -349,7 +352,7 @@ void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* outFlatted
     outFlattedScene->push_front(&root);
 }
 
-std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTexture)
+std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTexture, bool bIsLinear)
 {
     int32_t width = 0;
     int32_t height = 0;
@@ -416,17 +419,17 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTex
         switch (numColorChannels)
         {
             case 1:
-                format = Image::eFormat::R32F;
+                format = Image::eFormat::R32_FLOAT;
                 break;
             case 2:
-                format = Image::eFormat::RG32F;
+                format = Image::eFormat::R32G32_FLOAT;
                 break;
             case 3:
-                format = Image::eFormat::RGB32F;
+                format = Image::eFormat::R32G32B32_FLOAT;
                 break;
             case 4:
-            default:
-                format = Image::eFormat::RGBA32F;
+                format = Image::eFormat::R32G32B32A32_FLOAT;
+                break;
                 break;
         }
     }
@@ -435,17 +438,16 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const aiTexture& assimpTex
         switch (numColorChannels)
         {
             case 1:
-                format = Image::eFormat::R8;
+                format = bIsLinear ? Image::eFormat::R8_UNORM : Image::eFormat::R8_SRGB;
                 break;
             case 2:
-                format = Image::eFormat::RG8;
+                format = bIsLinear ? Image::eFormat::R8G8_UNORM : Image::eFormat::R8G8_SRGB;
                 break;
             case 3:
-                format = Image::eFormat::RGB8;
+                format = bIsLinear ? Image::eFormat::R8G8B8_UNORM : Image::eFormat::R8G8B8_SRGB;
                 break;
             case 4:
-            default:
-                format = Image::eFormat::RGBA8;
+                format = bIsLinear ? Image::eFormat::R8G8B8A8_UNORM : Image::eFormat::R8G8B8A8_SRGB;
                 break;
         }
     }
@@ -646,7 +648,7 @@ std::unique_ptr<const MaterialIR> parseMaterial(const std::string& nameStr,
     }
 
     // Texture Load Helper
-    auto loadTextureToMaterial = [&](aiTextureType aiType, MaterialIR::eTextureUsage engineType)
+    auto loadTextureToMaterial = [&](aiTextureType aiType, MaterialIR::eTextureUsage engineType, bool bIsLinear)
     {
         if (pMaterialIR->TextureIRIndices[static_cast<int32_t>(engineType)] != -1)
         {
@@ -689,12 +691,12 @@ std::unique_ptr<const MaterialIR> parseMaterial(const std::string& nameStr,
             std::unique_ptr<const TextureIR> pTextureIR;
             if (bEmbedded)
             {
-                pTextureIR = parseEmbeddedTexture(*pAssimpEmbTextures[embTexIdx]);
+                pTextureIR = parseEmbeddedTexture(*pAssimpEmbTextures[embTexIdx], bIsLinear);
             }
             else if (!texFileNameStr.empty())
             {
                 const Path texAbsPath = parentPath / Path(texFileNameStr);
-                pTextureIR = parseTextureFile(texNameStr, texAbsPath);
+                pTextureIR = parseTextureFile(texNameStr, texAbsPath, bIsLinear);
             }
 
             if (pTextureIR)
@@ -734,30 +736,30 @@ std::unique_ptr<const MaterialIR> parseMaterial(const std::string& nameStr,
 
     // Load textures
     // Phong / legacy
-    loadTextureToMaterial(aiTextureType_DIFFUSE, MaterialIR::eTextureUsage::Diffuse);
-    loadTextureToMaterial(aiTextureType_SPECULAR, MaterialIR::eTextureUsage::Specular);
-    loadTextureToMaterial(aiTextureType_SHININESS, MaterialIR::eTextureUsage::Shininess);
-    loadTextureToMaterial(aiTextureType_OPACITY, MaterialIR::eTextureUsage::Opacity);
+    loadTextureToMaterial(aiTextureType_DIFFUSE, MaterialIR::eTextureUsage::Diffuse, false);
+    loadTextureToMaterial(aiTextureType_SPECULAR, MaterialIR::eTextureUsage::Specular, true);
+    loadTextureToMaterial(aiTextureType_SHININESS, MaterialIR::eTextureUsage::Shininess, true);
+    loadTextureToMaterial(aiTextureType_OPACITY, MaterialIR::eTextureUsage::Opacity, true);
 
     // Geometry
-    loadTextureToMaterial(aiTextureType_HEIGHT, MaterialIR::eTextureUsage::Height);
-    loadTextureToMaterial(aiTextureType_NORMALS, MaterialIR::eTextureUsage::Normal);
+    loadTextureToMaterial(aiTextureType_HEIGHT, MaterialIR::eTextureUsage::Height, true);
+    loadTextureToMaterial(aiTextureType_NORMALS, MaterialIR::eTextureUsage::Normal, true);
 
     // PBR Core
-    loadTextureToMaterial(aiTextureType_BASE_COLOR, MaterialIR::eTextureUsage::Albedo);
-    loadTextureToMaterial(aiTextureType_EMISSION_COLOR, MaterialIR::eTextureUsage::Emissive);
-    loadTextureToMaterial(aiTextureType_EMISSIVE, MaterialIR::eTextureUsage::Emissive);
-    loadTextureToMaterial(aiTextureType_METALNESS, MaterialIR::eTextureUsage::Metallic);
-    loadTextureToMaterial(aiTextureType_DIFFUSE_ROUGHNESS, MaterialIR::eTextureUsage::Roughness);
-    loadTextureToMaterial(aiTextureType_GLTF_METALLIC_ROUGHNESS, MaterialIR::eTextureUsage::MetallicRoughness);
-    loadTextureToMaterial(aiTextureType_AMBIENT_OCCLUSION, MaterialIR::eTextureUsage::AmbientOcclusion);
-    loadTextureToMaterial(aiTextureType_LIGHTMAP, MaterialIR::eTextureUsage::AmbientOcclusion);
+    loadTextureToMaterial(aiTextureType_BASE_COLOR, MaterialIR::eTextureUsage::Albedo, false);
+    loadTextureToMaterial(aiTextureType_EMISSION_COLOR, MaterialIR::eTextureUsage::Emissive, false);
+    loadTextureToMaterial(aiTextureType_EMISSIVE, MaterialIR::eTextureUsage::Emissive, false);
+    loadTextureToMaterial(aiTextureType_METALNESS, MaterialIR::eTextureUsage::Metallic, true);
+    loadTextureToMaterial(aiTextureType_DIFFUSE_ROUGHNESS, MaterialIR::eTextureUsage::Roughness, true);
+    loadTextureToMaterial(aiTextureType_GLTF_METALLIC_ROUGHNESS, MaterialIR::eTextureUsage::MetallicRoughness, true);
+    loadTextureToMaterial(aiTextureType_AMBIENT_OCCLUSION, MaterialIR::eTextureUsage::AmbientOcclusion, true);
+    loadTextureToMaterial(aiTextureType_LIGHTMAP, MaterialIR::eTextureUsage::AmbientOcclusion, true);
 
     // PBR Advanced
-    loadTextureToMaterial(aiTextureType_SHEEN, MaterialIR::eTextureUsage::Sheen);
-    loadTextureToMaterial(aiTextureType_CLEARCOAT, MaterialIR::eTextureUsage::Clearcoat);
-    loadTextureToMaterial(aiTextureType_TRANSMISSION, MaterialIR::eTextureUsage::Transmission);
-    loadTextureToMaterial(aiTextureType_ANISOTROPY, MaterialIR::eTextureUsage::Anisotropy);
+    loadTextureToMaterial(aiTextureType_SHEEN, MaterialIR::eTextureUsage::Sheen, false);
+    loadTextureToMaterial(aiTextureType_CLEARCOAT, MaterialIR::eTextureUsage::Clearcoat, false);
+    loadTextureToMaterial(aiTextureType_TRANSMISSION, MaterialIR::eTextureUsage::Transmission, false);
+    loadTextureToMaterial(aiTextureType_ANISOTROPY, MaterialIR::eTextureUsage::Anisotropy, true);
 
     return pMaterialIR;
 }

@@ -19,7 +19,7 @@ TEST(ImageTest, GetPixelBytes_AllFormats_ReturnsCorrectByteSize)
     EXPECT_EQ(Image::GetPixelBytes(Image::eFormat::R32_FLOAT), 4);
     EXPECT_EQ(Image::GetPixelBytes(Image::eFormat::R32G32_FLOAT), 8);
     EXPECT_EQ(Image::GetPixelBytes(Image::eFormat::R32G32B32_FLOAT), 12);
-    EXPECT_EQ(Image::GetPixelBytes(Image::eFormat::R32G32B32_FLOAT), 16);
+    EXPECT_EQ(Image::GetPixelBytes(Image::eFormat::R32G32B32A32_FLOAT), 16);
 }
 
 TEST(ImageTest, Constructor_RawData_InitializesProperly)
@@ -129,7 +129,7 @@ TEST(ImageTest, GetColor128_AllFormats_ReturnsCorrectColor)
         EXPECT_FLOAT_EQ(c.R, 0.75f);
         EXPECT_FLOAT_EQ(c.G, 0.75f);
         EXPECT_FLOAT_EQ(c.B, 0.75f);
-        EXPECT_FLOAT_EQ(c.A, 255.0f);
+        EXPECT_FLOAT_EQ(c.A, 1.0f);
     }
 
     {

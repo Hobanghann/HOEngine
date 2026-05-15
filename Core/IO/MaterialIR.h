@@ -6,6 +6,7 @@
 #include "Core/Math/Matrix3x3.h"
 #include "Core/Math/Vector4.h"
 #include "Core/Templates/ID.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -81,6 +82,7 @@ struct MaterialIR
         }
     }
 
+    Path ResourcePath = Path(std::string(""));
     std::string NameStr;
 
     // Legacy / Phong Attributes

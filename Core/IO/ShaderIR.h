@@ -2,14 +2,17 @@
 
 #include <string>
 
+#include "Path.h"
+
 namespace ho
 {
 namespace parser
 {
 struct ShaderIR
 {
-    ShaderIR(std::string&& nameStr, std::string&& sourceStr) noexcept
-      : NameStr(std::move(nameStr))
+    ShaderIR(const Path& path, std::string&& nameStr, std::string&& sourceStr) noexcept
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , SourceStr(std::move(sourceStr))
     {
     }
@@ -20,8 +23,8 @@ struct ShaderIR
     ShaderIR(ShaderIR&& rhs) noexcept = default;
     ShaderIR& operator=(ShaderIR&& rhs) noexcept = default;
 
+    Path ResourcePath;
     std::string NameStr;
-
     std::string SourceStr;
 };
 } // namespace parser

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Image.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -12,8 +13,9 @@ namespace parser
 {
 struct TextureIR
 {
-    TextureIR(std::string&& nameStr, Image&& image)
-      : NameStr(std::move(nameStr))
+    TextureIR(const Path& path, std::string&& nameStr, Image&& image)
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , Img(std::move(image))
     {
     }
@@ -24,6 +26,7 @@ struct TextureIR
     TextureIR(TextureIR&& rhs) noexcept = default;
     TextureIR& operator=(TextureIR&& rhs) noexcept = default;
 
+    Path ResourcePath;
     std::string NameStr;
     Image Img;
 };

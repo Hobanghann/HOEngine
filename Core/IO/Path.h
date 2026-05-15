@@ -30,6 +30,7 @@ class Path final
 
     [[nodiscard]] FORCE_INLINE Path GetParentPath() const;
     [[nodiscard]] FORCE_INLINE Path GetFileName() const;
+    [[nodiscard]] FORCE_INLINE Path GetExtension() const;
 
     FORCE_INLINE Path& ResolveProjectPath();
     FORCE_INLINE Path& ResolveAssetPath();
@@ -92,6 +93,11 @@ Path Path::GetParentPath() const
 Path Path::GetFileName() const
 {
     return Path(mPath.filename());
+}
+
+Path Path::GetExtension() const
+{
+    return Path(mPath.extension());
 }
 
 Path Path::ResolvedProjectPath() const

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Core/Math/Transform3D.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -12,11 +13,13 @@ namespace parser
 {
 struct SkeletonIR
 {
-    SkeletonIR(std::string&& nameStr,
+    SkeletonIR(const Path& path,
+               std::string&& nameStr,
                std::vector<std::string>&& boneNameStrs,
                std::vector<Transform3D>&& localTransforms,
                std::vector<int32_t>&& parents) noexcept
-      : NameStr(std::move(nameStr))
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , BoneNameStrs(std::move(boneNameStrs))
       , LocalTransforms(std::move(localTransforms))
       , Parents(std::move(parents))
@@ -73,6 +76,7 @@ struct SkeletonIR
         return Children[it->second];
     }
 
+    Path ResourcePath;
     std::string NameStr;
     std::vector<std::string> BoneNameStrs;
     std::vector<Transform3D> LocalTransforms;

@@ -8,6 +8,7 @@
 #include "Core/Math/Transform3D.h"
 #include "Core/Math/Vector3.h"
 #include "Macros.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -156,11 +157,13 @@ struct AnimationIR
         std::vector<MorphingKey> KeySequance;
     };
 
-    AnimationIR(std::string&& nameStr,
+    AnimationIR(const Path& path,
+                std::string&& nameStr,
                 float duration,
                 std::vector<SkeletalTrack>&& skeletalTracks,
                 std::vector<MorphTargetTrack>&& morphTargetTracks) noexcept
-      : NameStr(std::move(nameStr))
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , Duration(duration)
       , SkeletalTracks(std::move(skeletalTracks))
       , MorphTargetTracks(std::move(morphTargetTracks))
@@ -200,6 +203,7 @@ struct AnimationIR
         return MorphTargetTracks[it->second];
     }
 
+    Path ResourcePath;
     std::string NameStr;
     float Duration;
     std::vector<SkeletalTrack> SkeletalTracks;

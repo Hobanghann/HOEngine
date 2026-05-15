@@ -12,6 +12,7 @@
 #include "Core/Math/Transform3D.h"
 #include "Core/Math/Vector2.h"
 #include "Core/Templates/ID.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -153,8 +154,9 @@ struct MeshIR
         std::unordered_map<std::string, int32_t> MorphNameToIndexMap;
     };
 
-    MeshIR(std::string&& nameStr, std::vector<SubMesh>&& subMeshes) noexcept
-      : NameStr(std::move(nameStr))
+    MeshIR(const Path& path, std::string&& nameStr, std::vector<SubMesh>&& subMeshes) noexcept
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , SubMeshes(std::move(subMeshes))
     {
         if (!SubMeshes.empty())
@@ -203,6 +205,7 @@ struct MeshIR
         return SubMeshes[it->second];
     }
 
+    Path ResourcePath;
     std::string NameStr;
 
     std::vector<SubMesh> SubMeshes;

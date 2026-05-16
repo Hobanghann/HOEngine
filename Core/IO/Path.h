@@ -34,9 +34,11 @@ class Path final
 
     FORCE_INLINE Path& ResolveProjectPath();
     FORCE_INLINE Path& ResolveAssetPath();
+    FORCE_INLINE Path& RemoveExtension();
 
     [[nodiscard]] FORCE_INLINE Path ResolvedProjectPath() const;
     [[nodiscard]] FORCE_INLINE Path ResolvedAssetPath() const;
+    [[nodiscard]] FORCE_INLINE Path RemovedExtension() const;
 
     [[nodiscard]] FORCE_INLINE std::string ToString() const;
 
@@ -100,18 +102,6 @@ Path Path::GetExtension() const
     return Path(mPath.extension());
 }
 
-Path Path::ResolvedProjectPath() const
-{
-    Path copy = *this;
-    return copy.ResolveProjectPath();
-}
-
-Path Path::ResolvedAssetPath() const
-{
-    Path copy = *this;
-    return copy.ResolveAssetPath();
-}
-
 Path& Path::ResolveProjectPath()
 {
     if (!mPath.is_absolute())
@@ -128,6 +118,30 @@ Path& Path::ResolveAssetPath()
         mPath = (sAssetRootPath / mPath).lexically_normal();
     }
     return *this;
+}
+
+Path& Path::RemoveExtension()
+{
+    mPath.replace_extension("");
+    return *this;
+}
+
+Path Path::ResolvedProjectPath() const
+{
+    Path copy = *this;
+    return copy.ResolveProjectPath();
+}
+
+Path Path::ResolvedAssetPath() const
+{
+    Path copy = *this;
+    return copy.ResolveAssetPath();
+}
+
+Path Path::RemovedExtension() const
+{
+    Path copy = *this;
+    return copy.RemoveExtension();
 }
 
 std::string Path::ToString() const

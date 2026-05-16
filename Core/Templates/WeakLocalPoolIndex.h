@@ -22,8 +22,8 @@ class WeakLocalPoolIndex
     }
 
     WeakLocalPoolIndex(PoolType<ValueType>* pool, uint32_t idx)
-      : mPool(pool)
-      , mIndex(idx)
+      : mIndex(idx)
+      , mPool(pool)
 
     {
     }

@@ -78,7 +78,7 @@ CheckOptions:
   - key: system-headers
     value: 0
   - key: readability-identifier-naming.MemberIgnoredRegexp
-    value: "^(s|m|b|p|sb|sp|mb|mp)[A-Z][a-zA-Z0-9]*$"
+    value: "^(s|m|b|p|h|sb|sp|mb|mp)[A-Z][a-zA-Z0-9]*$"
 
   - key: readability-identifier-naming.ClassCase
     value: CamelCase

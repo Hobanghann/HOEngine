@@ -10,9 +10,6 @@
 
 namespace ho
 {
-HO_DISABLE_COMPILER_WARNING_PUSH();
-HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
-
 namespace parser
 {
 struct MaterialIR
@@ -139,6 +136,4 @@ struct MaterialIR
     Matrix3x3 UVTransforms[static_cast<int32_t>(eTextureUsage::Last)];
 };
 } // namespace parser
-
-HO_DISABLE_COMPILER_WARNING_POP();
 } // namespace ho

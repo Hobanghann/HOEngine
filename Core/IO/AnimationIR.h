@@ -55,9 +55,6 @@ struct AnimationIR
         CubicSpline = 3
     };
 
-    HO_DISABLE_COMPILER_WARNING_PUSH();
-    HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
-
     struct TranslationKey
     {
         float Time;
@@ -75,8 +72,6 @@ struct AnimationIR
         float Time;
         Vector3 Scale;
     };
-
-    HO_DISABLE_COMPILER_WARNING_POP();
 
     struct MorphingKey
     {

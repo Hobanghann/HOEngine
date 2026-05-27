@@ -4,9 +4,6 @@
 
 using namespace ho;
 
-HO_DISABLE_COMPILER_WARNING_PUSH();
-HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
-
 class Matrix2x2Test : public ::testing::Test
 {
   protected:
@@ -29,8 +26,6 @@ class Matrix2x2Test : public ::testing::Test
     Matrix2x2 mat14, mat58;
     Matrix2x2 matOrthogonal, matOrthonormal;
 };
-
-HO_DISABLE_COMPILER_WARNING_POP();
 
 TEST_F(Matrix2x2Test, Constructor_DefaultAndAllParameters_InitializeCorrectly)
 {

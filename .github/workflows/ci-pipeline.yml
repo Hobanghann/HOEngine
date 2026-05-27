@@ -13,7 +13,7 @@ jobs:
     name: Run Format Check
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -32,7 +32,7 @@ jobs:
       - name: Run clang-format check
         run: |
           TARGET_DIRS=""
-          for dir in Core Test; do
+          for dir in Core Platforms Subsystems Main Test; do
             if [ -d "$dir" ]; then
               TARGET_DIRS="$TARGET_DIRS $dir"
             fi
@@ -41,7 +41,7 @@ jobs:
           if [ -n "$TARGET_DIRS" ]; then
             echo "Checking format for: $TARGET_DIRS"
             find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \) | xargs -r clang-format-21 -i
-            
+
             if [ -n "$(git status --porcelain -uno)" ]; then
               echo "--------------------------------------------------"
               echo " !! FORMAT MISMATCH DETECTED !! "
@@ -73,7 +73,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    steps:        
+    steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
@@ -91,8 +91,8 @@ jobs:
       - name: Run clang-tidy
         shell: bash
         run: |
-          TARGET_DIRS="Core"
-          
+          TARGET_DIRS="Core Platforms Subsystems Main"
+
           FILES=$(find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \))
 
           echo "$FILES" | xargs -r clang-tidy -p build --quiet
@@ -131,7 +131,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-        
+
       - name: Configure CMake
         shell: bash
         run: |
@@ -140,7 +140,7 @@ jobs:
           -G "${{ matrix.build_tool }}" \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} 
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}

@@ -3,6 +3,9 @@
 #include <memory>
 #include <string>
 
+#include "ModelIR.h"
+#include "ShaderIR.h"
+
 namespace ho
 {
 class Path;
@@ -10,9 +13,6 @@ class Image;
 
 namespace parser
 {
-struct ModelIR;
-struct TextureIR;
-struct ShaderIR;
 
 [[nodiscard]] std::unique_ptr<const ModelIR> parseModelFile(const Path& path,
                                                             const std::string& nameStr,

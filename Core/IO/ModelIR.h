@@ -4,7 +4,13 @@
 #include <string>
 #include <vector>
 
+#include "AnimationIR.h"
+#include "MaterialIR.h"
+#include "MeshIR.h"
 #include "Path.h"
+#include "SkeletonIR.h"
+#include "SkinIR.h"
+#include "TextureIR.h"
 
 namespace ho
 {

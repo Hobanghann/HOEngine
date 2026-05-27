@@ -9,17 +9,9 @@
 #include <sstream>
 #include <stb_image.h>
 
-#include "AnimationIR.h"
 #include "Core/Math/Transform3D.h"
 #include "Image.h"
-#include "MaterialIR.h"
-#include "MeshIR.h"
-#include "ModelIR.h"
 #include "Path.h"
-#include "ShaderIR.h"
-#include "SkeletonIR.h"
-#include "SkinIR.h"
-#include "TextureIR.h"
 
 namespace ho
 {
@@ -285,6 +277,7 @@ std::unique_ptr<Image> readImageFile(const Path& path, bool bIsLinear, int32_t d
                                        width,
                                        height,
                                        numColorChannels,
+                                       desiredChannels,
                                        reinterpret_cast<const uint8_t*>(pStbiBitmap));
         stbi_image_free(pStbiBitmap);
     }
@@ -318,7 +311,7 @@ std::unique_ptr<Image> readImageFile(const Path& path, bool bIsLinear, int32_t d
                 return nullptr;
         }
         pImg = std::make_unique<Image>(
-            path, path.GetFileName().ToString(), format, width, height, numColorChannels, pStbiBitmap);
+            path, path.GetFileName().ToString(), format, width, height, numColorChannels, desiredChannels, pStbiBitmap);
         stbi_image_free(pStbiBitmap);
     }
 
@@ -376,7 +369,7 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const ai
     int32_t width = 0;
     int32_t height = 0;
     int32_t numColorChannels = 0;
-    const int32_t desiredChannel = 4; // for BCn compression.
+    const int32_t desiredChannels = 4; // for BCn compression.
 
     std::uint8_t* pStbiBitmapLDR = nullptr;
     float* pStbiBitmapHDR = nullptr;
@@ -392,7 +385,7 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const ai
         {
             bHDR = true;
             pStbiBitmapHDR = stbi_loadf_from_memory(
-                pCompressedData, compressedSize, &width, &height, &numColorChannels, desiredChannel);
+                pCompressedData, compressedSize, &width, &height, &numColorChannels, desiredChannels);
             if (!pStbiBitmapHDR)
             {
                 return nullptr;
@@ -401,7 +394,7 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const ai
         else
         {
             pStbiBitmapLDR = stbi_load_from_memory(
-                pCompressedData, compressedSize, &width, &height, &numColorChannels, desiredChannel);
+                pCompressedData, compressedSize, &width, &height, &numColorChannels, desiredChannels);
             if (!pStbiBitmapLDR)
             {
                 return nullptr;
@@ -481,7 +474,7 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const ai
     const std::uint8_t* pFinalBitmap = bHDR ? reinterpret_cast<const std::uint8_t*>(pStbiBitmapHDR) : pStbiBitmapLDR;
 
     const std::unique_ptr<Image> pImg = std::make_unique<Image>(
-        path, assimpTexture.mFilename.C_Str(), format, width, height, numColorChannels, pFinalBitmap);
+        path, assimpTexture.mFilename.C_Str(), format, width, height, numColorChannels, desiredChannels, pFinalBitmap);
 
     if (bHDR)
     {

@@ -6,12 +6,10 @@
 #include "Core/Math/Matrix3x3.h"
 #include "Core/Math/Vector4.h"
 #include "Core/Templates/ID.h"
+#include "Path.h"
 
 namespace ho
 {
-HO_DISABLE_COMPILER_WARNING_PUSH();
-HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
-
 namespace parser
 {
 struct MaterialIR
@@ -81,6 +79,7 @@ struct MaterialIR
         }
     }
 
+    Path ResourcePath = Path(std::string(""));
     std::string NameStr;
 
     // Legacy / Phong Attributes
@@ -137,6 +136,4 @@ struct MaterialIR
     Matrix3x3 UVTransforms[static_cast<int32_t>(eTextureUsage::Last)];
 };
 } // namespace parser
-
-HO_DISABLE_COMPILER_WARNING_POP();
 } // namespace ho

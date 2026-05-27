@@ -4,6 +4,14 @@
 #include <string>
 #include <vector>
 
+#include "AnimationIR.h"
+#include "MaterialIR.h"
+#include "MeshIR.h"
+#include "Path.h"
+#include "SkeletonIR.h"
+#include "SkinIR.h"
+#include "TextureIR.h"
+
 namespace ho
 {
 namespace parser
@@ -17,6 +25,7 @@ struct TextureIR;
 
 struct ModelIR
 {
+    Path ResourcePath = Path(std::string(""));
     std::string NameStr;
     std::unique_ptr<const MeshIR> pMeshIR;
     std::unique_ptr<const SkeletonIR> pSkeletonIR;

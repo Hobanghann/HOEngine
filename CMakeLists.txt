@@ -3,6 +3,8 @@
 ##########################################################
 
 cmake_minimum_required(VERSION 3.30)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
+
 include(FetchContent)
 
 set(MAIN_PROJECT_NAME HOEngine)
@@ -21,14 +23,14 @@ option(ENABLE_TEST "Enable test" ON)
 ##########################################################
 # Set Compiler Options
 ##########################################################
-add_library(COMPILER_WARNING_FLAGS INTERFACE)
+add_library(COMPILER_FLAGS INTERFACE)
 
 if (MSVC)
     target_compile_options(
-        COMPILER_WARNING_FLAGS
+        COMPILER_FLAGS
         INTERFACE
         /WX             # -Werror
-        /W4             # -Wall -Wextra        
+        /W4             # -Wall -Wextra
         /w14242         # -Wconversion
         /w14254         # -Wconversion
         /w14287         # -Wsign-conversion
@@ -43,17 +45,18 @@ if (MSVC)
         /w14264         # -Woverloaded-virtual
         /w14266         # -Woverloaded-virtual
         /wd4100         # -Wno-unused-parameter
-        /wd4201           # allow anonymous struct, union
-        /wd4723           # disable: potential divide by zero (false positive)
-        /permissive-   
+        /wd4201         # allow anonymous struct, union
+        /wd4723         # disable: potential divide by zero (false positive)
+        /wd4324         # disable: redundant padding warning
+        /permissive-
         /Zc:__cplusplus
-        /EHsc             
-        /D_HAS_EXCEPTIONS=0 
+        /EHsc
+        /D_HAS_EXCEPTIONS=0
     )
 
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(
-            COMPILER_WARNING_FLAGS
+            COMPILER_FLAGS
             INTERFACE
             -Werror
             -Wall
@@ -81,16 +84,16 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-sign-conversion
             -fno-exceptions
         )
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")        
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(FATAL_ERROR
-        "GCC is not supported by HORenderer due to its restrictions on "
+        "GCC is not supported by HOEngine due to its restrictions on "
         "anonymous aggregates with non-POD members. "
         "Please use Clang or MSVC instead."
     )
 else()
     message(WARNING
         "Unknown compiler '${CMAKE_CXX_COMPILER_ID}'. "
-        "HORenderer officially supports only MSVC and Clang. "
+        "HOEngine officially supports only MSVC and Clang. "
         "Compilation may work, but is not tested."
     )
 endif ()

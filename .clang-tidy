@@ -20,7 +20,6 @@ Checks: >
   cppcoreguidelines-slicing,
   cppcoreguidelines-virtual-class-destructor,
   cppcoreguidelines-avoid-const-or-ref-data-members,
-  cppcoreguidelines-non-private-member-variables-in-classes,
   cppcoreguidelines-pro-type-const-cast,
 
   performance-*,
@@ -78,7 +77,7 @@ CheckOptions:
   - key: system-headers
     value: 0
   - key: readability-identifier-naming.MemberIgnoredRegexp
-    value: "^(s|m|b|p|sb|sp|mb|mp)[A-Z][a-zA-Z0-9]*$"
+    value: "^(s|m|b|p|h|sb|sp|sh|mb|mp|mh|ph)[A-Z][a-zA-Z0-9]*$"
 
   - key: readability-identifier-naming.ClassCase
     value: CamelCase

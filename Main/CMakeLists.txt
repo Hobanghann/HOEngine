@@ -1,6 +1,9 @@
 message(STATUS "[Module] Start to process ${MAIN_NAME} module.")
 
 ################################################################################
+# Process Engine Main
+################################################################################
+################################################################################
 # Read source files
 ################################################################################
 file(GLOB ENGINE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
@@ -24,7 +27,7 @@ add_library(${MAIN_NAME} STATIC ${ENGINE_FILES})
 target_link_libraries(
     ${MAIN_NAME}
     PRIVATE
-    COMPILER_WARNING_FLAGS
+    COMPILER_FLAGS
     PUBLIC
     ${THIRD_PARTY_NAME}
     ${CORE_NAME}
@@ -37,7 +40,9 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    
+################################################################################
+# Process Platform Main
+################################################################################
 ################################################################################
 # Check Platform
 ################################################################################
@@ -90,7 +95,7 @@ endif()
 target_link_libraries(
   ${MAIN_PROJECT_NAME}
   PRIVATE
-  COMPILER_WARNING_FLAGS
+  COMPILER_FLAGS
   PUBLIC  
   ${THIRD_PARTY_NAME}
   ${CORE_NAME}

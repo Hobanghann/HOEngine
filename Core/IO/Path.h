@@ -30,12 +30,15 @@ class Path final
 
     [[nodiscard]] FORCE_INLINE Path GetParentPath() const;
     [[nodiscard]] FORCE_INLINE Path GetFileName() const;
+    [[nodiscard]] FORCE_INLINE Path GetExtension() const;
 
-    FORCE_INLINE Path& ResolveProjectPath();
-    FORCE_INLINE Path& ResolveAssetPath();
+    FORCE_INLINE void ResolveProjectPath();
+    FORCE_INLINE void ResolveAssetPath();
+    FORCE_INLINE void RemoveExtension();
 
     [[nodiscard]] FORCE_INLINE Path ResolvedProjectPath() const;
     [[nodiscard]] FORCE_INLINE Path ResolvedAssetPath() const;
+    [[nodiscard]] FORCE_INLINE Path RemovedExtension() const;
 
     [[nodiscard]] FORCE_INLINE std::string ToString() const;
 
@@ -94,34 +97,51 @@ Path Path::GetFileName() const
     return Path(mPath.filename());
 }
 
-Path Path::ResolvedProjectPath() const
+Path Path::GetExtension() const
 {
-    Path copy = *this;
-    return copy.ResolveProjectPath();
+    return Path(mPath.extension());
 }
 
-Path Path::ResolvedAssetPath() const
-{
-    Path copy = *this;
-    return copy.ResolveAssetPath();
-}
-
-Path& Path::ResolveProjectPath()
+void Path::ResolveProjectPath()
 {
     if (!mPath.is_absolute())
     {
         mPath = (sProjectRootPath / mPath).lexically_normal();
     }
-    return *this;
 }
 
-Path& Path::ResolveAssetPath()
+void Path::ResolveAssetPath()
 {
     if (!mPath.is_absolute())
     {
         mPath = (sAssetRootPath / mPath).lexically_normal();
     }
-    return *this;
+}
+
+void Path::RemoveExtension()
+{
+    mPath.replace_extension("");
+}
+
+Path Path::ResolvedProjectPath() const
+{
+    Path copy = *this;
+    copy.ResolveProjectPath();
+    return copy;
+}
+
+Path Path::ResolvedAssetPath() const
+{
+    Path copy = *this;
+    copy.ResolveAssetPath();
+    return copy;
+}
+
+Path Path::RemovedExtension() const
+{
+    Path copy = *this;
+    copy.RemoveExtension();
+    return copy;
 }
 
 std::string Path::ToString() const

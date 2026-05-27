@@ -8,9 +8,6 @@
 
 using namespace ho;
 
-HO_DISABLE_COMPILER_WARNING_PUSH();
-HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
-
 class Vector3Test : public ::testing::Test
 {
   protected:
@@ -30,8 +27,6 @@ class Vector3Test : public ::testing::Test
     Vector3 zero, unitX, unitY, unitZ;
     Vector3 vec123, vec123Approx, vec435, vec010203;
 };
-
-HO_DISABLE_COMPILER_WARNING_POP();
 
 TEST_F(Vector3Test, Constructor_DefaultAndAllParameters_InitializesCorrectly)
 {

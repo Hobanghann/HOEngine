@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Core/Math/Transform3D.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -12,10 +13,12 @@ namespace parser
 {
 struct SkinIR
 {
-    SkinIR(std::string&& nameStr,
+    SkinIR(const Path& path,
+           std::string&& nameStr,
            std::vector<Transform3D>&& offsetTransforms,
            std::vector<std::vector<int32_t>>&& boneToSubMeshMap) noexcept
-      : NameStr(std::move(nameStr))
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , OffsetTransforms(std::move(offsetTransforms))
       , BindSubMeshIndices(boneToSubMeshMap)
     {
@@ -27,6 +30,7 @@ struct SkinIR
     SkinIR(SkinIR&& rhs) noexcept = default;
     SkinIR& operator=(SkinIR&& rhs) noexcept = default;
 
+    Path ResourcePath;
     std::string NameStr;
     std::vector<Transform3D> OffsetTransforms;
     std::vector<std::vector<int32_t>> BindSubMeshIndices;

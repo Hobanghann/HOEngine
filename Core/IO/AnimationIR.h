@@ -8,6 +8,7 @@
 #include "Core/Math/Transform3D.h"
 #include "Core/Math/Vector3.h"
 #include "Macros.h"
+#include "Path.h"
 
 namespace ho
 {
@@ -54,9 +55,6 @@ struct AnimationIR
         CubicSpline = 3
     };
 
-    HO_DISABLE_COMPILER_WARNING_PUSH();
-    HO_DISABLE_COMPILER_WARNING_PADDED_DUE_TO_ALIGNMENT_SPECIFIER();
-
     struct TranslationKey
     {
         float Time;
@@ -74,8 +72,6 @@ struct AnimationIR
         float Time;
         Vector3 Scale;
     };
-
-    HO_DISABLE_COMPILER_WARNING_POP();
 
     struct MorphingKey
     {
@@ -156,11 +152,13 @@ struct AnimationIR
         std::vector<MorphingKey> KeySequance;
     };
 
-    AnimationIR(std::string&& nameStr,
+    AnimationIR(const Path& path,
+                std::string&& nameStr,
                 float duration,
                 std::vector<SkeletalTrack>&& skeletalTracks,
                 std::vector<MorphTargetTrack>&& morphTargetTracks) noexcept
-      : NameStr(std::move(nameStr))
+      : ResourcePath(path)
+      , NameStr(std::move(nameStr))
       , Duration(duration)
       , SkeletalTracks(std::move(skeletalTracks))
       , MorphTargetTracks(std::move(morphTargetTracks))
@@ -200,6 +198,7 @@ struct AnimationIR
         return MorphTargetTracks[it->second];
     }
 
+    Path ResourcePath;
     std::string NameStr;
     float Duration;
     std::vector<SkeletalTrack> SkeletalTracks;

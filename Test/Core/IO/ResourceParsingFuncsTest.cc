@@ -18,7 +18,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
 {
     Path path(std::string("TestAssets/TestObj/Cube/cube.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -194,7 +194,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_DeduplicatesIdenticalTextures)
 {
     Path path(std::string("TestAssets/TestObj/CubeWithDuplicatedTexture/cube.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false, true);
     ASSERT_NE(pModelIR, nullptr);
 
     EXPECT_EQ(pModelIR->pTextureIRs.size(), 1);
@@ -227,7 +227,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMeshes
 {
     Path path(std::string("TestAssets/TestObj/MultipleMesh/multi_mesh.obj"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -303,7 +303,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
 {
     Path path(std::string("TestAssets/TestGltf/Box/glTF/Box.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("TestBox"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestBox"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -405,7 +405,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
 {
     Path path(std::string("TestAssets/TestGltf/BoxInterleaved/glTF/BoxInterleaved.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("BoxInterleaved"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxInterleaved"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -503,7 +503,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxVertexColors_ValidatesStandar
 {
     Path path(std::string("TestAssets/TestGltf/BoxVertexColors/glTF/BoxVertexColors.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("BoxVertexColors"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxVertexColors"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -521,7 +521,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpe
 {
     Path path(std::string("TestAssets/TestGltf/BoxTextured/glTF/BoxTextured.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("BoxTextured"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxTextured"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -602,7 +602,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
 {
     Path path(std::string("TestAssets/TestGltf/RiggedFigure/glTF/RiggedFigure.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("RiggedFigure"), path, false, false);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("RiggedFigure"), false, false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
@@ -1089,7 +1089,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
 {
     Path path(std::string("TestAssets/TestGltf/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf"));
     path.ResolveAssetPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(std::string("AnimatedMorphCube"), path, false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("AnimatedMorphCube"), false, true);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();

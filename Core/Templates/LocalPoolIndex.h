@@ -54,7 +54,7 @@ class LocalPoolIndex
 
     [[nodiscard]] constexpr bool IsNULL() const
     {
-        return mIndex == 0ull || mPool == nullptr;
+        return mIndex == 0ull || (mPool == nullptr ? true : mPool->Get(mIndex) == nullptr);
     }
 
     [[nodiscard]] constexpr bool IsValid() const
@@ -107,7 +107,7 @@ class LocalPoolIndex
         return *mPool;
     }
 
-    static const LocalPoolIndex sNull;
+    static const LocalPoolIndex sNULL;
 
   private:
     explicit LocalPoolIndex(PoolType<ValueType>* pool, uint32_t idx)
@@ -121,7 +121,7 @@ class LocalPoolIndex
 };
 
 template <typename ValueType, template <typename> class PoolType>
-INLINE const LocalPoolIndex<ValueType, PoolType> LocalPoolIndex<ValueType, PoolType>::sNull =
+INLINE const LocalPoolIndex<ValueType, PoolType> LocalPoolIndex<ValueType, PoolType>::sNULL =
     LocalPoolIndex<ValueType, PoolType>(nullptr, 0);
 } // namespace ho
 

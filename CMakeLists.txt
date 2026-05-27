@@ -104,6 +104,7 @@ endif ()
 set(THIRD_PARTY_NAME Lib)
 set(PLATFORMS_NAME Platforms)
 set(CORE_NAME Core)
+set(SUBSYSTEMS_NAME Subsystems)
 set(MAIN_NAME Main)
 
 ##########################################################
@@ -112,6 +113,7 @@ set(MAIN_NAME Main)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_NAME})
 
 ##########################################################

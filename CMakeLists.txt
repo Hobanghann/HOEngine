@@ -30,7 +30,7 @@ if (MSVC)
         COMPILER_FLAGS
         INTERFACE
         /WX             # -Werror
-        /W4             # -Wall -Wextra        
+        /W4             # -Wall -Wextra
         /w14242         # -Wconversion
         /w14254         # -Wconversion
         /w14287         # -Wsign-conversion
@@ -45,12 +45,13 @@ if (MSVC)
         /w14264         # -Woverloaded-virtual
         /w14266         # -Woverloaded-virtual
         /wd4100         # -Wno-unused-parameter
-        /wd4201           # allow anonymous struct, union
-        /wd4723           # disable: potential divide by zero (false positive)
-        /permissive-   
+        /wd4201         # allow anonymous struct, union
+        /wd4723         # disable: potential divide by zero (false positive)
+        /wd4324         # disable: redundant padding warning
+        /permissive-
         /Zc:__cplusplus
-        /EHsc             
-        /D_HAS_EXCEPTIONS=0 
+        /EHsc
+        /D_HAS_EXCEPTIONS=0
     )
 
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -83,16 +84,16 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-sign-conversion
             -fno-exceptions
         )
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")        
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(FATAL_ERROR
-        "GCC is not supported by HORenderer due to its restrictions on "
+        "GCC is not supported by HOEngine due to its restrictions on "
         "anonymous aggregates with non-POD members. "
         "Please use Clang or MSVC instead."
     )
 else()
     message(WARNING
         "Unknown compiler '${CMAKE_CXX_COMPILER_ID}'. "
-        "HORenderer officially supports only MSVC and Clang. "
+        "HOEngine officially supports only MSVC and Clang. "
         "Compilation may work, but is not tested."
     )
 endif ()
@@ -103,11 +104,6 @@ endif ()
 set(THIRD_PARTY_NAME Lib)
 set(PLATFORMS_NAME Platforms)
 set(CORE_NAME Core)
-#set(SUBSYSTEMS_NAME Subsystems)
-#set(SCENE_NAME Scene)
-#set(UI_NAME UI)
-#set(ENGINE_APPLICATION_NAME EngineApplication)
-#set(ENGINE_NAME Engine)
 set(MAIN_NAME Main)
 
 ##########################################################
@@ -116,11 +112,6 @@ set(MAIN_NAME Main)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SCENE_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${UI_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_APPLICATION_NAME})
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_NAME})
 
 ##########################################################

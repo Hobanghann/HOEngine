@@ -115,12 +115,12 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
     PATCH_COMMAND  "${Python_EXECUTABLE}" utils/git-sync-deps
     )
-set(SHADERC_ENABLE_HLSL         OFF CACHE BOOL "" FORCE)
+set(SHADERC_ENABLE_HLSL         ON CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_TESTS          ON CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_EXAMPLES       ON CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_EXECUTABLES    ON CACHE BOOL "" FORCE)
-set(SHADERC_ENABLE_SHARED_CRT   ON CACHE BOOL "" FORCE) 
-set(ENABLE_HLSL                 OFF CACHE BOOL "" FORCE)
+set(SHADERC_ENABLE_SHARED_CRT   ON CACHE BOOL "" FORCE)
+set(ENABLE_HLSL                 ON CACHE BOOL "" FORCE)
 # Download
 
 message (STATUS "[Download] Start to Download " ${ASSIMP_NAME} "...")
@@ -161,22 +161,22 @@ message (STATUS "[Download] Downloading " ${GLSL_COMPILER_NAME} " finished.")
 ##########################################################
 # glad
 add_library(
-    ${GLAD_NAME} 
-    STATIC 
+    ${GLAD_NAME}
+    STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c)
 target_include_directories(
-    ${GLAD_NAME} 
-    PUBLIC 
+    ${GLAD_NAME}
+    PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
 # iconsFontAwesome7
 add_library(
-    ${FONT_AWESOME_NAME} 
+    ${FONT_AWESOME_NAME}
     INTERFACE
     )
 target_include_directories(
-    ${FONT_AWESOME_NAME} 
-    INTERFACE 
+    ${FONT_AWESOME_NAME}
+    INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
@@ -187,7 +187,7 @@ add_library(
     )
 target_include_directories(
     ${HALF_NAME}
-    INTERFACE 
+    INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR})
 
 ################################################################################
@@ -197,28 +197,28 @@ target_include_directories(
 
 function(get_all_targets_recursive targets_var dir)
     get_property(
-        subdirectories 
-        DIRECTORY ${dir} 
+        subdirectories
+        DIRECTORY ${dir}
         PROPERTY SUBDIRECTORIES
         )
     foreach(subdir ${subdirectories})
         get_all_targets_recursive(${targets_var} ${subdir})
     endforeach()
-    
+
     get_property(
-        current_targets 
-        DIRECTORY ${dir} 
+        current_targets
+        DIRECTORY ${dir}
         PROPERTY BUILDSYSTEM_TARGETS
         )
-    
+
     list(APPEND ${targets_var} ${current_targets})
     set(${targets_var} ${${targets_var}} PARENT_SCOPE)
 endfunction()
 
 # Assimp targets
 FetchContent_GetProperties(
-    ${ASSIMP_NAME} 
-    SOURCE_DIR 
+    ${ASSIMP_NAME}
+    SOURCE_DIR
     ASSIMP_DIR
     )
 
@@ -229,7 +229,7 @@ endif()
 
 foreach(target IN LISTS ALL_ASSIMP_TARGETS)
     set_target_properties(
-        ${target} PROPERTIES 
+        ${target} PROPERTIES
         FOLDER "ThirdParty/${ASSIMP_NAME}"
         SYSTEM TRUE
     )
@@ -238,51 +238,51 @@ endforeach()
 
 # stb
 add_library(
-    ${IMAGE_LOADER_NAME} 
-    STATIC 
+    ${IMAGE_LOADER_NAME}
+    STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE_LOADER_NAME}.cc
     )
 target_include_directories(
-    ${IMAGE_LOADER_NAME} 
-    PRIVATE 
+    ${IMAGE_LOADER_NAME}
+    PRIVATE
     ${${IMAGE_LOADER_NAME}_SOURCE_DIR}
-    )    
+    )
 set_target_properties(
-    ${IMAGE_LOADER_NAME} PROPERTIES 
+    ${IMAGE_LOADER_NAME} PROPERTIES
     FOLDER "ThirdParty/${IMAGE_LOADER_NAME}"
     SYSTEM TRUE
     )
 if (MSVC)
     target_compile_definitions(
         ${IMAGE_LOADER_NAME}
-        PRIVATE 
+        PRIVATE
         _CRT_SECURE_NO_WARNINGS
         )
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(
         ${IMAGE_LOADER_NAME}
-        PRIVATE 
+        PRIVATE
         -Wno-deprecated-declarations
         )
 elseif(MSVC)
     target_compile_options(
         ${IMAGE_LOADER_NAME}
-        PRIVATE 
+        PRIVATE
         /wd4996
         )
 endif()
 
 # ini parser
 set_target_properties(
-    ${INI_PARSER_NAME} PROPERTIES 
+    ${INI_PARSER_NAME} PROPERTIES
     FOLDER "ThirdParty/${INI_PARSER_NAME}"
     SYSTEM TRUE
     )
 
 # glad
 set_target_properties(
-    ${GLAD_NAME} PROPERTIES 
+    ${GLAD_NAME} PROPERTIES
     FOLDER "ThirdParty/${GLAD_NAME}"
     SYSTEM TRUE
     )
@@ -300,97 +300,98 @@ file(GLOB IMGUI_BACKEND_SOURCES "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl
 file(GLOB IMGUI_BACKEND_HEADERS "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_opengl3.h" "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_win32.h")
 
 source_group(
-    "core" 
-    FILES 
-    ${IMGUI_CORE_SOURCES} 
+    "core"
+    FILES
+    ${IMGUI_CORE_SOURCES}
     ${IMGUI_CORE_HEADERS}
     )
 source_group(
-    "backends" 
-    FILES 
-    ${IMGUI_BACKEND_SOURCES} 
+    "backends"
+    FILES
+    ${IMGUI_BACKEND_SOURCES}
     ${IMGUI_BACKEND_HEADERS}
     )
 add_library(
-    ${IMGUI_NAME} 
-    STATIC 
-    ${IMGUI_CORE_SOURCES} 
+    ${IMGUI_NAME}
+    STATIC
+    ${IMGUI_CORE_SOURCES}
     ${IMGUI_CORE_HEADERS}
-    ${IMGUI_BACKEND_SOURCES} 
+    ${IMGUI_BACKEND_SOURCES}
     ${IMGUI_BACKEND_HEADERS}
     )
 target_include_directories(
-    ${IMGUI_NAME} 
-    PUBLIC 
+    ${IMGUI_NAME}
+    PUBLIC
     ${${IMGUI_NAME}_SOURCE_DIR}
     ${${IMGUI_NAME}_SOURCE_DIR}/backends
     )
 set_target_properties(
-    ${IMGUI_NAME} PROPERTIES 
+    ${IMGUI_NAME} PROPERTIES
     FOLDER "ThirdParty/${IMGUI_NAME}"
     SYSTEM TRUE
     )
 
 # ImViewGuizmo
 add_library(
-    ${IM_VIEW_GUIZMO_NAME} 
+    ${IM_VIEW_GUIZMO_NAME}
     INTERFACE
     )
 target_include_directories(
-    ${IM_VIEW_GUIZMO_NAME} 
-    INTERFACE 
+    ${IM_VIEW_GUIZMO_NAME}
+    INTERFACE
     ${${IM_VIEW_GUIZMO_NAME}_SOURCE_DIR}
     )
 set_target_properties(
-    ${IM_VIEW_GUIZMO_NAME} PROPERTIES 
+    ${IM_VIEW_GUIZMO_NAME} PROPERTIES
     FOLDER "ThirdParty/${IM_VIEW_GUIZMO_NAME}"
     SYSTEM TRUE
     )
 
 # font awesome
 set_target_properties(
-    ${FONT_AWESOME_NAME} PROPERTIES 
+    ${FONT_AWESOME_NAME} PROPERTIES
     FOLDER "ThirdParty/${FONT_AWESOME_NAME}"
     SYSTEM TRUE
     )
 
 # spdlog
 set_target_properties(
-    ${SPDLOG_NAME} PROPERTIES 
+    ${SPDLOG_NAME} PROPERTIES
     FOLDER "ThirdParty/${SPDLOG_NAME}"
     SYSTEM TRUE
     )
 
 # bc7enc_rdo
+file(GLOB BC7ENC_SOURCES "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/*.cpp")
+file(GLOB BC7ENC_HEADERS "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/*.h")
 add_library(
-    ${IMAGE_COMPRESSOR_NAME} 
+    ${IMAGE_COMPRESSOR_NAME}
     STATIC
-    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/rgbcx.cpp"
-    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/bc7enc.cpp"
-    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/bc7decomp.cpp"
+    ${BC7ENC_SOURCES}
+    ${BC7ENC_HEADERS}
     )
 target_include_directories(
-    ${IMAGE_COMPRESSOR_NAME} 
+    ${IMAGE_COMPRESSOR_NAME}
     PUBLIC
     "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}"
     )
 set_target_properties(
-    ${IMAGE_COMPRESSOR_NAME} PROPERTIES 
+    ${IMAGE_COMPRESSOR_NAME} PROPERTIES
     FOLDER "ThirdParty/${IMAGE_COMPRESSOR_NAME}"
     SYSTEM TRUE
     )
 
 # half
 set_target_properties(
-    ${HALF_NAME} PROPERTIES 
+    ${HALF_NAME} PROPERTIES
     FOLDER "ThirdParty/${HALF_NAME}"
     SYSTEM TRUE
     )
 
 # shaderc
 FetchContent_GetProperties(
-    ${GLSL_COMPILER_NAME} 
-    SOURCE_DIR 
+    ${GLSL_COMPILER_NAME}
+    SOURCE_DIR
     SHADERC_DIR
     )
 
@@ -403,11 +404,15 @@ foreach(target IN LISTS ALL_SHADERC_TARGETS)
     get_target_property(target_type ${target} TYPE)
 
     if(target_type STREQUAL "INTERFACE_LIBRARY" OR target_type STREQUAL "UTILITY")
+        set_target_properties(
+        ${target} PROPERTIES
+        FOLDER "ThirdParty/${GLSL_COMPILER_NAME}"
+        )
         continue()
     endif()
 
     set_target_properties(
-        ${target} PROPERTIES 
+        ${target} PROPERTIES
         FOLDER "ThirdParty/${GLSL_COMPILER_NAME}"
         SYSTEM TRUE
         )
@@ -422,18 +427,20 @@ foreach(target IN LISTS ALL_SHADERC_TARGETS)
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(
-            ${target} 
-            PRIVATE 
+            ${target}
+            PRIVATE
             -Wno-deprecated-declarations
             )
     elseif(MSVC)
         target_compile_options(
-            ${target} 
-            PRIVATE 
+            ${target}
+            PRIVATE
             /wd4996
             )
     endif()
 endforeach()
+
+
 
 ################################################################################
 # Add library target
@@ -454,10 +461,10 @@ target_link_libraries(
     ${HALF_NAME}
     ${GLSL_COMPILER_NAME}
     )
-    
+
 target_include_directories(
   ${THIRD_PARTY_NAME}
-  SYSTEM 
+  SYSTEM
   INTERFACE
   ${${ASSIMP_NAME}_SOURCE_DIR}/include
   ${${IMAGE_LOADER_NAME}_SOURCE_DIR}

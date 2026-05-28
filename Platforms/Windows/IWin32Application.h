@@ -18,6 +18,7 @@ namespace ho
 class IWin32Application : public IPlatformApplication
 {
   public:
+    ~IWin32Application() override = default;
     IWin32Application(const IWin32Application&) = delete;
     IWin32Application& operator=(const IWin32Application&) = delete;
 
@@ -35,7 +36,6 @@ class IWin32Application : public IPlatformApplication
 
   protected:
     IWin32Application(HINSTANCE hApp);
-    ~IWin32Application() override = default;
 
     static LRESULT CALLBACK wndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 

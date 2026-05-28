@@ -12,6 +12,7 @@ class Win32ApplicationGL final : public IWin32Application
   public:
     static void CreateInstance(HINSTANCE hApp);
 
+    ~Win32ApplicationGL() override = default;
     Win32ApplicationGL(const Win32ApplicationGL&) = delete;
     Win32ApplicationGL& operator=(const Win32ApplicationGL&) = delete;
 
@@ -25,7 +26,6 @@ class Win32ApplicationGL final : public IWin32Application
 
   private:
     Win32ApplicationGL(HINSTANCE hApp);
-    ~Win32ApplicationGL() override = default;
 
     std::unique_ptr<Win32WindowGL> pMainWindow;
 };

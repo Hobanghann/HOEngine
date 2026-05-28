@@ -22,6 +22,8 @@ class IPlatformApplication
         spInstance = nullptr;
     }
 
+    virtual ~IPlatformApplication() = default;
+
     IPlatformApplication(const IPlatformApplication&) = delete;
     IPlatformApplication& operator=(const IPlatformApplication&) = delete;
 
@@ -42,7 +44,6 @@ class IPlatformApplication
 
   protected:
     IPlatformApplication() = default;
-    virtual ~IPlatformApplication() = default;
 
     void initImGuiFonts();
 

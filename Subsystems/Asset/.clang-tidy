@@ -1,0 +1,7 @@
+InheritParentConfig: true
+
+Checks: >
+  -clang-analyzer-optin.performance.Padding,
+  -modernize-loop-convert,
+
+HeaderFilterRegex: '.*Subsystems/Asset/.*'

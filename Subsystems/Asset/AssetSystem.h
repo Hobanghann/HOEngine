@@ -25,6 +25,7 @@ class AssetSystem final
     TextureHandle AddTexture(TextureAsset&& texture);
     ShaderHandle AddShader(ShaderAsset&& shader);
 
+    bool ResolveStaticMeshMaterials(StaticMeshHandle hStaticMesh);
     bool ResolveMaterialTextures(MaterialHandle hMaterial);
 
     bool DeleteStaticMesh(StaticMeshHandle hStaticMesh);

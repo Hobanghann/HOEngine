@@ -62,6 +62,31 @@ ShaderHandle AssetSystem::AddShader(ShaderAsset&& shader)
     return hNewShader;
 }
 
+bool AssetSystem::ResolveStaticMeshMaterials(StaticMeshHandle hStaticMesh)
+{
+    HO_ASSERT(hStaticMesh.IsValid(), "Static mesh is invalid.");
+    StaticMeshAsset* pStaticMesh = hStaticMesh.Get();
+    bool bSuccess = true;
+    for (auto& subMesh : pStaticMesh->SubMeshes)
+    {
+        if (subMesh.hRenderMaterialName.IsNULL())
+        {
+            continue;
+        }
+        auto it = mNameToMaterialMap.find(subMesh.hRenderMaterialName);
+        if (it == mNameToMaterialMap.end())
+        {
+            HO_LOG_ERROR("[AssetSystem] Material '%s' doesn't exist for StaticMesh '%s'. Skipping resolution.",
+                         subMesh.hRenderMaterialName.Get()->c_str(),
+                         pStaticMesh->hName.Get()->c_str());
+            bSuccess = false;
+            continue;
+        }
+        subMesh.hRenderMaterial = it->second;
+    }
+    return bSuccess;
+}
+
 bool AssetSystem::ResolveMaterialTextures(MaterialHandle hMaterial)
 {
     HO_ASSERT(hMaterial.IsValid(), "Material is invalid.");

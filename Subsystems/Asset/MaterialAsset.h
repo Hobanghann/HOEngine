@@ -19,7 +19,6 @@ struct MaterialAsset
     {
         eMaterialAlphaMode AlphaMode = eMaterialAlphaMode::None;
         eMaterialAlphaBlendMode AlphaBlendMode = eMaterialAlphaBlendMode::None;
-        float AlphaThreshold = 0.5f;
         bool bWireframe = false;
         bool bBackfaceCulling = true;
     };
@@ -56,6 +55,7 @@ struct MaterialAsset
 
     // Global / Transparency Attributes
     float Opacity = 1.0f;
+    float AlphaThreshold = 0.5f;
     Color128 Emissive{0.f, 0.f, 0.f};
     float EmissiveIntensity = 1.0f;
     float NormalScale = 1.0f;

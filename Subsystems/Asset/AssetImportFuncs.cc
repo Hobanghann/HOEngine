@@ -217,7 +217,6 @@ std::unique_ptr<MaterialAsset> importMaterial(const parser::MaterialIR& srcMater
 
     pNewMaterial->PipelineState.AlphaMode = toAssetAlphaMode(srcMaterialIR.AlphaMode);
     pNewMaterial->PipelineState.AlphaBlendMode = toAssetAlphaBlendMode(srcMaterialIR.BlendMode);
-    pNewMaterial->PipelineState.AlphaThreshold = srcMaterialIR.AlphaThreshold;
     pNewMaterial->PipelineState.bWireframe = srcMaterialIR.bWireframe;
     pNewMaterial->PipelineState.bBackfaceCulling = srcMaterialIR.bBackfaceCulling;
 
@@ -232,6 +231,7 @@ std::unique_ptr<MaterialAsset> importMaterial(const parser::MaterialIR& srcMater
     pNewMaterial->IndexOfRefraction = srcMaterialIR.IndexOfRefraction;
 
     pNewMaterial->Opacity = srcMaterialIR.Opacity;
+    pNewMaterial->AlphaThreshold = srcMaterialIR.AlphaThreshold;
     pNewMaterial->Emissive = srcMaterialIR.Emissive;
     pNewMaterial->EmissiveIntensity = srcMaterialIR.EmissiveIntensity;
     pNewMaterial->NormalScale = srcMaterialIR.NormalScale;

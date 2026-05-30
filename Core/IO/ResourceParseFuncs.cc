@@ -1,7 +1,7 @@
 #include "ResourceParseFuncs.h"
 
+#include <assimp/GltfMaterial.h>
 #include <assimp/Importer.hpp>
-#include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <fstream>
@@ -551,22 +551,28 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
         pMaterialIR->Opacity = fVal;
     }
 
-    pMaterialIR->AlphaMode =
-        pMaterialIR->Opacity < 1.f ? MaterialIR::eAlphaMode::Blend : MaterialIR::eAlphaMode::Opaque;
-    pMaterialIR->AlphaThreshold = 0.5f;
-
-    if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_GLTF_ALPHAMODE, aiStr))
+    aiString alphaModeStr;
+    if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_GLTF_ALPHAMODE, alphaModeStr))
     {
-        const std::string mode(aiStr.C_Str());
-        if (mode == "MASK")
+        if (alphaModeStr == aiString("MASK"))
         {
             pMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Mask;
         }
-        else if (mode == "BLEND")
+        else if (alphaModeStr == aiString("BLEND"))
         {
             pMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Blend;
         }
+        else
+        {
+            pMaterialIR->AlphaMode = MaterialIR::eAlphaMode::Opaque;
+        }
     }
+    else
+    {
+        pMaterialIR->AlphaMode =
+            pMaterialIR->Opacity < 1.f ? MaterialIR::eAlphaMode::Blend : MaterialIR::eAlphaMode::Opaque;
+    }
+
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_GLTF_ALPHACUTOFF, fVal))
     {
         pMaterialIR->AlphaThreshold = fVal;

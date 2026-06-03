@@ -29,13 +29,13 @@ class FixedArray
     FixedArray(const FixedArray&) = delete;
     FixedArray& operator=(const FixedArray&) = delete;
 
-    FixedArray(FixedArray&& other)
+    FixedArray(FixedArray&& other) noexcept
       : mpArray(std::move(other.mpArray))
       , mSize(other.mSize)
     {
     }
 
-    FixedArray& operator=(FixedArray&& rhs)
+    FixedArray& operator=(FixedArray&& rhs) noexcept
     {
         if (this == &rhs)
         {

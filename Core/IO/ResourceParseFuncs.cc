@@ -513,6 +513,10 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_AMBIENT, color3D))
     {
         pMaterialIR->Ambient = Color128(color3D.r, color3D.g, color3D.b);
+        if (pMaterialIR->Ambient == Color128(0.0f, 0.0f, 0.0f))
+        {
+            pMaterialIR->Ambient = Color128(0.001f, 0.001f, 0.001f);
+        }
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_DIFFUSE, color3D))
     {
@@ -525,6 +529,10 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_SHININESS, fVal))
     {
         pMaterialIR->Shininess = fVal;
+        if (pMaterialIR->Shininess <= 0.01f)
+        {
+            pMaterialIR->Shininess = 32.0f;
+        }
     }
 
     // PBR Core Attributes

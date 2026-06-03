@@ -1,11 +1,14 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "Macros.h"
+#include "IPlatformWindow.h"
 
 namespace ho
 {
+
 class IPlatformApplication
 {
   public:
@@ -33,22 +36,16 @@ class IPlatformApplication
 
     virtual bool ProcessPlatformMessages() = 0;
 
-    virtual void EndFrame() = 0;
-
     virtual void Shutdown() = 0;
 
-    int32_t GetMainWindowWidth() const;
-    int32_t GetMainWindowHeight() const;
-
-    virtual void SetWindowTitle(std::wstring& titleStr) = 0;
+    const IPlatformWindow* GetMainWindow() const;
 
   protected:
     IPlatformApplication() = default;
 
     void initImGuiFonts();
 
-    static int32_t sMainWindowWidth;
-    static int32_t sMainWindowHeight;
+    static std::unique_ptr<IPlatformWindow> spMainWindow;
 
     static IPlatformApplication* spInstance;
 };

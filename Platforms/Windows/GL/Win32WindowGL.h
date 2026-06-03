@@ -1,46 +1,34 @@
 #pragma once
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#define UNICODE
-#define _UNICODE
-
-#define NOMINMAX
-
-#include <cstdint>
-#include <windows.h>
-
-class ImGuiViewport;
+#include "../IWin32Window.h"
 
 namespace ho
 {
-class Win32WindowGL final
+class Win32WindowGL final : public IWin32Window
 {
   public:
-    Win32WindowGL(HWND hWnd, int32_t clientWidth, int32_t clientHeight);
-    ~Win32WindowGL();
+    Win32WindowGL(int32_t clientWidth, int32_t clientHeight, HWND hWnd, HGLRC hGlContext)
+      : IWin32Window(clientWidth, clientHeight, hWnd)
+      , mhGlContext(hGlContext)
+    {
+    }
 
-    static bool DeleteGLContext();
+    ~Win32WindowGL() override
+    {
+        ::wglMakeCurrent(nullptr, nullptr);
+    }
 
-    int32_t GetClientWidth() const;
-    int32_t GetClientHeight() const;
-    void Resize(int32_t clientWidth, int32_t clientHeight);
-    void Present() const;
-    void MakeCurrent() const;
+    void ActivateContext() const
+    {
+        ::wglMakeCurrent(mhDC, mhGlContext);
+    }
 
-    static void Hook_CreateWindow(ImGuiViewport* viewport);
-    static void Hook_DestroyWindow(ImGuiViewport* viewport);
-    static void Hook_RenderWindow(ImGuiViewport* viewport, void* unused);
-    static void Hook_SwapBuffers(ImGuiViewport* viewport, void* unused);
+    void DeactivateContext() const
+    {
+        ::wglMakeCurrent(mhDC, nullptr);
+    }
 
   private:
-    HWND mhWnd;
-    HDC mhDC;
-    int32_t mClientWidth;
-    int32_t mClientHeight;
-
-    static HGLRC shGLRC;
+    HGLRC mhGlContext;
 };
 } // namespace ho

@@ -6,18 +6,9 @@
 
 namespace ho
 {
-int32_t IPlatformApplication::sMainWindowWidth = 0;
-int32_t IPlatformApplication::sMainWindowHeight = 0;
-IPlatformApplication* IPlatformApplication::spInstance = nullptr;
-
-int32_t IPlatformApplication::GetMainWindowWidth() const
+const IPlatformWindow* IPlatformApplication::GetMainWindow() const
 {
-    return sMainWindowWidth;
-}
-
-int32_t IPlatformApplication::GetMainWindowHeight() const
-{
-    return sMainWindowHeight;
+    return spMainWindow.get();
 }
 
 void IPlatformApplication::initImGuiFonts()
@@ -60,4 +51,7 @@ void IPlatformApplication::initImGuiFonts()
         HO_ASSERT(false, "Failed to build font.");
     }
 }
+
+std::unique_ptr<IPlatformWindow> IPlatformApplication::spMainWindow = nullptr;
+IPlatformApplication* IPlatformApplication::spInstance = nullptr;
 } // namespace ho

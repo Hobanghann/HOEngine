@@ -364,7 +364,7 @@ class IRenderingSystem
     // 'run' function creates rendering thread.
     // Engine must be create all needed frame buffers before create render thread.
     void run();
-    static int runInternal(void* unused);
+    static void runInternal(void* unused);
     // 'shutdown' called by engine and it will terminate 'run' function
     void shutdown();
 

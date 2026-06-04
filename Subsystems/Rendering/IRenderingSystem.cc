@@ -402,7 +402,7 @@ void IRenderingSystem::run()
     mpRenderThread->SetName("Render Thread");
 }
 
-int IRenderingSystem::runInternal(void* unused)
+void IRenderingSystem::runInternal(void* unused)
 {
     (void)unused;
     IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
@@ -434,8 +434,6 @@ int IRenderingSystem::runInternal(void* unused)
     spInstance->releaseAllResources();
 
     IPlatformApplication::GetInstance().GetMainWindow()->DeactivateContext();
-
-    return 0;
 }
 
 void IRenderingSystem::shutdown()

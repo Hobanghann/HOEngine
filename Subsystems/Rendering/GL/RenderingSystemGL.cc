@@ -343,7 +343,7 @@ void* RenderingSystemGL::GetRenderTargetNativeHandle(StringHandle hFrameBufferNa
     }
 
     HO_ASSERT(nativeHandle, "Texture for render target was not created.");
-    return (void*)(uintptr_t)nativeHandle->GlTexture; // NOLINT
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(nativeHandle->GlTexture)); // NOLINT
 }
 
 RenderingSystemGL::RenderingSystemGL()
@@ -801,8 +801,10 @@ void RenderingSystemGL::executeDrawCommand(const DrawCommand& command)
                               sizeof(Vertex));
     glVertexArrayElementBuffer(mGlVAO, meshNativehandle->GlEbo);
 
-    glDrawElements(
-        GL_TRIANGLES, command.IndexCount, GL_UNSIGNED_INT, (void*)(command.IndexOffset * sizeof(uint32_t))); // NOLINT
+    glDrawElements(GL_TRIANGLES,
+                   command.IndexCount,
+                   GL_UNSIGNED_INT,
+                   reinterpret_cast<void*>(command.IndexOffset * sizeof(uint32_t))); // NOLINT
 
     ASSERT_GL();
 }

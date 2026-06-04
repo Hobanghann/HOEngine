@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
-#include "Macros.h"
 #include "IPlatformWindow.h"
+#include "Macros.h"
 
 namespace ho
 {

@@ -55,8 +55,8 @@ LRESULT CALLBACK IWin32Application::wndProc(HWND hWnd, UINT iMessage, WPARAM wPa
             break;
 
         case WM_CLOSE:
-            PostQuitMessage(0); 
-            return 0;           
+            PostQuitMessage(0);
+            return 0;
 
         case WM_DESTROY:
             return 0;

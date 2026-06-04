@@ -76,15 +76,17 @@ enum class eAnimInterpolationMode : uint8_t
 enum class eMaterialAssetType : uint8_t
 {
     None = 0,
-    Unlit = 1,
-    Legacy = 1 << Unlit,
-    StandardLit = 1 << Legacy,
+    Unlit = 1 << 0,
+    Legacy = 1 << 1,
+    StandardLit = 1 << 2,
 };
 
+// NOLINTBEGIN
 FORCE_INLINE eMaterialAssetType operator|(eMaterialAssetType lhs, eMaterialAssetType rhs)
 {
     return static_cast<eMaterialAssetType>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
+// NOLINTEND
 
 enum class eShaderStage : uint8_t
 {

@@ -32,7 +32,7 @@ jobs:
       - name: Run clang-format check
         run: |
           TARGET_DIRS=""
-          for dir in Core Platforms Subsystems Main Test; do
+          for dir in Core Platforms Subsystems EngineApplication Engine Main Test; do
             if [ -d "$dir" ]; then
               TARGET_DIRS="$TARGET_DIRS $dir"
             fi
@@ -91,7 +91,7 @@ jobs:
       - name: Run clang-tidy
         shell: bash
         run: |
-          TARGET_DIRS="Core Platforms Subsystems Main"
+          TARGET_DIRS="Core Platforms Subsystems EngineApplication Engine Main"
 
           FILES=$(find $TARGET_DIRS -type f \( -name "*.h" -o -name "*.cc" \))
 

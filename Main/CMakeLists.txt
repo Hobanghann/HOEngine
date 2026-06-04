@@ -1,10 +1,7 @@
 message(STATUS "[Module] Start to process ${MAIN_NAME} module.")
 
 ################################################################################
-# Process Engine Main
-################################################################################
-################################################################################
-# Read source files
+# Read Engine Main source files
 ################################################################################
 file(GLOB ENGINE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 file(GLOB ENGINE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
@@ -12,37 +9,10 @@ file(GLOB ENGINE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 set(ENGINE_FILES ${ENGINE_SOURCES} ${ENGINE_HEADERS})
 
 ################################################################################
-# Repackiging source files
+# Repackaging source files
 ################################################################################
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ENGINE_FILES})
 
-################################################################################
-# Add library target
-################################################################################
-add_library(${MAIN_NAME} STATIC ${ENGINE_FILES})
-
-################################################################################
-# Set target properties
-################################################################################
-target_link_libraries(
-    ${MAIN_NAME}
-    PRIVATE
-    COMPILER_FLAGS
-    PUBLIC
-    ${THIRD_PARTY_NAME}
-    ${CORE_NAME}
-    ${PLATFORMS_NAME}
-    )
-target_include_directories(
-    ${MAIN_NAME}
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-################################################################################
-# Process Platform Main
-################################################################################
 ################################################################################
 # Check Platform
 ################################################################################
@@ -60,54 +30,68 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 ################################################################################
-# Read source files
+# Read Platform Main source files
 ################################################################################
 file(GLOB PLATFORM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORM_FOLDER}/*.cc)
 file(GLOB PLATFORM_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORM_FOLDER}/*.h)
 
 set(PLATFORM_FILES ${PLATFORM_SOURCES} ${PLATFORM_HEADERS})
 
-################################################################################
-# Repackiging source files
-################################################################################
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORM_FOLDER} FILES ${PLATFORM_FILES})
 
 ################################################################################
-# Add executable target
+# Add multiple executable targets
 ################################################################################
-# Windows
-if (WIN32)
-  add_executable(${MAIN_PROJECT_NAME} WIN32 ${PLATFORM_FILES})
-  set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ${MAIN_PROJECT_NAME})
-  # Apple
-elseif(APPLE)
-  message(FATAL_ERROR "This project only supports windows environment currently.")
-  add_executable(${MAIN_PROJECT_NAME} ${PLATFORM_FILES})
-# Linux
-elseif(UNIX AND NOT APPLE)
-  message(FATAL_ERROR "This project only supports windows environment currently.")
-  add_executable(${MAIN_PROJECT_NAME} ${PLATFORM_FILES})
-endif()
+set(APP_TYPES TestApp ModelViewer Editor Game)
+
+set(MACRO_Test         "TEST_APP")
+set(MACRO_ModelViewer  "MODEL_VIEWER")
+set(MACRO_Editor       "EDITOR")
+set(MACRO_Game         "GAME")
+
+foreach(APP_TYPE IN LISTS APP_TYPES)
+
+    set(TARGET_NAME "${APP_TYPE}")
+
+    set(FINAL_MACRO "HO_APP_${MACRO_${APP_TYPE}}")
+
+    # Windows
+    if (WIN32)
+        add_executable(${TARGET_NAME} WIN32 ${ENGINE_FILES} ${PLATFORM_FILES})
+    # Apple
+    elseif(APPLE)
+        add_executable(${TARGET_NAME} ${ENGINE_FILES} ${PLATFORM_FILES})
+    # Linux
+    elseif(UNIX AND NOT APPLE)
+        add_executable(${TARGET_NAME} ${ENGINE_FILES} ${PLATFORM_FILES})
+    endif()
+
+    ################################################################################
+    # Set target properties
+    ################################################################################
+    target_link_libraries(
+        ${TARGET_NAME}
+        PRIVATE
+        COMPILER_FLAGS
+        PUBLIC
+        ${PLATFORMS_NAME}
+        ${ENGINE_NAME}
+    )
+
+    target_include_directories(
+        ${TARGET_NAME}
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    target_compile_definitions(${TARGET_NAME} PRIVATE ${FINAL_MACRO})
+
+endforeach()
 
 ################################################################################
-# Set target properties
+# Set VS startup project
 ################################################################################
-target_link_libraries(
-  ${MAIN_PROJECT_NAME}
-  PRIVATE
-  COMPILER_FLAGS
-  PUBLIC  
-  ${THIRD_PARTY_NAME}
-  ${CORE_NAME}
-  ${PLATFORMS_NAME} 
-  ${MAIN_NAME}
-)
-
-target_include_directories(
-  ${MAIN_PROJECT_NAME}
-  PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+# set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT "${MAIN_PROJECT_NAME}_Editor")
 
 message(STATUS "[Module] Processing ${MAIN_NAME} module finished.\n")

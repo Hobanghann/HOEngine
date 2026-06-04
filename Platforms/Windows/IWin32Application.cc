@@ -2,18 +2,12 @@
 
 #include <imgui_impl_win32.h>
 
+#include "IWin32Window.h"
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace ho
 {
-
-IWin32Application::IWin32Application(HINSTANCE hApp)
-  : IPlatformApplication()
-  , mhApp(hApp)
-  , mhMainWnd(nullptr)
-{
-}
-
 bool IWin32Application::ProcessPlatformMessages()
 {
     static MSG msg;
@@ -29,12 +23,11 @@ bool IWin32Application::ProcessPlatformMessages()
     return true;
 }
 
-void IWin32Application::SetWindowTitle(std::wstring& titleStr)
+IWin32Application::IWin32Application(HINSTANCE hApp)
+  : IPlatformApplication()
+  , mhApp(hApp)
+  , mhMainWnd(nullptr)
 {
-    if (!SetWindowTextW(mhMainWnd, titleStr.c_str()))
-    {
-        HO_ASSERT(false, "Failed to set title text.");
-    }
 }
 
 LRESULT CALLBACK IWin32Application::wndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
@@ -49,8 +42,10 @@ LRESULT CALLBACK IWin32Application::wndProc(HWND hWnd, UINT iMessage, WPARAM wPa
         case WM_SIZE:
             if (wParam != SIZE_MINIMIZED)
             {
-                sMainWindowWidth = LOWORD(lParam);
-                sMainWindowHeight = HIWORD(lParam);
+                if (spMainWindow)
+                {
+                    spMainWindow->Resize(LOWORD(lParam), HIWORD(lParam));
+                }
             }
             return 0;
         case WM_SYSCOMMAND:
@@ -60,8 +55,11 @@ LRESULT CALLBACK IWin32Application::wndProc(HWND hWnd, UINT iMessage, WPARAM wPa
             }
             break;
 
-        case WM_DESTROY:
+        case WM_CLOSE:
             PostQuitMessage(0);
+            return 0;
+
+        case WM_DESTROY:
             return 0;
         default:
             break;

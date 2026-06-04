@@ -10,11 +10,7 @@ template <typename T>
 class FixedArray
 {
   public:
-    FixedArray()
-      : mpArray(nullptr)
-      , mSize(0)
-    {
-    }
+    FixedArray() = default;
 
     FixedArray(int32_t size)
       : mSize(size)
@@ -29,13 +25,13 @@ class FixedArray
     FixedArray(const FixedArray&) = delete;
     FixedArray& operator=(const FixedArray&) = delete;
 
-    FixedArray(FixedArray&& other)
+    FixedArray(FixedArray&& other) noexcept
       : mpArray(std::move(other.mpArray))
       , mSize(other.mSize)
     {
     }
 
-    FixedArray& operator=(FixedArray&& rhs)
+    FixedArray& operator=(FixedArray&& rhs) noexcept
     {
         if (this == &rhs)
         {
@@ -122,7 +118,7 @@ class FixedArray
     }
 
   private:
-    std::unique_ptr<T[]> mpArray;
-    int32_t mSize;
+    std::unique_ptr<T[]> mpArray = nullptr;
+    int32_t mSize = 0;
 };
 } // namespace ho

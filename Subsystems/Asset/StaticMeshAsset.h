@@ -38,6 +38,7 @@ struct StaticMeshAsset
         int32_t IndexOffset = 0;
         int32_t IndexCount = 0;
 
+        StringHandle hRenderMaterialName = StringHandle::sNULL;
         MaterialHandle hRenderMaterial = MaterialHandle::sNULL;
 
         AABB Aabb;

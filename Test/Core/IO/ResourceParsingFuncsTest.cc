@@ -65,10 +65,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
 
     // Check MaterialIR
     const MaterialIR* pTexMaterialIR = pModelIR->pMaterialIRs[0].get();
-    EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.0f, 0.0f, 0.0f));
+    EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
     EXPECT_TRUE(pTexMaterialIR->Diffuse.IsEqualApprox(Color128(0.6f, 0.6f, 0.6f)));
     EXPECT_EQ(pTexMaterialIR->Specular, Color128(0.0f, 0.0f, 0.0f));
-    EXPECT_EQ(pTexMaterialIR->Shininess, 0.0f);
+    EXPECT_EQ(pTexMaterialIR->Shininess, 32.0f);
     EXPECT_EQ(pTexMaterialIR->Albedo, Color128(1.0f, 1.0f, 1.0f));
     EXPECT_EQ(pTexMaterialIR->Metallic, 0.0f);
     EXPECT_EQ(pTexMaterialIR->Roughness, 0.5f);
@@ -362,10 +362,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
-    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.0f, 0.0f, 0.0f));
+    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
     EXPECT_TRUE(pMaterialIR->Diffuse.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Specular, Color128(1.0f, 1.0f, 1.0f));
-    EXPECT_EQ(pMaterialIR->Shininess, 0.0f);
+    EXPECT_EQ(pMaterialIR->Shininess, 32.0f);
     EXPECT_TRUE(pMaterialIR->Albedo.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Metallic, 0.0f);
     EXPECT_EQ(pMaterialIR->Roughness, 1.0f);
@@ -463,10 +463,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
-    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.0f, 0.0f, 0.0f));
+    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
     EXPECT_TRUE(pMaterialIR->Diffuse.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Specular, Color128(1.0f, 1.0f, 1.0f));
-    EXPECT_EQ(pMaterialIR->Shininess, 0.0f);
+    EXPECT_EQ(pMaterialIR->Shininess, 32.0f);
     EXPECT_TRUE(pMaterialIR->Albedo.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Metallic, 1.0f);
     EXPECT_EQ(pMaterialIR->Roughness, 1.0f);

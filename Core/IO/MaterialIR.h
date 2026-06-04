@@ -83,7 +83,7 @@ struct MaterialIR
     std::string NameStr;
 
     // Legacy / Phong Attributes
-    Color128 Ambient{0.f, 0.f, 0.f, 1.f};
+    Color128 Ambient{0.001f, 0.001f, 0.001f, 1.f};
     Color128 Diffuse{1.f, 1.f, 1.f, 1.f};
     Color128 Specular{1.f, 1.f, 1.f, 1.f};
     float Shininess = 32.0f;

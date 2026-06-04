@@ -6,4 +6,7 @@
 #define THREAD_ENABLED
 #endif
 
-#define GRAPHICS_API_GL
+enum eGraphicsAPI
+{
+    GL = 0,
+};

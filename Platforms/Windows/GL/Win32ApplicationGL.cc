@@ -4,6 +4,14 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
 
+#include "Win32WindowGL.h"
+
+typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int* pAttribList);
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
+
 namespace ho
 {
 void Win32ApplicationGL::CreateInstance(HINSTANCE hApp)
@@ -12,19 +20,100 @@ void Win32ApplicationGL::CreateInstance(HINSTANCE hApp)
     spInstance = new Win32ApplicationGL(hApp);
 }
 
-bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
-                              int32_t mainwWindowWidth,
-                              int32_t mainwWindowHeight)
+bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr, int32_t mainWindowWidth, int32_t mainWindowHeight)
 {
-    mMainWindowNameStr = mainWindowNameStr;
-    sMainWindowWidth = mainwWindowWidth;
-    sMainWindowHeight = mainwWindowHeight;
-
     ImGui_ImplWin32_EnableDpiAwareness();
     const float mainScale =
         ImGui_ImplWin32_GetDpiScaleForMonitor(::MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY));
 
-    // Register window
+    // Calc main window size
+    RECT stWindowRect = {0, 0, static_cast<LONG>(mainWindowWidth), static_cast<LONG>(mainWindowHeight)};
+    const DWORD dwStyle = WS_OVERLAPPEDWINDOW;
+
+    AdjustWindowRect(&stWindowRect, dwStyle, FALSE);
+
+    const int32_t finalWidth = stWindowRect.right - stWindowRect.left;
+    const int32_t finalHeight = stWindowRect.bottom - stWindowRect.top;
+
+    const int32_t scaledWidth = static_cast<int32_t>(static_cast<float>(finalWidth) * mainScale);
+    const int32_t scaledHeight = static_cast<int32_t>(static_cast<float>(finalHeight) * mainScale);
+
+    // Create GL context
+    HWND hDummyWnd = CreateWindowW(L"STATIC",
+                                   L"Dummy",
+                                   dwStyle,
+                                   CW_USEDEFAULT,
+                                   CW_USEDEFAULT,
+                                   scaledWidth,
+                                   scaledHeight,
+                                   nullptr,
+                                   nullptr,
+                                   mhApp,
+                                   this);
+
+    if (!hDummyWnd)
+    {
+        HO_ASSERT(false, "Failed to create main window.");
+        return false;
+    }
+
+    HDC hDummyDC = ::GetDC(hDummyWnd);
+    PIXELFORMATDESCRIPTOR pfd{};
+    pfd.nSize = sizeof(pfd);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SWAP_EXCHANGE;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 32;
+
+    const int pixelFormat = ::ChoosePixelFormat(hDummyDC, &pfd);
+    HO_ASSERT(pixelFormat != 0, "Current system not supports such pixel format.");
+    const BOOL bSuccess = ::SetPixelFormat(hDummyDC, pixelFormat, &pfd);
+    HO_ASSERT(bSuccess != FALSE, "Failed to setting pixel format.");
+    (void)bSuccess;
+
+    HGLRC hDummyGLRC = wglCreateContext(hDummyDC);
+    wglMakeCurrent(hDummyDC, hDummyGLRC);
+
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB =
+        reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(wglGetProcAddress("wglCreateContextAttribsARB"));
+
+    wglMakeCurrent(hDummyDC, nullptr);
+    wglDeleteContext(hDummyGLRC);
+
+    HO_ASSERT(wglCreateContextAttribsARB != nullptr, "Failed to get address of context creation function.");
+
+    int attribs[] = {WGL_CONTEXT_MAJOR_VERSION_ARB,
+                     4,
+                     WGL_CONTEXT_MINOR_VERSION_ARB,
+                     6,
+                     WGL_CONTEXT_PROFILE_MASK_ARB,
+                     WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                     0};
+
+    shGlContext = wglCreateContextAttribsARB(hDummyDC, nullptr, attribs);
+
+    HO_ASSERT(shGlContext != nullptr, "Failed to create GL context.");
+
+    wglMakeCurrent(hDummyDC, shGlContext);
+
+    if (!gladLoadGL())
+    {
+        HO_ASSERT(false, "Failed to load GL functions.");
+        return false;
+    }
+
+    wglMakeCurrent(hDummyDC, nullptr);
+    ::ReleaseDC(hDummyWnd, hDummyDC);
+
+    if (!::DestroyWindow(hDummyWnd))
+    {
+        HO_ASSERT(false, "Failed to destroy dummy window.");
+        return false;
+    }
+
+    // Create main window
+    mMainWndNameStr = mainWindowNameStr;
+
     WNDCLASSEXW stWndClass{};
     stWndClass.cbSize = sizeof(WNDCLASSEXW);
     stWndClass.style = CS_OWNDC;
@@ -33,7 +122,7 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
     stWndClass.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
     stWndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
     stWndClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH));
-    stWndClass.lpszClassName = mMainWindowNameStr.c_str();
+    stWndClass.lpszClassName = mMainWndNameStr.c_str();
     stWndClass.hIconSm = static_cast<HICON>(LoadImage(mhApp,
                                                       MAKEINTRESOURCE(5),
                                                       IMAGE_ICON,
@@ -47,21 +136,8 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
         return false;
     }
 
-    // Calc window size
-    RECT stWindowRect = {0, 0, static_cast<LONG>(mainwWindowWidth), static_cast<LONG>(mainwWindowHeight)};
-    const DWORD dwStyle = WS_OVERLAPPEDWINDOW;
-
-    AdjustWindowRect(&stWindowRect, dwStyle, FALSE);
-
-    const int32_t finalWidth = stWindowRect.right - stWindowRect.left;
-    const int32_t finalHeight = stWindowRect.bottom - stWindowRect.top;
-
-    const int32_t scaledWidth = static_cast<int32_t>(static_cast<float>(finalWidth) * mainScale);
-    const int32_t scaledHeight = static_cast<int32_t>(static_cast<float>(finalHeight) * mainScale);
-
-    // Create window
     mhMainWnd = CreateWindowW(stWndClass.lpszClassName,
-                              mMainWindowNameStr.c_str(),
+                              mMainWndNameStr.c_str(),
                               dwStyle,
                               CW_USEDEFAULT,
                               CW_USEDEFAULT,
@@ -72,21 +148,8 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
                               mhApp,
                               this);
 
-    if (!mhMainWnd)
-    {
-        HO_ASSERT(false, "Failed to create main window.");
-        return false;
-    }
-
-    pMainWindow = std::make_unique<Win32WindowGL>(mhMainWnd, sMainWindowWidth, sMainWindowHeight);
-
-    // Create GL context
-    pMainWindow->MakeCurrent();
-    if (!gladLoadGL())
-    {
-        HO_ASSERT(false, "Failed to load GL functions.");
-        return false;
-    }
+    spMainWindow = std::make_unique<Win32WindowGL>(finalWidth, finalHeight, mhMainWnd, shGlContext);
+    spMainWindow->ActivateContext();
 
     // Init imgui
     // Setup Dear ImGui context
@@ -139,10 +202,10 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
         HO_ASSERT(platform_io.Renderer_DestroyWindow == nullptr, "");
         HO_ASSERT(platform_io.Renderer_SwapBuffers == nullptr, "");
         HO_ASSERT(platform_io.Platform_RenderWindow == nullptr, "");
-        platform_io.Renderer_CreateWindow = Win32WindowGL::Hook_CreateWindow;
-        platform_io.Renderer_DestroyWindow = Win32WindowGL::Hook_DestroyWindow;
-        platform_io.Renderer_SwapBuffers = Win32WindowGL::Hook_SwapBuffers;
-        platform_io.Platform_RenderWindow = Win32WindowGL::Hook_RenderWindow;
+        platform_io.Renderer_CreateWindow = Hook_CreateWindow;
+        platform_io.Renderer_DestroyWindow = Hook_DestroyWindow;
+        platform_io.Renderer_SwapBuffers = Hook_SwapBuffers;
+        platform_io.Platform_RenderWindow = Hook_RenderWindow;
     }
 
     // Load and Merge fonts
@@ -151,6 +214,11 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr,
     // show main window
     ShowWindow(mhMainWnd, SW_SHOWDEFAULT);
     UpdateWindow(mhMainWnd);
+
+    // It's to prevent imgui initialize GL in 'ImGui_ImplOpenGL3_NewFrame()'.
+    ImGui_ImplOpenGL3_CreateDeviceObjects();
+
+    spMainWindow->DeactivateContext();
 
     return true;
 }
@@ -162,47 +230,76 @@ void Win32ApplicationGL::BeginFrame()
     ImGui::NewFrame();
 }
 
-void Win32ApplicationGL::EndFrame()
-{
-    const ImGuiIO& io = ImGui::GetIO();
-    // Update and Render additional Platform Windows
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-
-        // Restore the OpenGL rendering context to the main window DC, since platform windows might have changed it.
-        pMainWindow->MakeCurrent();
-    }
-
-    // Present
-    pMainWindow->Present();
-}
-
 void Win32ApplicationGL::Shutdown()
 {
+    // 'ImGui_ImplOpenGL3_Shutdown()' calls GL APIs internally. So GL context must be brought back from render thread to
+    // main thread.
+    IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
-    pMainWindow.reset();
-    if (!Win32WindowGL::DeleteGLContext())
-    {
-        HO_ASSERT(false, "Failed to delete GL context.");
-    }
 
+    spMainWindow.reset();
     if (!::DestroyWindow(mhMainWnd))
     {
         HO_ASSERT(false, "Failed to destroy main window.");
     }
-
-    if (!::UnregisterClassW(mMainWindowNameStr.c_str(), mhApp))
+    if (!::UnregisterClassW(mMainWndNameStr.c_str(), mhApp))
     {
         HO_ASSERT(false, "Failed to unregister main window class.");
     }
+
+    if (!wglDeleteContext(shGlContext))
+    {
+        HO_ASSERT(false, "Failed to delete GL context.");
+    }
+}
+
+void Win32ApplicationGL::Hook_CreateWindow(ImGuiViewport* viewport)
+{
+    HO_ASSERT(viewport->RendererUserData == nullptr, "");
+
+    Win32WindowGL* pWindow = new Win32WindowGL(static_cast<int32_t>(viewport->Size.x),
+                                               static_cast<int32_t>(viewport->Size.y),
+                                               static_cast<HWND>(viewport->PlatformHandle),
+                                               shGlContext);
+    viewport->RendererUserData = static_cast<void*>(pWindow);
+}
+
+void Win32ApplicationGL::Hook_DestroyWindow(ImGuiViewport* viewport)
+{
+    if (viewport->RendererUserData != nullptr)
+    {
+        const Win32WindowGL* window = static_cast<Win32WindowGL*>(viewport->RendererUserData);
+        delete window;
+        viewport->RendererUserData = nullptr;
+    }
+}
+
+void Win32ApplicationGL::Hook_RenderWindow(ImGuiViewport* viewport, void* unused)
+{
+    // Activate the platform window DC in the OpenGL rendering context
+    if (const Win32WindowGL* pWindow = static_cast<const Win32WindowGL*>(viewport->RendererUserData))
+    {
+        pWindow->ActivateContext();
+    }
+    (void)unused;
+}
+
+void Win32ApplicationGL::Hook_SwapBuffers(ImGuiViewport* viewport, void* unused)
+{
+    if (const Win32WindowGL* pWindow = static_cast<const Win32WindowGL*>(viewport->RendererUserData))
+    {
+        pWindow->Present();
+    }
+    (void)unused;
 }
 
 Win32ApplicationGL::Win32ApplicationGL(HINSTANCE hApp)
   : IWin32Application(hApp)
 {
 }
+
+HGLRC Win32ApplicationGL::shGlContext = nullptr;
 } // namespace ho

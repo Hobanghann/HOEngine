@@ -70,9 +70,11 @@ static std::vector<uint32_t> compileFileGLSL(const shaderc::Compiler& compiler,
 //  Public Function Definitions
 // ===========================================================================
 
-std::unique_ptr<StaticMeshAsset> importStaticMesh(const parser::MeshIR& srcMeshIR,
-                                                  const parser::SkeletonIR& srcSkeletonIR,
-                                                  const parser::SkinIR& srcSkinIR)
+std::unique_ptr<StaticMeshAsset> importStaticMesh(
+    const parser::MeshIR& srcMeshIR,
+    const std::vector<std::unique_ptr<const parser::MaterialIR>>& pMaterialIRs,
+    const parser::SkeletonIR& srcSkeletonIR,
+    const parser::SkinIR& srcSkinIR)
 {
     std::unique_ptr<StaticMeshAsset> pNewMesh = std::make_unique<StaticMeshAsset>();
     const std::string nameStr =
@@ -151,6 +153,11 @@ std::unique_ptr<StaticMeshAsset> importStaticMesh(const parser::MeshIR& srcMeshI
         subMeshes[smi].IndexOffset = indexOffset;
         subMeshes[smi].IndexCount = static_cast<int32_t>(subMeshIR.Indices.size());
 
+        const parser::MaterialIR& matIR = *pMaterialIRs[srcMeshIR.SubMeshes[smi].RenderMaterialIndex];
+        const std::string matNameStr =
+            matIR.ResourcePath.RemovedExtension().ToString() + "::Material::" + matIR.NameStr;
+        subMeshes[smi].hRenderMaterialName = StringHandle(matNameStr);
+
         subMeshes[smi].Aabb = subMeshIR.Aabb;
         subMeshes[smi].Sphere = subMeshIR.Sphere;
 
@@ -210,7 +217,6 @@ std::unique_ptr<MaterialAsset> importMaterial(const parser::MaterialIR& srcMater
 
     pNewMaterial->PipelineState.AlphaMode = toAssetAlphaMode(srcMaterialIR.AlphaMode);
     pNewMaterial->PipelineState.AlphaBlendMode = toAssetAlphaBlendMode(srcMaterialIR.BlendMode);
-    pNewMaterial->PipelineState.AlphaThreshold = srcMaterialIR.AlphaThreshold;
     pNewMaterial->PipelineState.bWireframe = srcMaterialIR.bWireframe;
     pNewMaterial->PipelineState.bBackfaceCulling = srcMaterialIR.bBackfaceCulling;
 
@@ -225,6 +231,7 @@ std::unique_ptr<MaterialAsset> importMaterial(const parser::MaterialIR& srcMater
     pNewMaterial->IndexOfRefraction = srcMaterialIR.IndexOfRefraction;
 
     pNewMaterial->Opacity = srcMaterialIR.Opacity;
+    pNewMaterial->AlphaThreshold = srcMaterialIR.AlphaThreshold;
     pNewMaterial->Emissive = srcMaterialIR.Emissive;
     pNewMaterial->EmissiveIntensity = srcMaterialIR.EmissiveIntensity;
     pNewMaterial->NormalScale = srcMaterialIR.NormalScale;

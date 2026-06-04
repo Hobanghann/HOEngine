@@ -28,11 +28,7 @@ class IWin32Application : public IPlatformApplication
 
     bool ProcessPlatformMessages() override;
 
-    void EndFrame() override = 0;
-
     void Shutdown() override = 0;
-
-    void SetWindowTitle(std::wstring& titleStr) override;
 
   protected:
     IWin32Application(HINSTANCE hApp);
@@ -40,8 +36,7 @@ class IWin32Application : public IPlatformApplication
     static LRESULT CALLBACK wndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
     HINSTANCE mhApp;
-
-    std::wstring mMainWindowNameStr;
+    std::wstring mMainWndNameStr;
     HWND mhMainWnd;
 };
 } // namespace ho

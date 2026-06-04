@@ -26,9 +26,11 @@ struct ShaderAsset;
 
 namespace importer
 {
-[[nodiscard]] std::unique_ptr<StaticMeshAsset> importStaticMesh(const parser::MeshIR& srcMeshIR,
-                                                                const parser::SkeletonIR& srcSkeletonIR,
-                                                                const parser::SkinIR& srcSkinIR);
+[[nodiscard]] std::unique_ptr<StaticMeshAsset> importStaticMesh(
+    const parser::MeshIR& srcMeshIR,
+    const std::vector<std::unique_ptr<const parser::MaterialIR>>& pMaterialIRs,
+    const parser::SkeletonIR& srcSkeletonIR,
+    const parser::SkinIR& srcSkinIR);
 [[nodiscard]] std::unique_ptr<MaterialAsset> importMaterial(const parser::MaterialIR& srcMaterialIR,
                                                             eMaterialAssetType type);
 [[nodiscard]] std::unique_ptr<MaterialAsset> importTexturedMaterial(

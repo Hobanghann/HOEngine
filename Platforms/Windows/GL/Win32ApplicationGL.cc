@@ -75,7 +75,7 @@ bool Win32ApplicationGL::Init(const std::wstring& mainWindowNameStr, int32_t mai
     wglMakeCurrent(hDummyDC, hDummyGLRC);
 
     PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB =
-        (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+        reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(wglGetProcAddress("wglCreateContextAttribsARB"));
 
     wglMakeCurrent(hDummyDC, nullptr);
     wglDeleteContext(hDummyGLRC);

@@ -47,16 +47,16 @@ class IWin32Window : public IPlatformWindow
         ::ReleaseDC(mhWnd, mhDC);
     }
 
-    virtual void ActivateContext() const = 0;
+    void ActivateContext() const override = 0;
 
-    virtual void DeactivateContext() const = 0;
+    void DeactivateContext() const override = 0;
 
-    void Present() const
+    void Present() const override
     {
         ::SwapBuffers(mhDC);
     }
 
-    void SetTitle(const std::wstring& titleStr) const
+    void SetTitle(const std::wstring& titleStr) const override
     {
         if (!SetWindowTextW(mhWnd, titleStr.c_str()))
         {

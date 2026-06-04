@@ -507,7 +507,6 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
     aiColor4D color4D;
     float fVal = 0.0f;
     int iVal = 0;
-    aiString aiStr;
 
     // Legacy / Phong Attributes
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_AMBIENT, color3D))

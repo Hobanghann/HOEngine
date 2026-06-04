@@ -26,6 +26,7 @@ bool IWin32Application::ProcessPlatformMessages()
 IWin32Application::IWin32Application(HINSTANCE hApp)
   : IPlatformApplication()
   , mhApp(hApp)
+  , mhMainWnd(nullptr)
 {
 }
 

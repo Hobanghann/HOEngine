@@ -18,12 +18,12 @@ class Win32WindowGL final : public IWin32Window
         ::wglMakeCurrent(nullptr, nullptr);
     }
 
-    void ActivateContext() const
+    void ActivateContext() const override
     {
         ::wglMakeCurrent(mhDC, mhGlContext);
     }
 
-    void DeactivateContext() const
+    void DeactivateContext() const override
     {
         ::wglMakeCurrent(mhDC, nullptr);
     }

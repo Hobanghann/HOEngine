@@ -1,6 +1,6 @@
 #include "IPlatformApplication.h"
 
-#include <Lib/IconsFontAwesome7.h>
+#include <IconsFontAwesome7.h>
 #include <filesystem>
 #include <imgui.h>
 

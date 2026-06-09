@@ -22,16 +22,17 @@ add_library(${SUBSYSTEMS_NAME} STATIC ${ALL_FILES})
 # Set target properties
 ################################################################################
 target_link_libraries(
-    ${SUBSYSTEMS_NAME} 
-    PRIVATE 
+    ${SUBSYSTEMS_NAME}
+    PRIVATE
     COMPILER_FLAGS
-    PUBLIC 
+    PUBLIC
     ${CORE_NAME}
+    ${APP_THIRD_PARTY_NAME}
     )
 target_include_directories(
-    ${SUBSYSTEMS_NAME} 
-    PRIVATE 
-    ${CMAKE_SOURCE_DIR} 
+    ${SUBSYSTEMS_NAME}
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 

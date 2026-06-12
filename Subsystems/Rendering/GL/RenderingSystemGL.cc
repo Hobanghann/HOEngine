@@ -835,7 +835,12 @@ void RenderingSystemGL::executeInWorldDebugDrawPass()
     glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, mGlDefaultWorldGizmoVS);
     glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, mGlDefaultWorldGizmoFS);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glDisable(GL_BLEND);
 
     ASSERT_GL();
 }

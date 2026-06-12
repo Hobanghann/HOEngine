@@ -24,24 +24,42 @@ layout(location = 0) out vec4 out_FragColor;
 layout (depth_less) out float gl_FragDepth;
 
 void main() {
-    vec3 cameraToFarPlane = v_worldFarPlanePos - u_General.WorldCameraPos;
+    if (abs(u_General.WorldCameraPos.y) < 0.001f) {
+        discard;
+    }
 
+    vec3 cameraToFarPlane = v_worldFarPlanePos - u_General.WorldCameraPos;
     float t = (-u_General.WorldCameraPos.y / cameraToFarPlane.y);
 
-    if (t < -0.0f) {
+    if (t < 0.0f) {
         discard;
     }
 
-    vec3 xzPlaneWorldPos = u_General.WorldCameraPos + cameraToFarPlane * t;
+    vec3 zxPlaneWorldPos = u_General.WorldCameraPos + cameraToFarPlane * t;
 
-    if(!(abs(mod(xzPlaneWorldPos.x, 10.0f) - 0.0f) <= 0.4f || abs(mod(xzPlaneWorldPos.z, 10.0f) - 0.0f) <= 0.4f)) {
-        discard;
-    }
+    const float gridSize = 10.0f;
+    const float gridLineWidth = 0.5f;
 
-    vec4 xzPlaneClipCoord = u_Matrices.Proj * u_Matrices.View * vec4(xzPlaneWorldPos, 1.0f);
-    vec3 xzPlaneNDC = xzPlaneClipCoord.xyz / xzPlaneClipCoord.w;
+    vec2 zxPlaneEdgeWorldPos = floor((zxPlaneWorldPos.xz / gridSize) + 0.5f) * gridSize;
+    vec2 distFromEdge = abs(zxPlaneWorldPos.xz - zxPlaneEdgeWorldPos);
 
-    gl_FragDepth = (xzPlaneNDC.z + 1.0f) * 0.5f;
+    vec2 zxPlaneSizePerPixel = fwidth(zxPlaneWorldPos.xz);
 
-    out_FragColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+    vec2 gridLineRatioPerPixel = (gridLineWidth * 0.5f - distFromEdge) / zxPlaneSizePerPixel;
+
+    vec2 finalRatio = clamp(gridLineRatioPerPixel + 0.5f, 0.0f, 1.0f);
+
+    const float fadeEdge0 = 100.0f;
+    const float fadeEdge1 = 600.0f;
+    float zxPlaneDist = length(zxPlaneWorldPos - u_General.WorldCameraPos);
+    float fade = 1.0f - smoothstep(fadeEdge0, fadeEdge1, zxPlaneDist);
+
+    float finalAlpha = max(finalRatio.x, finalRatio.y) * fade;
+
+    vec4 zxPlaneClipCoord = u_Matrices.Proj * u_Matrices.View * vec4(zxPlaneWorldPos, 1.0f);
+    vec3 zxPlaneNDC = zxPlaneClipCoord.xyz / zxPlaneClipCoord.w;
+
+    gl_FragDepth = (zxPlaneNDC.z + 1.0f) * 0.5f;
+
+    out_FragColor = vec4(0.5f, 0.5f, 0.5f, finalAlpha);
 }

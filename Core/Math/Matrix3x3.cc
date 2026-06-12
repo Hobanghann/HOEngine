@@ -54,22 +54,22 @@ Matrix3x3 Matrix3x3::FromEuler(float x, float y, float z, math::eEulerOrder orde
     switch (order)
     {
         case math::eEulerOrder::XYZ:
-            m = rotationMatX * rotationMatY * rotationMatZ;
+            m = rotationMatZ * rotationMatY * rotationMatX;
             break;
         case math::eEulerOrder::XZY:
-            m = rotationMatX * rotationMatZ * rotationMatY;
+            m = rotationMatY * rotationMatZ * rotationMatX;
             break;
         case math::eEulerOrder::YXZ:
             m = rotationMatY * rotationMatX * rotationMatZ;
             break;
         case math::eEulerOrder::YZX:
-            m = rotationMatY * rotationMatZ * rotationMatX;
+            m = rotationMatX * rotationMatZ * rotationMatY;
             break;
         case math::eEulerOrder::ZXY:
             m = rotationMatZ * rotationMatX * rotationMatY;
             break;
         case math::eEulerOrder::ZYX:
-            m = rotationMatZ * rotationMatY * rotationMatX;
+            m = rotationMatX * rotationMatY * rotationMatZ;
             break;
         default:
             m = Matrix3x3();

@@ -10,10 +10,15 @@ namespace ho
 class Path final
 {
   public:
-    Path() = delete;
+    Path() = default;
     Path(const Path& path) = default;
 
     explicit Path(const std::string& pathStr)
+      : mPath(pathStr)
+    {
+    }
+
+    explicit Path(const std::wstring& pathStr)
       : mPath(pathStr)
     {
     }
@@ -41,6 +46,7 @@ class Path final
     [[nodiscard]] FORCE_INLINE Path RemovedExtension() const;
 
     [[nodiscard]] FORCE_INLINE std::string ToString() const;
+    [[nodiscard]] FORCE_INLINE std::wstring ToWString() const;
 
   private:
     Path(const std::filesystem::path& path)
@@ -48,8 +54,8 @@ class Path final
     {
     }
 
-    static std::filesystem::path sProjectRootPath; // root ~ HORenderer3
-    static std::filesystem::path sAssetRootPath;   // root ~ HORenderer3/assets/
+    static std::filesystem::path sProjectRootPath; // System Root ~ HOEngine
+    static std::filesystem::path sAssetRootPath;   // System Root ~ HOEngine/Assets/
 
     std::filesystem::path mPath;
 };
@@ -147,6 +153,11 @@ Path Path::RemovedExtension() const
 std::string Path::ToString() const
 {
     return mPath.string();
+}
+
+std::wstring Path::ToWString() const
+{
+    return mPath.wstring();
 }
 
 } // namespace ho

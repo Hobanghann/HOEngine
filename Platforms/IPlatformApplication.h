@@ -8,6 +8,7 @@
 
 namespace ho
 {
+class Path;
 
 class IPlatformApplication
 {
@@ -36,7 +37,25 @@ class IPlatformApplication
 
     virtual bool ProcessPlatformMessages() = 0;
 
+    virtual bool ShowOpenFileDialog(Path* pOutPaths,
+                                    const std::wstring& titleStr,
+                                    const std::wstring* pFilterNamesStr,
+                                    const std::wstring* pFilterExtensionsStr,
+                                    int32_t filterCount,
+                                    const std::wstring& initialDirPathStr) = 0;
+
+    virtual bool ShowOpenFilesDialog(Path* pOutPaths,
+                                     int32_t* pOutPathCount,
+                                     int32_t maxOutPathCount,
+                                     const std::wstring& titleStr,
+                                     const std::wstring* pFilterNamesStr,
+                                     const std::wstring* pFilterExtensionsStr,
+                                     int32_t filterCount,
+                                     const std::wstring& initialDirPathStr) = 0;
+
     virtual void Shutdown() = 0;
+
+    virtual void* GetNativeHandle() const = 0;
 
     const IPlatformWindow* GetMainWindow() const;
 

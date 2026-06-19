@@ -16,6 +16,8 @@ class IPlatformWindow
 
     virtual ~IPlatformWindow() = default;
 
+    virtual void* GetNativeHandle() const = 0;
+
     int32_t GetClientWidth() const
     {
         return mClientWidth;

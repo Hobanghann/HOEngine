@@ -47,6 +47,11 @@ class IWin32Window : public IPlatformWindow
         ::ReleaseDC(mhWnd, mhDC);
     }
 
+    void* GetNativeHandle() const override
+    {
+        return reinterpret_cast<void*>(mhWnd);
+    }
+
     void ActivateContext() const override = 0;
 
     void DeactivateContext() const override = 0;

@@ -9,6 +9,8 @@
 
 #define NOMINMAX
 
+#include <objbase.h>
+#include <shlobj.h>
 #include <windows.h>
 
 #include "../IPlatformApplication.h"
@@ -28,7 +30,28 @@ class IWin32Application : public IPlatformApplication
 
     bool ProcessPlatformMessages() override;
 
+    bool ShowOpenFileDialog(Path* pOutPaths,
+                            const std::wstring& titleStr,
+                            const std::wstring* pFilterNamesStr,
+                            const std::wstring* pFilterExtensionsStr,
+                            int32_t filterCount,
+                            const std::wstring& initialDirPathStr) override;
+
+    bool ShowOpenFilesDialog(Path* pOutPaths,
+                             int32_t* pOutPathCount,
+                             int32_t maxOutPathCount,
+                             const std::wstring& titleStr,
+                             const std::wstring* pFilterNamesStr,
+                             const std::wstring* pFilterExtensionsStr,
+                             int32_t filterCount,
+                             const std::wstring& initialDirPathStr) override;
+
     void Shutdown() override = 0;
+
+    void* GetNativeHandle() const override
+    {
+        return reinterpret_cast<void*>(mhApp);
+    }
 
   protected:
     IWin32Application(HINSTANCE hApp);

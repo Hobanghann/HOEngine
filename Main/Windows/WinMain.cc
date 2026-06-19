@@ -11,9 +11,6 @@
 #include <stdlib.h>
 #include <windows.h>
 
-#include "../EngineMain.h"
-#include "Platforms/Windows/GL/Win32ApplicationGL.h"
-
 // Intel integrated graphics drivers do not fully support OpenGL 4.6.
 // Therefore, engine currently force the use of a dedicated GPU.
 extern "C"
@@ -21,6 +18,13 @@ extern "C"
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+
+#pragma comment(                                                                                                       \
+    linker,                                                                                                            \
+    "\"/manifestdependency:type='Win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
+#include "../EngineMain.h"
+#include "Platforms/Windows/GL/Win32ApplicationGL.h"
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {

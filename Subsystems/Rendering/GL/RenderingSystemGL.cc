@@ -40,7 +40,8 @@ void* RenderingSystemGL::GetRenderTargetNativeHandle(StringHandle hFrameBufferNa
 {
     auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
 
-    if (fbit == mNameToFrameBufferMap.end()) {
+    if (fbit == mNameToFrameBufferMap.end())
+    {
         return nullptr;
     }
 

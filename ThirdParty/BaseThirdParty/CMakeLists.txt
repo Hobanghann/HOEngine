@@ -19,7 +19,7 @@ set(IMGUI_NAME imgui)
 set(IM_O_GUIZMO_NAME imoguizmo)
 set(FONT_AWESOME_NAME icons_font_awesome7)
 set(SPDLOG_NAME spdlog)
-set(IMAGE_COMPRESSOR_NAME bc7enc_rdo)
+set(IMAGE_COMPRESSOR_NAME ISPCTextureCompressor)
 set(HALF_NAME half)
 set(GLSL_COMPILER_NAME shaderc)
 
@@ -93,15 +93,6 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
     )
 
-# bc7enc
-FetchContent_Declare(
-    ${IMAGE_COMPRESSOR_NAME}
-    GIT_REPOSITORY https://github.com/richgel999/bc7enc_rdo
-    GIT_TAG dbe416d28a5530b4e8cc45b14bf034dc6b96bbde
-    SOURCE_SUBDIR "dummy_folder"
-    EXCLUDE_FROM_ALL
-    )
-
 # shaderc
 find_package(Python REQUIRED COMPONENTS Interpreter)
 if(NOT Python_EXECUTABLE)
@@ -147,14 +138,9 @@ message (STATUS "[Download] Start to Download " ${SPDLOG_NAME} "...")
 FetchContent_MakeAvailable(${SPDLOG_NAME})
 message (STATUS "[Download] Downloading " ${SPDLOG_NAME} " finished.")
 
-message (STATUS "[Download] Start to Download " ${IMAGE_COMPRESSOR_NAME} "...")
-FetchContent_MakeAvailable(${IMAGE_COMPRESSOR_NAME})
-message (STATUS "[Download] Downloading " ${IMAGE_COMPRESSOR_NAME} " finished.")
-
 message (STATUS "[Download] Start to Download " ${GLSL_COMPILER_NAME} "...")
 FetchContent_MakeAvailable(${GLSL_COMPILER_NAME})
 message (STATUS "[Download] Downloading " ${GLSL_COMPILER_NAME} " finished.")
-
 
 ################################################################################
 # Add target for raw external libraries
@@ -180,6 +166,31 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
+# ISPCTextureCompressor
+set(${IMAGE_COMPRESSOR_NAME}_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ISPCTextureCompressor")
+
+file(GLOB ${IMAGE_COMPRESSOR_NAME}_SOURCES "${${IMAGE_COMPRESSOR_NAME}_DIR}/src/*.cpp")
+file(GLOB ${IMAGE_COMPRESSOR_NAME}_HEADERS "${${IMAGE_COMPRESSOR_NAME}_DIR}/include/*.h")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    file(GLOB ${IMAGE_COMPRESSOR_NAME}_BINARIES "${${IMAGE_COMPRESSOR_NAME}_DIR}/bin/windows/*.obj")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    file(GLOB ${IMAGE_COMPRESSOR_NAME}_BINARIES "${${IMAGE_COMPRESSOR_NAME}_DIR}/bin/linux/*.o")
+endif()
+
+add_library(
+    ${IMAGE_COMPRESSOR_NAME}
+    STATIC
+    ${${IMAGE_COMPRESSOR_NAME}_SOURCES}
+    ${${IMAGE_COMPRESSOR_NAME}_HEADERS}
+    ${${IMAGE_COMPRESSOR_NAME}_BINARIES}
+    )
+target_include_directories(
+    ${IMAGE_COMPRESSOR_NAME}
+    PUBLIC
+    "${${IMAGE_COMPRESSOR_NAME}_DIR}/include"
+    )
+
 # half
 add_library(
     ${HALF_NAME}
@@ -189,6 +200,7 @@ target_include_directories(
     ${HALF_NAME}
     INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR})
+
 
 ################################################################################
 # Set library properties
@@ -338,20 +350,7 @@ set_target_properties(
     SYSTEM TRUE
     )
 
-# bc7enc_rdo
-file(GLOB BC7ENC_SOURCES "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/*.cpp")
-file(GLOB BC7ENC_HEADERS "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}/*.h")
-add_library(
-    ${IMAGE_COMPRESSOR_NAME}
-    STATIC
-    ${BC7ENC_SOURCES}
-    ${BC7ENC_HEADERS}
-    )
-target_include_directories(
-    ${IMAGE_COMPRESSOR_NAME}
-    PUBLIC
-    "${${IMAGE_COMPRESSOR_NAME}_SOURCE_DIR}"
-    )
+# ISPCTextureCompressor
 set_target_properties(
     ${IMAGE_COMPRESSOR_NAME} PROPERTIES
     FOLDER "ThirdParty/${BASE_THIRD_PARTY_NAME}/${IMAGE_COMPRESSOR_NAME}"

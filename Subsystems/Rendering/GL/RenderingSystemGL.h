@@ -14,10 +14,6 @@ class RenderingSystemGL final : public IRenderingSystem
     friend void IRenderingSystem::createInstance(eGraphicsAPI api);
 
   public:
-    bool CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc) override;
-
-    bool DestroyFrameBuffer(StringHandle hFrameBufferName) override;
-
     void* GetRenderTargetNativeHandle(StringHandle hFrameBufferName,
                                       eRenderTargetType type,
                                       bool bRequireMultisample = false) const override;
@@ -55,6 +51,9 @@ class RenderingSystemGL final : public IRenderingSystem
     void renderUI() override;
 
     void flush() override;
+
+    bool createFrameBuffer(const FrameBufferDesc& frameBufferDesc) override;
+    bool destroyFrameBuffer(StringHandle hFrameBufferName) override;
 
     eResourceTransferResult uploadStaticMesh(GpuStaticMeshHandle hPreparedGpuStaticMesh,
                                              uint64_t currentFrame) override;

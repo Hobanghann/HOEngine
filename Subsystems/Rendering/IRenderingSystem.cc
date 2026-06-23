@@ -8,6 +8,33 @@
 
 namespace ho
 {
+bool IRenderingSystem::EnqueueCreateFramebuffer(const FrameBufferDesc& frameBufferDesc)
+{
+    if (mFrameBufferToCreateQueue.IsFull())
+    {
+        HO_ASSERT(false, "Pending queue is full.");
+        return false;
+    }
+
+    mFrameBufferToCreateQueueLock.Lock();
+    mFrameBufferToCreateQueue.Push(frameBufferDesc);
+    mFrameBufferToCreateQueueLock.Unlock();
+    return true;
+}
+
+bool IRenderingSystem::EnqueueDestroyFramebuffer(StringHandle hFrameBufferName)
+{
+    if (mhFrameBufferToDestroyQueue.IsFull())
+    {
+        HO_ASSERT(false, "Pending queue is full.");
+        return false;
+    }
+
+    mFrameBufferToDestroyQueueLock.Lock();
+    mhFrameBufferToDestroyQueue.Push(hFrameBufferName);
+    mFrameBufferToDestroyQueueLock.Unlock();
+    return true;
+}
 
 bool IRenderingSystem::BeginRenderPass(RenderPassDesc& renderPassDesc)
 {
@@ -29,7 +56,6 @@ bool IRenderingSystem::BeginRenderPass(RenderPassDesc& renderPassDesc)
     auto it = mNameToFrameBufferMap.find(renderPassDesc.hFrameBufferName);
     if (it == mNameToFrameBufferMap.end())
     {
-        HO_ASSERT(false, "FrameBuffer not found.");
         return false;
     }
     currentPass.pFrameBuffer = &it->second;
@@ -372,11 +398,12 @@ void IRenderingSystem::createInstance(eGraphicsAPI api)
                 HO_ASSERT(false, "Unsupported API.");
         }
     }
-
-    spInstance->mhPendingStaticMeshQueue = FixedQueue<GpuStaticMeshHandle>(sPendingQueueSize);
-    spInstance->mhPendingMaterialQueue = FixedQueue<GpuMaterialHandle>(sPendingQueueSize);
-    spInstance->mhPendingTextureQueue = FixedQueue<GpuTextureHandle>(sPendingQueueSize);
-    spInstance->mhPendingShaderQueue = FixedQueue<GpuShaderHandle>(sPendingQueueSize);
+    spInstance->mFrameBufferToCreateQueue = FixedQueue<FrameBufferDesc>(sPendingFrameBufferQueueSize);
+    spInstance->mhFrameBufferToDestroyQueue = FixedQueue<StringHandle>(sPendingFrameBufferQueueSize);
+    spInstance->mhPendingStaticMeshQueue = FixedQueue<GpuStaticMeshHandle>(sPendingResourceQueueSize);
+    spInstance->mhPendingMaterialQueue = FixedQueue<GpuMaterialHandle>(sPendingResourceQueueSize);
+    spInstance->mhPendingTextureQueue = FixedQueue<GpuTextureHandle>(sPendingResourceQueueSize);
+    spInstance->mhPendingShaderQueue = FixedQueue<GpuShaderHandle>(sPendingResourceQueueSize);
 }
 
 void IRenderingSystem::deleteInstance()
@@ -407,14 +434,16 @@ void IRenderingSystem::runInternal(void* unused)
     (void)unused;
     IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
 
-    while (spInstance->mbIsRunning)
+    while (spInstance->mbRunning)
     {
         spInstance->mRenderSync.WaitUntilEngineSwapComplete();
 
-        if (!spInstance->mbIsRunning)
+        if (!spInstance->mbRunning)
         {
             break;
         }
+
+        spInstance->createPendingFrameBuffers();
 
         const uint64_t currentFrame = spInstance->mRenderQueues[spInstance->mBackRenderQueueIndex].FrameCount;
 
@@ -428,6 +457,8 @@ void IRenderingSystem::runInternal(void* unused)
 
         spInstance->renderUI();
 
+        spInstance->destroyPendingFrameBuffers();
+
         spInstance->mRenderSync.NotifyRenderDone();
     }
 
@@ -438,7 +469,7 @@ void IRenderingSystem::runInternal(void* unused)
 
 void IRenderingSystem::shutdown()
 {
-    mbIsRunning = false;
+    mbRunning = false;
 
     mRenderSync.NotifyEngineSwapComplete();
 
@@ -626,6 +657,64 @@ bool IRenderingSystem::trySwapRenderQueues(uint64_t currentFrame)
 
     swapRenderQueues(currentFrame);
     return true;
+}
+
+void IRenderingSystem::createPendingFrameBuffers()
+{
+    while (true)
+    {
+        FrameBufferDesc desc;
+        bool bEmpty = false;
+
+        spInstance->mFrameBufferToCreateQueueLock.Lock();
+        if (!spInstance->mFrameBufferToCreateQueue.IsEmpty())
+        {
+            desc = spInstance->mFrameBufferToCreateQueue.Front();
+            spInstance->mFrameBufferToCreateQueue.Pop();
+            bEmpty = false;
+        }
+        else
+        {
+            bEmpty = true;
+        }
+        spInstance->mFrameBufferToCreateQueueLock.Unlock();
+
+        if (bEmpty)
+        {
+            break;
+        }
+
+        spInstance->createFrameBuffer(desc);
+    }
+}
+
+void IRenderingSystem::destroyPendingFrameBuffers()
+{
+    while (true)
+    {
+        StringHandle hFrameBuffer;
+        bool bEmpty = false;
+
+        spInstance->mFrameBufferToDestroyQueueLock.Lock();
+        if (!spInstance->mhFrameBufferToDestroyQueue.IsEmpty())
+        {
+            hFrameBuffer = spInstance->mhFrameBufferToDestroyQueue.Front();
+            spInstance->mhFrameBufferToDestroyQueue.Pop();
+            bEmpty = false;
+        }
+        else
+        {
+            bEmpty = true;
+        }
+        spInstance->mFrameBufferToDestroyQueueLock.Unlock();
+
+        if (bEmpty)
+        {
+            break;
+        }
+
+        spInstance->destroyFrameBuffer(hFrameBuffer);
+    }
 }
 
 // TODO: Currently, always upload all pending resources.

@@ -34,281 +34,15 @@ struct Vertex
     uint8_t Padding[4] = {}; // 4 byte
 }; // 64 byte
 
-bool RenderingSystemGL::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc)
-{
-    if (!validateFrameBufferDesc(frameBufferDesc))
-    {
-        HO_ASSERT(false, "Invalid frame buffer description.");
-        return false;
-    }
-
-    GLuint glFBO[2] = {};
-    glCreateFramebuffers(2, glFBO);
-    if (!ASSERT_GL())
-    {
-        return false;
-    }
-    GLuint glResolvedFBO[2] = {};
-    if (frameBufferDesc.SampleCount > 1)
-    {
-        glCreateFramebuffers(2, glResolvedFBO);
-        if (!ASSERT_GL())
-        {
-            glDeleteFramebuffers(2, glFBO);
-            return false;
-        }
-    }
-
-    FrameBuffer newFrameBuffer;
-    newFrameBuffer.hName = frameBufferDesc.hName;
-    newFrameBuffer.Width = frameBufferDesc.Width;
-    newFrameBuffer.Height = frameBufferDesc.Height;
-    newFrameBuffer.SampleCount = frameBufferDesc.SampleCount;
-
-    GLint maxSamples = 0;
-    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-    HO_ASSERT(frameBufferDesc.SampleCount <= maxSamples,
-              "Required sample count exceeds current hardware's maximum sample count limits. The hardware maximum "
-              "sample count will be used instead.");
-
-    GLuint glRenderTargets[2][static_cast<int32_t>(eRenderTargetType::Last)] = {};
-    GLuint glResolvedRenderTargets[2][static_cast<int32_t>(eRenderTargetType::Last)] = {};
-    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
-    {
-        for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
-        {
-            if (frameBufferDesc.TargetDesc[targetIdx].Format != eRenderTargetFormat::None)
-            {
-                if (frameBufferDesc.SampleCount > 1)
-                {
-                    glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &glRenderTargets[bufferIdx][targetIdx]);
-                    if (targetIdx != static_cast<int32_t>(eRenderTargetType::Depth))
-                    {
-                        glCreateTextures(GL_TEXTURE_2D, 1, &glResolvedRenderTargets[bufferIdx][targetIdx]);
-                    }
-                }
-                else
-                {
-                    glCreateTextures(GL_TEXTURE_2D, 1, &glRenderTargets[bufferIdx][targetIdx]);
-                }
-                if (!ASSERT_GL())
-                {
-                    cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
-                    return false;
-                }
-            }
-        }
-    }
-
-    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
-    {
-        for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
-        {
-            if (frameBufferDesc.TargetDesc[targetIdx].Format != eRenderTargetFormat::None)
-            {
-                if (frameBufferDesc.SampleCount > 1)
-                {
-                    glTextureStorage2DMultisample(glRenderTargets[bufferIdx][targetIdx],
-                                                  math::Min(frameBufferDesc.SampleCount, maxSamples),
-                                                  toGlRenderTargetFormat(frameBufferDesc.TargetDesc[targetIdx].Format),
-                                                  frameBufferDesc.Width,
-                                                  frameBufferDesc.Height,
-                                                  GL_TRUE);
-                    if (targetIdx != static_cast<int32_t>(eRenderTargetType::Depth))
-                    {
-                        glTextureStorage2D(glResolvedRenderTargets[bufferIdx][targetIdx],
-                                           1,
-                                           toGlRenderTargetFormat(frameBufferDesc.TargetDesc[targetIdx].Format),
-                                           frameBufferDesc.Width,
-                                           frameBufferDesc.Height);
-                    }
-                }
-                else
-                {
-                    glTextureStorage2D(glRenderTargets[bufferIdx][targetIdx],
-                                       1,
-                                       toGlRenderTargetFormat(frameBufferDesc.TargetDesc[targetIdx].Format),
-                                       frameBufferDesc.Width,
-                                       frameBufferDesc.Height);
-                }
-                if (!ASSERT_GL())
-                {
-                    cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
-                    return false;
-                }
-
-                if (targetIdx == static_cast<int32_t>(eRenderTargetType::Depth))
-                {
-                    switch (frameBufferDesc.TargetDesc[targetIdx].Format)
-                    {
-                        case IRenderingSystem::eRenderTargetFormat::D24_UNORM_S8_UINT:
-                            glNamedFramebufferTexture(glFBO[bufferIdx],
-                                                      GL_DEPTH_STENCIL_ATTACHMENT,
-                                                      glRenderTargets[bufferIdx][targetIdx],
-                                                      0);
-                            break;
-                        case IRenderingSystem::eRenderTargetFormat::D32_FLOAT:
-                            glNamedFramebufferTexture(
-                                glFBO[bufferIdx], GL_DEPTH_ATTACHMENT, glRenderTargets[bufferIdx][targetIdx], 0);
-                            break;
-                        default:
-                            HO_ASSERT(false, "Invalid depth target format.");
-                            cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
-                            return false;
-                    }
-                }
-                else
-                {
-                    glNamedFramebufferTexture(
-                        glFBO[bufferIdx], GL_COLOR_ATTACHMENT0 + targetIdx, glRenderTargets[bufferIdx][targetIdx], 0);
-                    if (frameBufferDesc.SampleCount > 1)
-                    {
-                        glNamedFramebufferTexture(glResolvedFBO[bufferIdx],
-                                                  GL_COLOR_ATTACHMENT0 + targetIdx,
-                                                  glResolvedRenderTargets[bufferIdx][targetIdx],
-                                                  0);
-                    }
-                }
-
-                if (!ASSERT_GL())
-                {
-                    cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
-                    return false;
-                }
-
-                GpuTextureHandle hGpuRenderTarget = prepareUploadTexture(TextureHandle::sNULL, true);
-
-                TextureNativeHandleGL nativeHandle;
-                nativeHandle.GlTexture = glRenderTargets[bufferIdx][targetIdx];
-                hGpuRenderTarget.Get()->NativeHandlePoolIndex = mTextureNativeHandlePool.Add(nativeHandle);
-
-                newFrameBuffer.hRenderTargets[bufferIdx][targetIdx] = hGpuRenderTarget;
-
-                if (frameBufferDesc.SampleCount > 1 && targetIdx != static_cast<int32_t>(eRenderTargetType::Depth))
-                {
-                    GpuTextureHandle hGpuResolvedRenderTarget = prepareUploadTexture(TextureHandle::sNULL, true);
-
-                    TextureNativeHandleGL nativeHandleResolved;
-                    nativeHandleResolved.GlTexture = glResolvedRenderTargets[bufferIdx][targetIdx];
-                    hGpuResolvedRenderTarget.Get()->NativeHandlePoolIndex =
-                        mTextureNativeHandlePool.Add(nativeHandleResolved);
-
-                    newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx] = hGpuResolvedRenderTarget;
-                }
-            }
-        }
-    }
-
-    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
-    {
-        if (targetIdx == static_cast<int32_t>(eRenderTargetType::Depth))
-        {
-            newFrameBuffer.ClearDepth = frameBufferDesc.TargetDesc[targetIdx].ClearDepth;
-            newFrameBuffer.ClearStencil = frameBufferDesc.TargetDesc[targetIdx].ClearStencil;
-        }
-        else
-        {
-            newFrameBuffer.ClearColors[targetIdx] = Vector4(frameBufferDesc.TargetDesc[targetIdx].ClearColor);
-        }
-    }
-
-    for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
-    {
-        if (glCheckNamedFramebufferStatus(glFBO[bufferIdx], GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        {
-            HO_ASSERT(false, "Framebuffer is incomplete.");
-            cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
-            for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
-            {
-                if (newFrameBuffer.hRenderTargets[bufferIdx][targetIdx].IsValid())
-                {
-                    mTextureNativeHandlePool.Remove(
-                        newFrameBuffer.hRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
-                    mGpuTexturePool.Remove(newFrameBuffer.hRenderTargets[bufferIdx][targetIdx].GetIndex());
-                }
-            }
-            return false;
-        }
-        if (frameBufferDesc.SampleCount > 1)
-        {
-            if (glCheckNamedFramebufferStatus(glResolvedFBO[bufferIdx], GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            {
-                HO_ASSERT(false, "ResolvedFramebuffer is incomplete.");
-                cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
-                for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
-                {
-                    if (newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].IsValid())
-                    {
-                        mTextureNativeHandlePool.Remove(
-                            newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
-                        mGpuTexturePool.Remove(newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].GetIndex());
-                    }
-                }
-                return false;
-            }
-        }
-    }
-
-    mNameToGlFboMap.insert({frameBufferDesc.hName, GlFBO{{glFBO[0], glFBO[1]}, {glResolvedFBO[0], glResolvedFBO[1]}}});
-    mNameToFrameBufferMap.insert({frameBufferDesc.hName, newFrameBuffer});
-    return true;
-}
-
-bool RenderingSystemGL::DestroyFrameBuffer(StringHandle hFrameBufferName)
-{
-    auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
-    if (fbit == mNameToFrameBufferMap.end())
-    {
-        return false;
-    }
-    FrameBuffer& frameBuffer = fbit->second;
-    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
-    {
-        for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
-        {
-            if (frameBuffer.hRenderTargets[bufferIdx][targetIdx].IsValid())
-            {
-                const TextureNativeHandleGL* nativeHandle = mTextureNativeHandlePool.Get(
-                    frameBuffer.hRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
-                HO_ASSERT(nativeHandle,
-                          "Render target's native handle is null. Frame buffer might be created incompletely.");
-                glDeleteTextures(1, &nativeHandle->GlTexture);
-                mTextureNativeHandlePool.Remove(
-                    frameBuffer.hRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
-                mGpuTexturePool.Remove(frameBuffer.hRenderTargets[bufferIdx][targetIdx].GetIndex());
-            }
-            if (frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].IsValid())
-            {
-                const TextureNativeHandleGL* nativeHandle = mTextureNativeHandlePool.Get(
-                    frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
-                HO_ASSERT(nativeHandle,
-                          "Render target's native handle is null. Frame buffer might be created incompletely.");
-                glDeleteTextures(1, &nativeHandle->GlTexture);
-                mTextureNativeHandlePool.Remove(
-                    frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
-                mGpuTexturePool.Remove(frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].GetIndex());
-            }
-        }
-    }
-
-    mNameToFrameBufferMap.erase(hFrameBufferName);
-
-    auto glit = mNameToGlFboMap.find(hFrameBufferName);
-    HO_ASSERT(glit != mNameToGlFboMap.end(),
-              "GL id for frame buffer was not inserted. Frame buffer might be created incompletely.");
-    glDeleteFramebuffers(2, glit->second.FBO);
-    glDeleteFramebuffers(2, glit->second.ResolvedFBO);
-    mNameToGlFboMap.erase(hFrameBufferName);
-    return true;
-}
-
 void* RenderingSystemGL::GetRenderTargetNativeHandle(StringHandle hFrameBufferName,
                                                      eRenderTargetType type,
                                                      bool bRequireMultisample) const
 {
     auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
 
-    HO_ASSERT(fbit != mNameToFrameBufferMap.end(), "There is no frame buffer.");
+    if (fbit == mNameToFrameBufferMap.end()) {
+        return nullptr;
+    }
 
     const FrameBuffer& frameBuffer = fbit->second;
     HO_ASSERT(frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)].IsValid(),
@@ -353,8 +87,6 @@ RenderingSystemGL::RenderingSystemGL()
 
 bool RenderingSystemGL::init()
 {
-    IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
-
     if (!spInstance)
     {
         HO_ASSERT(false, "Rendering system is not created.");
@@ -619,7 +351,6 @@ bool RenderingSystemGL::init()
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
-        IPlatformApplication::GetInstance().GetMainWindow()->DeactivateContext();
         return true;
     }
 }
@@ -1006,6 +737,274 @@ void RenderingSystemGL::renderUI()
 void RenderingSystemGL::flush()
 {
     glFlush();
+}
+
+bool RenderingSystemGL::createFrameBuffer(const FrameBufferDesc& frameBufferDesc)
+{
+    if (!validateFrameBufferDesc(frameBufferDesc))
+    {
+        HO_ASSERT(false, "Invalid frame buffer description.");
+        return false;
+    }
+
+    GLuint glFBO[2] = {};
+    glCreateFramebuffers(2, glFBO);
+    if (!ASSERT_GL())
+    {
+        return false;
+    }
+    GLuint glResolvedFBO[2] = {};
+    if (frameBufferDesc.SampleCount > 1)
+    {
+        glCreateFramebuffers(2, glResolvedFBO);
+        if (!ASSERT_GL())
+        {
+            glDeleteFramebuffers(2, glFBO);
+            return false;
+        }
+    }
+
+    FrameBuffer newFrameBuffer;
+    newFrameBuffer.hName = frameBufferDesc.hName;
+    newFrameBuffer.Width = frameBufferDesc.Width;
+    newFrameBuffer.Height = frameBufferDesc.Height;
+    newFrameBuffer.SampleCount = frameBufferDesc.SampleCount;
+
+    GLint maxSamples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+    HO_ASSERT(frameBufferDesc.SampleCount <= maxSamples,
+              "Required sample count exceeds current hardware's maximum sample count limits. The hardware maximum "
+              "sample count will be used instead.");
+
+    GLuint glRenderTargets[2][static_cast<int32_t>(eRenderTargetType::Last)] = {};
+    GLuint glResolvedRenderTargets[2][static_cast<int32_t>(eRenderTargetType::Last)] = {};
+    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
+    {
+        for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
+        {
+            if (frameBufferDesc.TargetDesc[targetIdx].Format != eRenderTargetFormat::None)
+            {
+                if (frameBufferDesc.SampleCount > 1)
+                {
+                    glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &glRenderTargets[bufferIdx][targetIdx]);
+                    if (targetIdx != static_cast<int32_t>(eRenderTargetType::Depth))
+                    {
+                        glCreateTextures(GL_TEXTURE_2D, 1, &glResolvedRenderTargets[bufferIdx][targetIdx]);
+                    }
+                }
+                else
+                {
+                    glCreateTextures(GL_TEXTURE_2D, 1, &glRenderTargets[bufferIdx][targetIdx]);
+                }
+                if (!ASSERT_GL())
+                {
+                    cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
+                    return false;
+                }
+            }
+        }
+    }
+
+    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
+    {
+        for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
+        {
+            if (frameBufferDesc.TargetDesc[targetIdx].Format != eRenderTargetFormat::None)
+            {
+                if (frameBufferDesc.SampleCount > 1)
+                {
+                    glTextureStorage2DMultisample(glRenderTargets[bufferIdx][targetIdx],
+                                                  math::Min(frameBufferDesc.SampleCount, maxSamples),
+                                                  toGlRenderTargetFormat(frameBufferDesc.TargetDesc[targetIdx].Format),
+                                                  frameBufferDesc.Width,
+                                                  frameBufferDesc.Height,
+                                                  GL_TRUE);
+                    if (targetIdx != static_cast<int32_t>(eRenderTargetType::Depth))
+                    {
+                        glTextureStorage2D(glResolvedRenderTargets[bufferIdx][targetIdx],
+                                           1,
+                                           toGlRenderTargetFormat(frameBufferDesc.TargetDesc[targetIdx].Format),
+                                           frameBufferDesc.Width,
+                                           frameBufferDesc.Height);
+                    }
+                }
+                else
+                {
+                    glTextureStorage2D(glRenderTargets[bufferIdx][targetIdx],
+                                       1,
+                                       toGlRenderTargetFormat(frameBufferDesc.TargetDesc[targetIdx].Format),
+                                       frameBufferDesc.Width,
+                                       frameBufferDesc.Height);
+                }
+                if (!ASSERT_GL())
+                {
+                    cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
+                    return false;
+                }
+
+                if (targetIdx == static_cast<int32_t>(eRenderTargetType::Depth))
+                {
+                    switch (frameBufferDesc.TargetDesc[targetIdx].Format)
+                    {
+                        case IRenderingSystem::eRenderTargetFormat::D24_UNORM_S8_UINT:
+                            glNamedFramebufferTexture(glFBO[bufferIdx],
+                                                      GL_DEPTH_STENCIL_ATTACHMENT,
+                                                      glRenderTargets[bufferIdx][targetIdx],
+                                                      0);
+                            break;
+                        case IRenderingSystem::eRenderTargetFormat::D32_FLOAT:
+                            glNamedFramebufferTexture(
+                                glFBO[bufferIdx], GL_DEPTH_ATTACHMENT, glRenderTargets[bufferIdx][targetIdx], 0);
+                            break;
+                        default:
+                            HO_ASSERT(false, "Invalid depth target format.");
+                            cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
+                            return false;
+                    }
+                }
+                else
+                {
+                    glNamedFramebufferTexture(
+                        glFBO[bufferIdx], GL_COLOR_ATTACHMENT0 + targetIdx, glRenderTargets[bufferIdx][targetIdx], 0);
+                    if (frameBufferDesc.SampleCount > 1)
+                    {
+                        glNamedFramebufferTexture(glResolvedFBO[bufferIdx],
+                                                  GL_COLOR_ATTACHMENT0 + targetIdx,
+                                                  glResolvedRenderTargets[bufferIdx][targetIdx],
+                                                  0);
+                    }
+                }
+
+                if (!ASSERT_GL())
+                {
+                    cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
+                    return false;
+                }
+
+                GpuTextureHandle hGpuRenderTarget = prepareUploadTexture(TextureHandle::sNULL, true);
+
+                TextureNativeHandleGL nativeHandle;
+                nativeHandle.GlTexture = glRenderTargets[bufferIdx][targetIdx];
+                hGpuRenderTarget.Get()->NativeHandlePoolIndex = mTextureNativeHandlePool.Add(nativeHandle);
+
+                newFrameBuffer.hRenderTargets[bufferIdx][targetIdx] = hGpuRenderTarget;
+
+                if (frameBufferDesc.SampleCount > 1 && targetIdx != static_cast<int32_t>(eRenderTargetType::Depth))
+                {
+                    GpuTextureHandle hGpuResolvedRenderTarget = prepareUploadTexture(TextureHandle::sNULL, true);
+
+                    TextureNativeHandleGL nativeHandleResolved;
+                    nativeHandleResolved.GlTexture = glResolvedRenderTargets[bufferIdx][targetIdx];
+                    hGpuResolvedRenderTarget.Get()->NativeHandlePoolIndex =
+                        mTextureNativeHandlePool.Add(nativeHandleResolved);
+
+                    newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx] = hGpuResolvedRenderTarget;
+                }
+            }
+        }
+    }
+
+    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
+    {
+        if (targetIdx == static_cast<int32_t>(eRenderTargetType::Depth))
+        {
+            newFrameBuffer.ClearDepth = frameBufferDesc.TargetDesc[targetIdx].ClearDepth;
+            newFrameBuffer.ClearStencil = frameBufferDesc.TargetDesc[targetIdx].ClearStencil;
+        }
+        else
+        {
+            newFrameBuffer.ClearColors[targetIdx] = Vector4(frameBufferDesc.TargetDesc[targetIdx].ClearColor);
+        }
+    }
+
+    for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
+    {
+        if (glCheckNamedFramebufferStatus(glFBO[bufferIdx], GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            HO_ASSERT(false, "Framebuffer is incomplete.");
+            cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
+            for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
+            {
+                if (newFrameBuffer.hRenderTargets[bufferIdx][targetIdx].IsValid())
+                {
+                    mTextureNativeHandlePool.Remove(
+                        newFrameBuffer.hRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
+                    mGpuTexturePool.Remove(newFrameBuffer.hRenderTargets[bufferIdx][targetIdx].GetIndex());
+                }
+            }
+            return false;
+        }
+        if (frameBufferDesc.SampleCount > 1)
+        {
+            if (glCheckNamedFramebufferStatus(glResolvedFBO[bufferIdx], GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                HO_ASSERT(false, "ResolvedFramebuffer is incomplete.");
+                cancelFrameBufferCreation(glFBO, glResolvedFBO, glRenderTargets, glResolvedRenderTargets);
+                for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
+                {
+                    if (newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].IsValid())
+                    {
+                        mTextureNativeHandlePool.Remove(
+                            newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
+                        mGpuTexturePool.Remove(newFrameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].GetIndex());
+                    }
+                }
+                return false;
+            }
+        }
+    }
+
+    mNameToGlFboMap.insert({frameBufferDesc.hName, GlFBO{{glFBO[0], glFBO[1]}, {glResolvedFBO[0], glResolvedFBO[1]}}});
+    mNameToFrameBufferMap.insert({frameBufferDesc.hName, newFrameBuffer});
+    return true;
+}
+
+bool RenderingSystemGL::destroyFrameBuffer(StringHandle hFrameBufferName)
+{
+    auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
+    if (fbit == mNameToFrameBufferMap.end())
+    {
+        return false;
+    }
+    FrameBuffer& frameBuffer = fbit->second;
+    for (int32_t targetIdx = 0; targetIdx < static_cast<int32_t>(eRenderTargetType::Last); ++targetIdx)
+    {
+        for (int32_t bufferIdx = 0; bufferIdx < 2; ++bufferIdx)
+        {
+            if (frameBuffer.hRenderTargets[bufferIdx][targetIdx].IsValid())
+            {
+                const TextureNativeHandleGL* nativeHandle = mTextureNativeHandlePool.Get(
+                    frameBuffer.hRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
+                HO_ASSERT(nativeHandle,
+                          "Render target's native handle is null. Frame buffer might be created incompletely.");
+                glDeleteTextures(1, &nativeHandle->GlTexture);
+                mTextureNativeHandlePool.Remove(
+                    frameBuffer.hRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
+                mGpuTexturePool.Remove(frameBuffer.hRenderTargets[bufferIdx][targetIdx].GetIndex());
+            }
+            if (frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].IsValid())
+            {
+                const TextureNativeHandleGL* nativeHandle = mTextureNativeHandlePool.Get(
+                    frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
+                HO_ASSERT(nativeHandle,
+                          "Render target's native handle is null. Frame buffer might be created incompletely.");
+                glDeleteTextures(1, &nativeHandle->GlTexture);
+                mTextureNativeHandlePool.Remove(
+                    frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].Get()->NativeHandlePoolIndex);
+                mGpuTexturePool.Remove(frameBuffer.hResolvedRenderTargets[bufferIdx][targetIdx].GetIndex());
+            }
+        }
+    }
+
+    mNameToFrameBufferMap.erase(hFrameBufferName);
+
+    auto glit = mNameToGlFboMap.find(hFrameBufferName);
+    HO_ASSERT(glit != mNameToGlFboMap.end(),
+              "GL id for frame buffer was not inserted. Frame buffer might be created incompletely.");
+    glDeleteFramebuffers(2, glit->second.FBO);
+    glDeleteFramebuffers(2, glit->second.ResolvedFBO);
+    mNameToGlFboMap.erase(hFrameBufferName);
+    return true;
 }
 
 // TODO: Currently, all vertex attributes are always packed and uploaded interleaved

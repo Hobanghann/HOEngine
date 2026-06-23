@@ -171,45 +171,45 @@ TEST_F(Basis3DTest, RotateEuler_GlobalSpaceVaryingOrders_AppliesRotationsCorrect
 
     b1 = b;
     b1.RotateEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XYZ);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
 
     b1 = b;
     b1.RotateEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XZY);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
 
     b1 = b;
     b1.RotateEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YZX);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
 
     b1 = b;
     b1.RotateEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YXZ);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
 
     b1 = b;
     b1.RotateEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZXY);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
 
     b1 = b;
     b1.RotateEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZYX);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
-
-    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XYZ);
     EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
 
-    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XZY);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
+    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XYZ);
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
 
-    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YZX);
+    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XZY);
     EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
 
-    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YXZ);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
+    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YZX);
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
 
-    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZXY);
+    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YXZ);
     EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix * b.Matrix));
 
+    b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZXY);
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
+
     b1 = b.RotatedEuler(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZYX);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * b.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(pitchRotBasis.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix * b.Matrix));
 }
 
 TEST_F(Basis3DTest, RotateAxisAngle_GlobalSpace_AppliesRotationCorrectly)
@@ -255,45 +255,45 @@ TEST_F(Basis3DTest, RotateEuler_LocalSpaceVaryingOrders_AppliesRotationsCorrectl
 
     b1 = b;
     b1.RotateEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XYZ);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix));
 
     b1 = b;
     b1.RotateEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XZY);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix));
 
     b1 = b;
     b1.RotateEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YZX);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix));
 
     b1 = b;
     b1.RotateEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YXZ);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix));
 
     b1 = b;
     b1.RotateEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZXY);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix));
 
     b1 = b;
     b1.RotateEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZYX);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix));
-
-    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XYZ);
     EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix));
 
-    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XZY);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix));
+    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XYZ);
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix));
 
-    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YZX);
+    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::XZY);
     EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix));
 
-    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YXZ);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix));
+    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YZX);
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix));
 
-    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZXY);
+    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::YXZ);
     EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix));
 
+    b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZXY);
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix * rollRotBasis.Matrix));
+
     b1 = b.RotatedEulerLocal(math::PI / 4.0f, math::PI / 4.0f, math::PI / 4.0f, math::eEulerOrder::ZYX);
-    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * rollRotBasis.Matrix * yawRotBasis.Matrix * pitchRotBasis.Matrix));
+    EXPECT_TRUE(b1.Matrix.IsEqualApprox(b.Matrix * pitchRotBasis.Matrix * yawRotBasis.Matrix * rollRotBasis.Matrix));
 }
 
 TEST_F(Basis3DTest, RotateAxisAngle_LocalSpace_AppliesRotationCorrectly)

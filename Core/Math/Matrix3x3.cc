@@ -60,13 +60,13 @@ Matrix3x3 Matrix3x3::FromEuler(float x, float y, float z, math::eEulerOrder orde
             m = rotationMatY * rotationMatZ * rotationMatX;
             break;
         case math::eEulerOrder::YXZ:
-            m = rotationMatY * rotationMatX * rotationMatZ;
+            m = rotationMatZ * rotationMatX * rotationMatY;
             break;
         case math::eEulerOrder::YZX:
             m = rotationMatX * rotationMatZ * rotationMatY;
             break;
         case math::eEulerOrder::ZXY:
-            m = rotationMatZ * rotationMatX * rotationMatY;
+            m = rotationMatY * rotationMatX * rotationMatZ;
             break;
         case math::eEulerOrder::ZYX:
             m = rotationMatX * rotationMatY * rotationMatZ;

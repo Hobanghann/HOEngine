@@ -114,45 +114,77 @@ bool AssetSystem::ResolveMaterialTextures(MaterialHandle hMaterial)
 
 bool AssetSystem::DeleteStaticMesh(StaticMeshHandle hStaticMesh)
 {
+    if (hStaticMesh.IsNULL())
+    {
+        return false;
+    }
     mNameToStaticMeshMap.erase(hStaticMesh.Get()->hName);
     return mStaticMeshPool.Remove(hStaticMesh.GetIndex());
 }
 
 bool AssetSystem::DeleteMaterial(MaterialHandle hMaterial)
 {
+    if (hMaterial.IsNULL())
+    {
+        return false;
+    }
     mNameToMaterialMap.erase(hMaterial.Get()->hName);
     return mMaterialPool.Remove(hMaterial.GetIndex());
 }
 
 bool AssetSystem::DeleteTexture(TextureHandle hTexture)
 {
+    if (hTexture.IsNULL())
+    {
+        return false;
+    }
     mNameToTextureMap.erase(hTexture.Get()->hName);
     return mTexturePool.Remove(hTexture.GetIndex());
 }
 
 bool AssetSystem::DeleteShader(ShaderHandle hShader)
 {
+    if (hShader.IsNULL())
+    {
+        return false;
+    }
     mNameToShaderMap.erase(hShader.Get()->hName);
     return mShaderPool.Remove(hShader.GetIndex());
 }
 
 bool AssetSystem::HasStaticMesh(StaticMeshHandle hStaticMesh) const
 {
+    if (hStaticMesh.IsNULL())
+    {
+        return false;
+    }
     return mStaticMeshPool.Has(hStaticMesh.GetIndex());
 }
 
 bool AssetSystem::HasMaterial(MaterialHandle hMaterial) const
 {
+    if (hMaterial.IsNULL())
+    {
+        return false;
+    }
     return mMaterialPool.Has(hMaterial.GetIndex());
 }
 
 bool AssetSystem::HasTexture(TextureHandle hTexture) const
 {
+    if (hTexture.IsNULL())
+    {
+        return false;
+    }
     return mTexturePool.Has(hTexture.GetIndex());
 }
 
 bool AssetSystem::HasShader(ShaderHandle hShader) const
 {
+    if (hShader.IsNULL())
+    {
+        return false;
+    }
     return mShaderPool.Has(hShader.GetIndex());
 }
 

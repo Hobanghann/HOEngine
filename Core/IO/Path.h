@@ -18,11 +18,6 @@ class Path final
     {
     }
 
-    explicit Path(const std::wstring& pathStr)
-      : mPath(pathStr)
-    {
-    }
-
     Path(Path&& path) noexcept = default;
 
     FORCE_INLINE Path& operator=(const Path& rhs);
@@ -46,7 +41,6 @@ class Path final
     [[nodiscard]] FORCE_INLINE Path RemovedExtension() const;
 
     [[nodiscard]] FORCE_INLINE std::string ToString() const;
-    [[nodiscard]] FORCE_INLINE std::wstring ToWString() const;
 
   private:
     Path(const std::filesystem::path& path)
@@ -153,11 +147,6 @@ Path Path::RemovedExtension() const
 std::string Path::ToString() const
 {
     return mPath.string();
-}
-
-std::wstring Path::ToWString() const
-{
-    return mPath.wstring();
 }
 
 } // namespace ho

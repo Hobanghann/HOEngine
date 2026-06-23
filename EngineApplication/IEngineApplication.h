@@ -21,13 +21,13 @@ class IEngineApplication
     virtual bool OnRender() = 0;
     virtual void OnShutdown() = 0;
 
-    std::wstring GetTitleStr() const
+    std::string GetTitleStr() const
     {
         return mTitleStr;
     }
 
   protected:
-    IEngineApplication(const std::wstring& titleStr);
-    std::wstring mTitleStr;
+    IEngineApplication(const std::string& titleStr);
+    std::string mTitleStr;
 };
 } // namespace ho

@@ -19,8 +19,9 @@ namespace ho
 class IWin32Window : public IPlatformWindow
 {
   public:
-    IWin32Window(int32_t clientWidth, int32_t clientHeight, HWND hWnd)
-      : IPlatformWindow(clientWidth, clientHeight)
+    IWin32Window(
+        int32_t posX, int32_t posY, int32_t titleBarHeight, int32_t clientWidth, int32_t clientHeight, HWND hWnd)
+      : IPlatformWindow(posX, posY, titleBarHeight, clientWidth, clientHeight)
       , mhWnd(hWnd)
     {
         HO_ASSERT(mhWnd != nullptr, "Invalid Window Handle.");
@@ -61,12 +62,26 @@ class IWin32Window : public IPlatformWindow
         ::SwapBuffers(mhDC);
     }
 
-    void SetTitle(const std::wstring& titleStr) const override
+    void ProcessWindowDragging() const override;
+
+    void Maximize() const override
     {
-        if (!SetWindowTextW(mhWnd, titleStr.c_str()))
-        {
-            HO_ASSERT(false, "Failed to set title text.");
-        }
+        ::ShowWindow(mhWnd, SW_MAXIMIZE);
+    }
+
+    void Minimize() const override
+    {
+        ::ShowWindow(mhWnd, SW_MINIMIZE);
+    }
+
+    void Restore() const override
+    {
+        ::ShowWindow(mhWnd, SW_RESTORE);
+    }
+
+    void Close() const override
+    {
+        ::PostMessageW(mhWnd, WM_CLOSE, 0, 0);
     }
 
   protected:

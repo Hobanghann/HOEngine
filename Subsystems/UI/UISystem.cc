@@ -1,7 +1,9 @@
 #include "UISystem.h"
 
+#include <IconsFontAwesome7.h>
 #include <imgui.h>
 
+#include "Core/IO/Path.h"
 #include "Platforms/IPlatformApplication.h"
 #include "Subsystems/Rendering/IRenderingSystem.h"
 
@@ -46,7 +48,97 @@ void UISystem::deleteInstance()
 
 bool UISystem::init()
 {
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Load text font
+    const float fontSize = 16.0f;
+    const ImWchar* pGlyphRangesKorean = io.Fonts->GetGlyphRangesKorean();
+    Path fontPath = Path(std::string("Platforms/Resources/Fonts/Inter_18pt-Regular.ttf"));
+    fontPath.ResolveProjectPath();
+    if (!io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean))
+    {
+        HO_ASSERT(false, "Failed to load font.");
+        return false;
+    }
+
+    // Load icon font
+    ImFontConfig iconConfig;
+    iconConfig.MergeMode = true;
+    iconConfig.PixelSnapH = true;
+    iconConfig.GlyphMinAdvanceX = 14.f;
+    iconConfig.GlyphOffset = ImVec2(0.0f, 2.0f);
+    static const ImWchar sIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+
+    mpFaSolidFont = io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
+    if (!mpFaSolidFont)
+    {
+        HO_ASSERT(false, "Failed to load base font for Solid.");
+        return false;
+    }
+
+    Path iconPath;
+    iconPath = Path(std::string("Platforms/Resources/Fonts/fa-solid-900.ttf"));
+    iconPath.ResolveProjectPath();
+    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRanges))
+    {
+        HO_ASSERT(false, "Failed to merge FaSolid font.");
+        return false;
+    }
+
+    mpFaRegularFont = io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
+    if (!mpFaRegularFont)
+    {
+        HO_ASSERT(false, "Failed to load base font for Regular.");
+        return false;
+    }
+
+    iconPath = Path(std::string("Platforms/Resources/Fonts/fa-regular-400.ttf"));
+    iconPath.ResolveProjectPath();
+    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRanges))
+    {
+        HO_ASSERT(false, "Failed to merge FaRegular font.");
+        return false;
+    }
+
+    mpFaBrandsFont = io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
+    if (!mpFaBrandsFont)
+    {
+        HO_ASSERT(false, "Failed to load base font for Brands.");
+        return false;
+    }
+
+    iconPath = Path(std::string("Platforms/Resources/Fonts/fa-brands-400.ttf"));
+    iconPath.ResolveProjectPath();
+    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRanges))
+    {
+        HO_ASSERT(false, "Failed to merge FaBrands font.");
+        return false;
+    }
+
     return true;
+}
+
+void UISystem::ActivateFaSolid()
+{
+    HO_ASSERT(mpFaSolidFont, "Font is not loaded.");
+    ImGui::PushFont(mpFaSolidFont);
+}
+
+void UISystem::ActivateFaRegular()
+{
+    HO_ASSERT(mpFaRegularFont, "Font is not loaded.");
+    ImGui::PushFont(mpFaRegularFont);
+}
+
+void UISystem::ActivateFaBrands()
+{
+    HO_ASSERT(mpFaBrandsFont, "Font is not loaded.");
+    ImGui::PushFont(mpFaBrandsFont);
+}
+
+void UISystem::DeactivateIconFont()
+{
+    ImGui::PopFont();
 }
 
 void UISystem::submitDrawCommandForUI()

@@ -2,6 +2,9 @@
 
 #include "Core/Templates/FixedQueue.h"
 #include "IUIWindow.h"
+#include "TitleBarTheme.h"
+
+struct ImFont;
 
 namespace ho
 {
@@ -19,6 +22,26 @@ class UISystem final
 
     void SubmitRenderWindow(IUIWindow* pWindow);
 
+    void SetTitleBarTheme(const TitleBarTheme& theme)
+    {
+        mTitleBarTheme = theme;
+    }
+
+    TitleBarTheme& GetTitleBarTheme()
+    {
+        return mTitleBarTheme;
+    }
+
+    const TitleBarTheme& GetTitleBarTheme() const
+    {
+        return mTitleBarTheme;
+    }
+
+    void ActivateFaSolid();
+    void ActivateFaRegular();
+    void ActivateFaBrands();
+    void DeactivateIconFont();
+
   private:
     static const int32_t sRenderWindowQueueSize = 32;
 
@@ -35,7 +58,13 @@ class UISystem final
 
     void shutdown();
 
+    TitleBarTheme mTitleBarTheme;
+
     FixedQueue<IUIWindow*> mRenderWindowQueue;
+
+    ImFont* mpFaSolidFont = nullptr;
+    ImFont* mpFaRegularFont = nullptr;
+    ImFont* mpFaBrandsFont = nullptr;
 
     static UISystem* spInstance;
 };

@@ -7,7 +7,7 @@ namespace ho
 class TestAppMainWindow final : public IUIWindow
 {
   public:
-    TestAppMainWindow();
+    TestAppMainWindow(StringHandle hMainFrameBufferName);
 
     TestAppMainWindow(const TestAppMainWindow&) = delete;
     TestAppMainWindow& operator=(const TestAppMainWindow&) = delete;
@@ -16,5 +16,7 @@ class TestAppMainWindow final : public IUIWindow
 
   private:
     void onGUI() override;
+
+    StringHandle mhMainFrameBufferName;
 };
 } // namespace ho

@@ -1,5 +1,6 @@
 #include "Engine.h"
 
+#include "Core/IO/Path.h"
 #include "Core/Log/Logger.h"
 #include "EngineApplication/IEngineApplication.h"
 #include "Platforms/IPlatformApplication.h"
@@ -26,10 +27,30 @@ bool Engine::Init(const EngineInitParam& param)
     }
 
     // Init platform application
-    if (!IPlatformApplication::GetInstance().Init(
-            mpRunningApp->GetTitleStr(), param.MainWindowWidth, param.MainWindowHeight))
+    Path iconPath;
+    switch (param.ApplicationType)
     {
-        HO_ASSERT(false, "Failed to create platform application.");
+        case eEngineApplicationType::TestApp:
+            iconPath = Path(std::string("Platforms/Resources/Icons/TestAppIcon64.png"));
+            break;
+        case eEngineApplicationType::ModelViewer:
+            iconPath = Path(std::string("Platforms/Resources/Icons/ModelViewerIcon64.png"));
+            break;
+        case eEngineApplicationType::Editor:
+            iconPath = Path(std::string("Platforms/Resources/Icons/EditorIcon64.png"));
+            break;
+        case eEngineApplicationType::Game:
+            iconPath = Path(std::string("Platforms/Resources/Icons/GameIcon64.png"));
+            break;
+        default:
+            HO_ASSERT(false, "Invalid application type.");
+            break;
+    }
+    iconPath.ResolveProjectPath();
+
+    if (!IPlatformApplication::GetInstance().Init(iconPath.ToString()))
+    {
+        HO_ASSERT(false, "Failed to initialize platform application.");
         return false;
     }
 
@@ -55,14 +76,22 @@ bool Engine::Init(const EngineInitParam& param)
         return false;
     }
 
+    // Create main window
+    if (!IPlatformApplication::GetInstance().CreateMainWindow(mpRunningApp->GetTitleStr(),
+                                                              UISystem::GetInstance().GetTitleBarTheme().Height,
+                                                              param.MainWindowWidth,
+                                                              param.MainWindowHeight))
+    {
+        HO_ASSERT(false, "Failed to create main window.");
+        return false;
+    }
+
     // Init engine application
-    IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
     if (!mpRunningApp->OnInit())
     {
         HO_ASSERT(false, "Failed to initialize engine application.");
         return false;
     }
-    IPlatformApplication::GetInstance().GetMainWindow()->DeactivateContext();
 
     // Run render thread
     IRenderingSystem::GetInstance().run();
@@ -78,17 +107,22 @@ void Engine::Run()
 
     while (mbRunning)
     {
-        IPlatformApplication::GetInstance().BeginFrame();
-
-        ++mFrameCount;
-
         if (!IPlatformApplication::GetInstance().ProcessPlatformMessages())
         {
             mbRunning = false;
             break;
         }
 
+        if (IPlatformApplication::GetInstance().IsPaused())
+        {
+            Thread::Sleep(16);
+            continue;
+        }
+
+        IPlatformApplication::GetInstance().BeginFrame();
+
         mEngineTimer.Tick();
+        ++mFrameCount;
 
         // ===========================================
         // Update

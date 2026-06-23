@@ -52,6 +52,7 @@ if (MSVC)
         /Zc:__cplusplus
         /EHsc
         /D_HAS_EXCEPTIONS=0
+        /utf-8
     )
 
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -83,6 +84,8 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-double-promotion       # allow float to double promotion
             -Wno-sign-conversion
             -fno-exceptions
+            -finput-charset=UTF-8
+            -fexec-charset=UTF-8
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(FATAL_ERROR

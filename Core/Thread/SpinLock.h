@@ -21,7 +21,7 @@ class SpinLock final
         while (true)
         {
             bool bExpected = false;
-            if (mbIsLock.compare_exchange_weak(bExpected, true, std::memory_order_acquire, std::memory_order_relaxed))
+            if (mbLocked.compare_exchange_weak(bExpected, true, std::memory_order_acquire, std::memory_order_relaxed))
             {
                 break; // acquired
             }
@@ -29,19 +29,19 @@ class SpinLock final
             do
             {
                 CPU_PAUSE();
-            } while (mbIsLock.load(std::memory_order_relaxed));
+            } while (mbLocked.load(std::memory_order_relaxed));
         }
     }
 
     FORCE_INLINE void Unlock() const
     {
-        mbIsLock.store(false, std::memory_order_release);
+        mbLocked.store(false, std::memory_order_release);
     }
 
   private:
     union
     {
-        mutable std::atomic<bool> mbIsLock = false;
+        mutable std::atomic<bool> mbLocked = false;
         char mAligner[Thread::sCacheLineBytes]; // reduce false sharing
     };
 };

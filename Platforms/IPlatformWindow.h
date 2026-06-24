@@ -19,8 +19,6 @@ class IPlatformWindow
       , mClientWidth(clientWidth)
       , mClientHeight(clientHeight)
     {
-        HO_ASSERT(mPosX >= 0, "Window position can't be negative.");
-        HO_ASSERT(mPosY >= 0, "Window position can't be negative.");
         HO_ASSERT(mTitleBarHeight >= 0, "title bar height can't be negative.");
         HO_ASSERT(mClientWidth >= 0, "Window width can't be negative.");
         HO_ASSERT(mClientHeight >= 0, "Window height can't be negative.");
@@ -42,13 +40,11 @@ class IPlatformWindow
 
     void SetPosX(int32_t posX)
     {
-        HO_ASSERT(posX >= 0, "Window position can't be negative.");
         mPosX = posX;
     }
 
     void SetPosY(int32_t posY)
     {
-        HO_ASSERT(posY >= 0, "Window position can't be negative.");
         mPosY = posY;
     }
 

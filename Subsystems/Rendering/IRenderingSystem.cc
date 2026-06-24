@@ -377,6 +377,7 @@ GpuShaderHandle IRenderingSystem::EnqueueUploadShader(ShaderHandle hShader, bool
 }
 
 IRenderingSystem::IRenderingSystem()
+  : mbVSyncEnabled(false)
 {
     HO_ASSERT(!spInstance, "Rendering system muse be created by 'createInstance' function.");
 }

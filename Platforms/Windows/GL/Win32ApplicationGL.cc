@@ -14,6 +14,9 @@ typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareCo
 #define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
 
+typedef BOOL(WINAPI* PFNWGLSWAPINTERVALEXTPROC)(int interval);
+static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
+
 namespace ho
 {
 void Win32ApplicationGL::CreateInstance(HINSTANCE hApp)
@@ -78,6 +81,9 @@ bool Win32ApplicationGL::Init(const std::string& iconPathStr)
         HO_ASSERT(false, "Failed to load GL functions.");
         return false;
     }
+
+    wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(wglGetProcAddress("wglSwapIntervalEXT"));
+    HO_ASSERT(wglSwapIntervalEXT, "Failed to get function for VSync.");
 
     // Load windows icon
     loadWindowsIcon(iconPathStr);
@@ -288,6 +294,11 @@ void Win32ApplicationGL::Shutdown()
     mIconNativeHandle = nullptr;
 }
 
+void Win32ApplicationGL::SetVSync(bool bEnable)
+{
+    wglSwapIntervalEXT(bEnable ? 1 : 0);
+}
+
 void Win32ApplicationGL::uploadIconTexture(const std::string& path)
 {
     // Load icon image
@@ -349,6 +360,16 @@ void Win32ApplicationGL::RendererCreateWindow_Hook(ImGuiViewport* viewport)
                                                shGlContext);
 
     pWindow->SetTitle(viewport->GetDebugName());
+
+    ::SendMessageW(static_cast<HWND>(viewport->PlatformHandle),
+                   WM_SETICON,
+                   ICON_SMALL,
+                   reinterpret_cast<LPARAM>(static_cast<Win32ApplicationGL*>(spInstance)->mhIcon));
+
+    ::SendMessageW(static_cast<HWND>(viewport->PlatformHandle),
+                   WM_SETICON,
+                   ICON_BIG,
+                   reinterpret_cast<LPARAM>(static_cast<Win32ApplicationGL*>(spInstance)->mhIcon));
 
     viewport->RendererUserData = static_cast<void*>(pWindow);
 }

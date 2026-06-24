@@ -18,6 +18,8 @@ class RenderingSystemGL final : public IRenderingSystem
                                       eRenderTargetType type,
                                       bool bRequireMultisample = false) const override;
 
+    void SetVSync(bool bEnabled) override;
+
   private:
     struct GlFBO
     {

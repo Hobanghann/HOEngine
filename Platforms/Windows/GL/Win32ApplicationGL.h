@@ -4,7 +4,7 @@
 
 #include "../IWin32Application.h"
 
-class ImGuiViewport;
+struct ImGuiViewport;
 
 namespace ho
 {
@@ -27,6 +27,12 @@ class Win32ApplicationGL final : public IWin32Application
     void BeginFrame() override;
 
     void Shutdown() override;
+
+    // Sets platform-specific OpenGL V-Sync configuration.
+    // Placed at the platform application level since OpenGL lacks a universal cross-platform method for V-Sync control
+    // (Windows uses WGL, Linux uses GLX, macOS uses NSOpenGLContext).
+    // Renderering system should downcast the platform instance to call this method during API-specific initialization.
+    void SetVSync(bool bEnable);
 
     static void RendererCreateWindow_Hook(ImGuiViewport* pViewport);
     static void RendererDestroyWindow_Hook(ImGuiViewport* pViewport);

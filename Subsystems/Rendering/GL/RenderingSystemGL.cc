@@ -7,6 +7,7 @@
 #include "Core/IO/ResourceParseFuncs.h"
 #include "Core/Log/Logger.h"
 #include "Platforms/IPlatformApplication.h"
+#include "Platforms/Windows/GL/Win32ApplicationGL.h"
 #include "Subsystems/Asset/AssetImportFuncs.h"
 #include "Subsystems/Asset/Assets.h"
 
@@ -351,8 +352,20 @@ bool RenderingSystemGL::init()
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-
         return true;
+    }
+}
+
+void RenderingSystemGL::SetVSync(bool bEnabled)
+{
+    if (mbVSyncEnabled.TestNotEqual(bEnabled))
+    {
+#if defined(_WIN32)
+        static_cast<Win32ApplicationGL&>(IPlatformApplication::GetInstance()).SetVSync(bEnabled);
+#elif defined(__linux__)
+#error "Linux environment is currently not supported."
+#endif
+        mbVSyncEnabled.Set(bEnabled);
     }
 }
 

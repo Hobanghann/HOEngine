@@ -4,6 +4,7 @@
 #include "Core/Math/Color128.h"
 #include "Core/Math/Matrix4x4.h"
 #include "Core/Math/Vector3.h"
+#include "Core/Templates/AtomicNumeric.h"
 #include "Core/Templates/FixedArray.h"
 #include "Core/Templates/FixedQueue.h"
 #include "Core/Templates/GlobalPoolIndex.h"
@@ -207,6 +208,8 @@ class IRenderingSystem
     GpuMaterialHandle EnqueueUploadMaterial(MaterialHandle hMaterial, bool bPersistent = false);
     GpuTextureHandle EnqueueUploadTexture(TextureHandle hTexture, bool bPersistent = false);
     GpuShaderHandle EnqueueUploadShader(ShaderHandle hShader, bool bPersistent = false);
+
+    virtual void SetVSync(bool bEnable) = 0;
 
   protected:
     struct FrameBuffer
@@ -465,6 +468,7 @@ class IRenderingSystem
     SpinLock mPendingShaderQueueLock;
 
     bool mbRunning = true;
+    AtomicNumeric<bool> mbVSyncEnabled;
     RenderSync mRenderSync;
 
     std::unique_ptr<Thread> mpRenderThread;

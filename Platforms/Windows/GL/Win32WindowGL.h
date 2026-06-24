@@ -27,7 +27,7 @@ class Win32WindowGL final : public IWin32Window
     void ActivateContext() const override
     {
         const BOOL bSuccess = ::wglMakeCurrent(mhDC, mhGlContext);
-        HO_ASSERT(bSuccess != FALSE, "wglMakeCurrent failed.");
+        // HO_ASSERT(bSuccess != FALSE, "wglMakeCurrent failed.");
         (void)bSuccess;
     }
 

@@ -1,4 +1,4 @@
-#include "IUIWindow.h"
+#include "IUIDrawable.h"
 
 #include <IconsFontAwesome7.h>
 #include <imgui.h>
@@ -10,7 +10,7 @@
 
 namespace ho
 {
-void IUIWindow::drawMainWindowTitleBar(const TitleBarTheme& theme) const
+void IUIDrawable::drawMainWindowTitleBar(const TitleBarTheme& theme) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
     ImGui::SetNextWindowSize(
@@ -108,7 +108,7 @@ void IUIWindow::drawMainWindowTitleBar(const TitleBarTheme& theme) const
     ImGui::PopStyleVar(3);
 }
 
-void IUIWindow::drawIcon(void* iconNativeHandle, int32_t width, int32_t height) const
+void IUIDrawable::drawIcon(void* iconNativeHandle, int32_t width, int32_t height) const
 {
     if (iconNativeHandle != nullptr)
     {
@@ -127,7 +127,7 @@ void IUIWindow::drawIcon(void* iconNativeHandle, int32_t width, int32_t height) 
     }
 }
 
-void IUIWindow::drawTitle(const std::string& titleStr, const Color128& textColor, float textSize) const
+void IUIDrawable::drawTitle(const std::string& titleStr, const Color128& textColor, float textSize) const
 {
     if (titleStr.empty())
     {
@@ -141,11 +141,11 @@ void IUIWindow::drawTitle(const std::string& titleStr, const Color128& textColor
     ImGui::PopStyleColor();
 }
 
-void IUIWindow::drawMinimizeButton(const Color128& iconColor,
-                                   const Color128& hoveredColor,
-                                   const Color128& activateColor,
-                                   int32_t width,
-                                   int32_t height) const
+void IUIDrawable::drawMinimizeButton(const Color128& iconColor,
+                                     const Color128& hoveredColor,
+                                     const Color128& activateColor,
+                                     int32_t width,
+                                     int32_t height) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
@@ -189,11 +189,11 @@ void IUIWindow::drawMinimizeButton(const Color128& iconColor,
     }
 }
 
-void IUIWindow::drawMaximizeButton(const Color128& iconColor,
-                                   const Color128& hoveredColor,
-                                   const Color128& activateColor,
-                                   int32_t width,
-                                   int32_t height) const
+void IUIDrawable::drawMaximizeButton(const Color128& iconColor,
+                                     const Color128& hoveredColor,
+                                     const Color128& activateColor,
+                                     int32_t width,
+                                     int32_t height) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
@@ -244,11 +244,11 @@ void IUIWindow::drawMaximizeButton(const Color128& iconColor,
     }
 }
 
-void IUIWindow::drawCloseButton(const Color128& iconColor,
-                                const Color128& hoveredColor,
-                                const Color128& activateColor,
-                                int32_t width,
-                                int32_t height) const
+void IUIDrawable::drawCloseButton(const Color128& iconColor,
+                                  const Color128& hoveredColor,
+                                  const Color128& activateColor,
+                                  int32_t width,
+                                  int32_t height) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 

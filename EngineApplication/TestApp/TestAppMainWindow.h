@@ -1,22 +1,22 @@
 #pragma once
 
-#include "Subsystems/UI/IUIWindow.h"
+#include "../IEngineWindow.h"
 
 namespace ho
 {
-class TestAppMainWindow final : public IUIWindow
+class TestAppMainWindow final : public IEngineWindow
 {
   public:
-    TestAppMainWindow(StringHandle hMainFrameBufferName);
+    TestAppMainWindow();
 
     TestAppMainWindow(const TestAppMainWindow&) = delete;
     TestAppMainWindow& operator=(const TestAppMainWindow&) = delete;
 
     ~TestAppMainWindow() override = default;
 
-  private:
-    void onGUI() override;
+    void DrawUI() override;
 
+  private:
     StringHandle mhMainFrameBufferName;
 };
 } // namespace ho

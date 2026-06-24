@@ -28,6 +28,7 @@ class IEngineApplication
 
   protected:
     IEngineApplication(const std::string& titleStr);
+
     std::string mTitleStr;
 };
 } // namespace ho

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Templates/FixedQueue.h"
-#include "IUIWindow.h"
+#include "IUIDrawable.h"
 #include "TitleBarTheme.h"
 
 struct ImFont;
@@ -20,7 +20,7 @@ class UISystem final
 
     static UISystem& GetInstance();
 
-    void SubmitRenderWindow(IUIWindow* pWindow);
+    void SubmitUIDrawable(IUIDrawable* pWindow);
 
     void SetTitleBarTheme(const TitleBarTheme& theme)
     {
@@ -43,7 +43,7 @@ class UISystem final
     void DeactivateIconFont();
 
   private:
-    static const int32_t sRenderWindowQueueSize = 32;
+    static const int32_t sUIDrawableQueueSize = 32;
 
     UISystem();
     ~UISystem() = default;
@@ -60,7 +60,7 @@ class UISystem final
 
     TitleBarTheme mTitleBarTheme;
 
-    FixedQueue<IUIWindow*> mRenderWindowQueue;
+    FixedQueue<IUIDrawable*> mUIDrawableQueue;
 
     ImFont* mpFaSolidFont = nullptr;
     ImFont* mpFaRegularFont = nullptr;

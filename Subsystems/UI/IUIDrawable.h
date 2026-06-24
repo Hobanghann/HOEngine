@@ -10,45 +10,27 @@ class UISystem;
 struct TitleBarTheme;
 struct Color128;
 
-class IUIWindow
+class IUIDrawable
 {
     friend UISystem;
 
   public:
-    IUIWindow(StringHandle hName)
-      : mhName(hName)
-    {
-    }
+    IUIDrawable() = default;
 
-    IUIWindow(const IUIWindow&) = delete;
-    IUIWindow& operator=(const IUIWindow&) = delete;
-    virtual ~IUIWindow() = default;
+    IUIDrawable(const IUIDrawable&) = delete;
+    IUIDrawable& operator=(const IUIDrawable&) = delete;
+    virtual ~IUIDrawable() = default;
 
-    StringHandle GetName() const
-    {
-        return mhName;
-    }
-
-    bool IsVisible() const
-    {
-        return mbVisible;
-    }
-
-    void SetVisible(bool bFlag)
-    {
-        mbVisible = bFlag;
-    }
+    // Function to handle the UI rendering logic.
+    // Implementations must enclose their UI widgets between ImGui::Begin() and ImGui::End()
+    // internally to properly construct and render the window.
+    virtual void DrawUI() = 0;
 
   protected:
-    virtual void onGUI() = 0;
-
     // This function draws the title bar as an ImGui child window.
     // Therefore, it must be called immediately after ImGui::Begin() before any other widgets.
     // WARN: This function must be used with main window.
     void drawMainWindowTitleBar(const TitleBarTheme& theme) const;
-
-    StringHandle mhName;
-    bool mbVisible = false;
 
   private:
     void drawIcon(void* iconNativeHandle, int32_t width, int32_t height) const;

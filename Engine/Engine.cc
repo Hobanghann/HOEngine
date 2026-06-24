@@ -17,15 +17,6 @@ bool Engine::Init(const EngineInitParam& param)
 {
     Logger::Init();
 
-    // Create engine application
-    mpRunningApp = IEngineApplication::CreateApplication(param.ApplicationType);
-
-    if (!mpRunningApp)
-    {
-        HO_ASSERT(false, "Failed to create engine application.");
-        return false;
-    }
-
     // Init platform application
     Path iconPath;
     switch (param.ApplicationType)
@@ -70,6 +61,7 @@ bool Engine::Init(const EngineInitParam& param)
         HO_ASSERT(false, "Failed to initialize rendering system.");
         return false;
     }
+
     if (!UISystem::GetInstance().init())
     {
         HO_ASSERT(false, "Failed to initialize UI system.");
@@ -77,12 +69,38 @@ bool Engine::Init(const EngineInitParam& param)
     }
 
     // Create main window
-    if (!IPlatformApplication::GetInstance().CreateMainWindow(mpRunningApp->GetTitleStr(),
-                                                              UISystem::GetInstance().GetTitleBarTheme().Height,
-                                                              param.MainWindowWidth,
-                                                              param.MainWindowHeight))
+    std::string titleStr;
+    switch (param.ApplicationType)
+    {
+        case eEngineApplicationType::TestApp:
+            titleStr = "HOEngine: TestApp";
+            break;
+        case eEngineApplicationType::ModelViewer:
+            titleStr = "HOEngine: ModelViewer";
+            break;
+        case eEngineApplicationType::Editor:
+            titleStr = "HOEngine: Editor";
+            break;
+        case eEngineApplicationType::Game:
+            titleStr = "HOEngine: Game";
+            break;
+        default:
+            HO_ASSERT(false, "Invalid application type.");
+            break;
+    }
+    if (!IPlatformApplication::GetInstance().CreateMainWindow(
+            titleStr, UISystem::GetInstance().GetTitleBarTheme().Height, param.MainWindowWidth, param.MainWindowHeight))
     {
         HO_ASSERT(false, "Failed to create main window.");
+        return false;
+    }
+
+    // Create engine application
+    mpRunningApp = IEngineApplication::CreateApplication(param.ApplicationType);
+
+    if (!mpRunningApp)
+    {
+        HO_ASSERT(false, "Failed to create engine application.");
         return false;
     }
 
@@ -159,6 +177,7 @@ void Engine::Run()
 void Engine::Shutdown()
 {
     mpRunningApp->OnShutdown();
+    mpRunningApp.reset();
 
     UISystem::GetInstance().shutdown();
     IRenderingSystem::GetInstance().shutdown();

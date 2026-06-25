@@ -135,8 +135,6 @@ jobs:
       - name: Set up MSVC
         if: startsWith(matrix.build_tool, 'Visual Studio')
         uses: ilammy/msvc-dev-cmd@v1
-        with:
-          toolset: 14.3
 
       - name: Configure CMake
         shell: bash

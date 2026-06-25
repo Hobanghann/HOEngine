@@ -233,6 +233,22 @@ bool RenderingSystemGL::init()
         }
 
         if (!loadShader(
+                "DefaultUnlit.frag", &mGlDefaultUnlitFS, eShaderStage::FragmentShader, eMaterialAssetType::Unlit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader("DefaultUnlitMasked.frag",
+                        &mGlDefaultUnlitMaskedFS,
+                        eShaderStage::FragmentShader,
+                        eMaterialAssetType::Unlit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
                 "DefaultPhong.frag", &mGlDefaultPhongFS, eShaderStage::FragmentShader, eMaterialAssetType::Legacy))
         {
             cancelInitialization();
@@ -415,6 +431,8 @@ void RenderingSystemGL::releaseAllResources()
     glDeleteVertexArrays(1, &mGlVAO);
     glDeleteProgramPipelines(1, &mGlProgramPipeline);
     glDeleteProgram(mGlDefaultVS);
+    glDeleteProgram(mGlDefaultUnlitFS);
+    glDeleteProgram(mGlDefaultUnlitMaskedFS);
     glDeleteProgram(mGlDefaultPhongFS);
     glDeleteProgram(mGlDefaultPhongMaskedFS);
     glDeleteProgram(mGlDefaultPbrFS);
@@ -504,6 +522,16 @@ void RenderingSystemGL::applyMaterial(GpuMaterialHandle hGpuMaterial)
     {
         switch (hGpuMaterial.Get()->Type)
         {
+            case eMaterialAssetType::Unlit:
+                if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
+                {
+                    glFS = mGlDefaultUnlitMaskedFS;
+                }
+                else
+                {
+                    glFS = mGlDefaultUnlitFS;
+                }
+                break;
             case eMaterialAssetType::Legacy:
                 if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
                 {
@@ -1662,6 +1690,8 @@ void RenderingSystemGL::cancelInitialization()
     glDeleteVertexArrays(1, &mGlVAO);
     glDeleteProgramPipelines(1, &mGlProgramPipeline);
     glDeleteProgram(mGlDefaultVS);
+    glDeleteProgram(mGlDefaultUnlitFS);
+    glDeleteProgram(mGlDefaultUnlitMaskedFS);
     glDeleteProgram(mGlDefaultPhongFS);
     glDeleteProgram(mGlDefaultPhongMaskedFS);
     glDeleteProgram(mGlDefaultPbrFS);

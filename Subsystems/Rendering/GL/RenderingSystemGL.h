@@ -88,6 +88,8 @@ class RenderingSystemGL final : public IRenderingSystem
 
     GLuint mGlProgramPipeline = 0;
     GLuint mGlDefaultVS = 0;
+    GLuint mGlDefaultUnlitFS = 0;
+    GLuint mGlDefaultUnlitMaskedFS = 0;
     GLuint mGlDefaultPhongFS = 0;
     GLuint mGlDefaultPhongMaskedFS = 0;
     GLuint mGlDefaultPbrFS = 0;

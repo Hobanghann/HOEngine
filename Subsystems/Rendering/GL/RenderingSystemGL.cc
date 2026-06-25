@@ -348,6 +348,7 @@ bool RenderingSystemGL::init()
         }
 
         // Set initial GL state
+        glFrontFace(GL_CW);
         glEnable(GL_MULTISAMPLE);
 
         glEnable(GL_DEPTH_TEST);

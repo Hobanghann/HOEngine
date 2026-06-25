@@ -4,13 +4,13 @@ const int UNIFORM_MATRICES_BINDING = 1;
 const int UNIFORM_GENERAL_BINDING = 3;
 
 const vec3 FarPlaneNDC[6] = vec3[6](
-    vec3(-1.0f, -1.0f, 0.99999f),
+    vec3(1.0f, 1.0f, 0.99999f),
     vec3(1.0f, -1.0f, 0.99999f),
-    vec3(1.0f, 1.0f, 0.99999f),
+    vec3(-1.0f, -1.0f, 0.99999f),
 
-    vec3(1.0f, 1.0f, 0.99999f),
+    vec3(-1.0f, -1.0f, 0.99999f),
     vec3(-1.0f, 1.0f, 0.99999f),
-    vec3(-1.0f, -1.0f, 0.99999f)
+    vec3(1.0f, 1.0f, 0.99999f)
 );
 
 layout (std140, row_major, binding = UNIFORM_MATRICES_BINDING) uniform Matrices

@@ -124,9 +124,11 @@ vec3 GetNormal()
         return normalize(v_Normal);
     }
 
-    vec3 texNormal = texture(t_Normal, GetUV(TEX_NORMAL_BINDING)).xyz * 2.0f - 1.0f;
+    vec2 normalXY = texture(t_Normal, GetUV(TEX_NORMAL_BINDING)).rg * 2.0f - 1.0f;
+    float normalZ = sqrt(max(1.0f - dot(normalXY, normalXY), 0.0f));
+    vec3 texNormal = vec3(normalXY, normalZ);
 
-    texNormal *= u_MatAttr.NormalScale;
+    texNormal.xy *= u_MatAttr.NormalScale;
     texNormal = normalize(texNormal);
 
     vec3 N = normalize(v_Normal);
@@ -198,20 +200,20 @@ void main()
     vec4 texAO = texture(t_AmbientOcclusion, GetUV(TEX_AMBIENT_OCCLUSION_BINDING));
 
     float finalOpacity = u_MatAttr.Opacity;
-    if (u_MatAttr.HasTextures[3] == 1)
+    if (u_MatAttr.HasTextures[TEX_OPACITY_BINDING] == 1)
     {
         finalOpacity *= texOpacity.r;
     }
 
     vec3 albedo = u_MatAttr.Albedo.rgb;
-    if (u_MatAttr.HasTextures[5] == 1)
+    if (u_MatAttr.HasTextures[TEX_ALBEDO_BINDING] == 1)
     {
         albedo = texAlbedo.rgb;
     }
 
     float metallic = u_MatAttr.Metallic;
     float roughness = u_MatAttr.Roughness;
-    if (u_MatAttr.HasTextures[6] == 1)
+    if (u_MatAttr.HasTextures[TEX_METALLIC_ROUGHNESS_BINDING] == 1)
     {
         roughness *= texMetallicRoughness.g;
         metallic *= texMetallicRoughness.b;
@@ -307,7 +309,7 @@ void main()
     }
 
     float ao = 1.0f;
-    if (u_MatAttr.HasTextures[8] == 1)
+    if (u_MatAttr.HasTextures[TEX_AMBIENT_OCCLUSION_BINDING] == 1)
     {
         ao *= texture(t_AmbientOcclusion, GetUV(8)).r;
     }
@@ -316,7 +318,7 @@ void main()
     vec3 ambient = u_MatAttr.Ambient.rgb * albedo * ao;
 
     vec3 emissive = u_MatAttr.Emissive.rgb * u_MatAttr.EmissiveIntensity;
-    if (u_MatAttr.HasTextures[7] == 1)
+    if (u_MatAttr.HasTextures[TEX_EMISSIVE_BINDING] == 1)
     {
         emissive *= texEmissive.rgb;
     }

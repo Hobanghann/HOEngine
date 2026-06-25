@@ -123,9 +123,11 @@ vec3 GetNormal()
         return normalize(v_Normal);
     }
 
-    vec3 texNormal = texture(t_Normal, GetUV(TEX_NORMAL_BINDING)).xyz * 2.0f - 1.0f;
+    vec2 normalXY = texture(t_Normal, GetUV(TEX_NORMAL_BINDING)).rg * 2.0f - 1.0f;
+    float normalZ = sqrt(max(1.0f - dot(normalXY, normalXY), 0.0f));
+    vec3 texNormal = vec3(normalXY, normalZ);
 
-    texNormal *= u_MatAttr.NormalScale;
+    texNormal.xy *= u_MatAttr.NormalScale;
     texNormal = normalize(texNormal);
 
     vec3 N = normalize(v_Normal);
@@ -146,23 +148,23 @@ void main()
     vec4 texAO = texture(t_AmbientOcclusion, GetUV(TEX_AMBIENT_OCCLUSION_BINDING));
 
     float finalOpacity = u_MatAttr.Opacity;
-    if (u_MatAttr.HasTextures[3] == 1)
+    if (u_MatAttr.HasTextures[TEX_OPACITY_BINDING] == 1)
     {
         finalOpacity *= texOpacity.r;
     }
 
     vec3 diffColor = u_MatAttr.Diffuse.rgb;
-    if (u_MatAttr.HasTextures[1] == 1)
+    if (u_MatAttr.HasTextures[TEX_DIFFUSE_BINDING] == 1)
     {
         diffColor = texDiffuse.rgb;
     }
-    else if (u_MatAttr.HasTextures[5] == 1)
+    else if (u_MatAttr.HasTextures[TEX_ALBEDO_BINDING] == 1)
     {
         diffColor = texAlbedo.rgb;
     }
 
     vec3 specColor = u_MatAttr.Specular.rgb;
-    if (u_MatAttr.HasTextures[2] == 1)
+    if (u_MatAttr.HasTextures[TEX_SPECULAR_BINDING] == 1)
     {
         specColor *= texSpecular.rgb;
     }
@@ -232,7 +234,7 @@ void main()
     }
 
     float ao = 1.0f;
-    if (u_MatAttr.HasTextures[8] == 1)
+    if (u_MatAttr.HasTextures[TEX_AMBIENT_OCCLUSION_BINDING] == 1)
     {
         ao = texAO.r;
     }
@@ -240,7 +242,7 @@ void main()
     vec3 ambient = u_MatAttr.Ambient.rgb * ao;
 
     vec3 emissive = u_MatAttr.Emissive.rgb * u_MatAttr.EmissiveIntensity;
-    if (u_MatAttr.HasTextures[7] == 1)
+    if (u_MatAttr.HasTextures[TEX_EMISSIVE_BINDING] == 1)
     {
         emissive = texEmissive.rgb * u_MatAttr.EmissiveIntensity;
     }

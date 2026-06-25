@@ -3,23 +3,29 @@
 const int UNIFORM_MATRICES_BINDING = 1;
 
 const vec3 skyboxVertices[36] = vec3[36](
-    vec3(-1.0f,  1.0f, -1.0f), vec3(-1.0f, -1.0f, -1.0f), vec3( 1.0f, -1.0f, -1.0f),
-    vec3( 1.0f, -1.0f, -1.0f), vec3( 1.0f,  1.0f, -1.0f), vec3(-1.0f,  1.0f, -1.0f),
+    // Right face
+    vec3(-1.0f,  1.0f, -1.0f), vec3( 1.0f, -1.0f, -1.0f), vec3(-1.0f, -1.0f, -1.0f),
+    vec3( 1.0f, -1.0f, -1.0f), vec3(-1.0f,  1.0f, -1.0f), vec3( 1.0f,  1.0f, -1.0f),
 
-    vec3(-1.0f, -1.0f,  1.0f), vec3(-1.0f, -1.0f, -1.0f), vec3(-1.0f,  1.0f, -1.0f),
-    vec3(-1.0f,  1.0f, -1.0f), vec3(-1.0f,  1.0f,  1.0f), vec3(-1.0f, -1.0f,  1.0f),
+    // Left face
+    vec3(-1.0f, -1.0f,  1.0f), vec3(-1.0f,  1.0f, -1.0f), vec3(-1.0f, -1.0f, -1.0f),
+    vec3(-1.0f,  1.0f, -1.0f), vec3(-1.0f, -1.0f,  1.0f), vec3(-1.0f,  1.0f,  1.0f),
 
-    vec3( 1.0f, -1.0f, -1.0f), vec3( 1.0f, -1.0f,  1.0f), vec3( 1.0f,  1.0f,  1.0f),
-    vec3( 1.0f,  1.0f,  1.0f), vec3( 1.0f,  1.0f, -1.0f), vec3( 1.0f, -1.0f, -1.0f),
+    // Top face
+    vec3( 1.0f, -1.0f, -1.0f), vec3( 1.0f,  1.0f,  1.0f), vec3( 1.0f, -1.0f,  1.0f),
+    vec3( 1.0f,  1.0f,  1.0f), vec3( 1.0f, -1.0f, -1.0f), vec3( 1.0f,  1.0f, -1.0f),
 
-    vec3(-1.0f, -1.0f,  1.0f), vec3(-1.0f,  1.0f,  1.0f), vec3( 1.0f,  1.0f,  1.0f),
-    vec3( 1.0f,  1.0f,  1.0f), vec3( 1.0f, -1.0f,  1.0f), vec3(-1.0f, -1.0f,  1.0f),
+    // Bottom face
+    vec3(-1.0f, -1.0f,  1.0f), vec3( 1.0f,  1.0f,  1.0f), vec3(-1.0f,  1.0f,  1.0f),
+    vec3( 1.0f,  1.0f,  1.0f), vec3(-1.0f, -1.0f,  1.0f), vec3( 1.0f, -1.0f,  1.0f),
 
-    vec3(-1.0f,  1.0f, -1.0f), vec3( 1.0f,  1.0f, -1.0f), vec3( 1.0f,  1.0f,  1.0f),
-    vec3( 1.0f,  1.0f,  1.0f), vec3(-1.0f,  1.0f,  1.0f), vec3(-1.0f,  1.0f, -1.0f),
+    // Front face
+    vec3(-1.0f,  1.0f, -1.0f), vec3( 1.0f,  1.0f,  1.0f), vec3( 1.0f,  1.0f, -1.0f),
+    vec3( 1.0f,  1.0f,  1.0f), vec3(-1.0f,  1.0f, -1.0f), vec3(-1.0f,  1.0f,  1.0f),
 
-    vec3(-1.0f, -1.0f, -1.0f), vec3(-1.0f, -1.0f,  1.0f), vec3( 1.0f, -1.0f, -1.0f),
-    vec3( 1.0f, -1.0f, -1.0f), vec3(-1.0f, -1.0f,  1.0f), vec3( 1.0f, -1.0f,  1.0f)
+    // Back face
+    vec3(-1.0f, -1.0f, -1.0f), vec3( 1.0f, -1.0f, -1.0f), vec3(-1.0f, -1.0f,  1.0f),
+    vec3( 1.0f, -1.0f, -1.0f), vec3( 1.0f, -1.0f,  1.0f), vec3(-1.0f, -1.0f,  1.0f)
 );
 
 layout (std140, row_major, binding = UNIFORM_MATRICES_BINDING) uniform Matrices

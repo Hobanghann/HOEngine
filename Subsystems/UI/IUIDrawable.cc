@@ -122,7 +122,7 @@ void IUIDrawable::drawIcon(void* iconNativeHandle, int32_t width, int32_t height
     else
     {
         ImGui::PushFont(nullptr, static_cast<float>(width));
-        ImGui::Text(ICON_FA_SQUARE_FULL, ImGui::GetFontSize(), static_cast<float>(width));
+        ImGui::TextUnformatted(ICON_FA_SQUARE_FULL);
         ImGui::PopFont();
     }
 }

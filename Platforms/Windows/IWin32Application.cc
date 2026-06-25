@@ -260,7 +260,8 @@ void IWin32Application::loadWindowsIcon(const std::string& iconPathStr)
     HDC hdc = ::GetDC(nullptr);
 
     void* lpBits = nullptr;
-    HBITMAP hColorBitmap = ::CreateDIBSection(hdc, (BITMAPINFO*)&bi, DIB_RGB_COLORS, &lpBits, nullptr, 0);
+    HBITMAP hColorBitmap =
+        ::CreateDIBSection(hdc, reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS, &lpBits, nullptr, 0);
     ::ReleaseDC(nullptr, hdc);
 
     if (hColorBitmap == nullptr || lpBits == nullptr)

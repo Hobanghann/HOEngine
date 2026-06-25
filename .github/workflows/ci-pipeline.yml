@@ -106,12 +106,12 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            build_tool: Visual Studio 17 2022
+            build_tool: Visual Studio
             build_type: Debug
             c_compiler: cl
             cpp_compiler: cl
           - os: windows-latest
-            build_tool: Visual Studio 17 2022
+            build_tool: Visual Studio
             build_type: Release
             c_compiler: cl
             cpp_compiler: cl
@@ -132,19 +132,28 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up MSVC
-        if: startsWith(matrix.build_tool, 'Visual Studio')
-        uses: ilammy/msvc-dev-cmd@v1
-
       - name: Configure CMake
         shell: bash
         run: |
-          cmake -S "${{ github.workspace }}" \
-          -B "${{ github.workspace }}/build" \
-          -G "${{ matrix.build_tool }}" \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          CMAKE_ARGS=(
+            -S "${{ github.workspace }}"
+            -B "${{ github.workspace }}/build"
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          )
+
+          if [ "${{ matrix.build_tool }}" = "Visual Studio" ]; then
+            echo "Configuring for Visual Studio (Automatic Visual Studio detection)..."
+
+          elif [ "${{ matrix.build_tool }}" = "Ninja" ]; then
+            echo "Configuring for Ninja with Clang..."
+            CMAKE_ARGS+=(
+              -G "Ninja"
+              -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+              -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+            )
+          fi
+
+          cmake "${CMAKE_ARGS[@]}"
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}

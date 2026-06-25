@@ -13,7 +13,7 @@ class IEngineWindow : public IUIDrawable
     {
     }
 
-    virtual ~IEngineWindow() = default;
+    ~IEngineWindow() override = default;
 
     StringHandle GetName() const
     {

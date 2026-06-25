@@ -38,9 +38,7 @@ struct ModelParsingContext
 // ===========================================================================
 
 [[nodiscard]] static std::unique_ptr<Image> readImageFile(const Path& path, bool bLinear, int32_t desiredChannels = 0);
-[[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path,
-                                                                        bool bMakeStatic,
-                                                                        bool bConvertToLeftHanded);
+[[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic);
 static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOutFlattedScene);
 
 [[nodiscard]] static std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path,
@@ -79,12 +77,9 @@ static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOu
 //  Public Function Definitions
 // ===========================================================================
 
-std::unique_ptr<const ModelIR> parseModelFile(const Path& path,
-                                              const std::string& nameStr,
-                                              bool bMakeStatic,
-                                              bool bConvertToLeftHanded)
+std::unique_ptr<const ModelIR> parseModelFile(const Path& path, const std::string& nameStr, bool bMakeStatic)
 {
-    const std::unique_ptr<ModelParsingContext> pParsingContext = readModelFile(path, bMakeStatic, bConvertToLeftHanded);
+    const std::unique_ptr<ModelParsingContext> pParsingContext = readModelFile(path, bMakeStatic);
     if (!pParsingContext)
     {
         return nullptr;
@@ -317,16 +312,23 @@ std::unique_ptr<Image> readImageFile(const Path& path, bool bLinear, int32_t des
     return pImg;
 }
 
-std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic, bool bConvertToLeftHanded)
+std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic)
 {
     std::unique_ptr<ModelParsingContext> pParsingContext = std::make_unique<ModelParsingContext>();
 
+    // -----------------------------------------------------------------------------------------
+    // Convert source asset (RHS, CCW) to match Engine conventions (LHS, CW).
+    // - aiProcess_MakeLeftHanded: Flips Z-axis to convert asset from RHS to LHS.
+    // - aiProcess_FlipWindingOrder: Flips index order (CCW -> CW) due to the Z-axis inversion.
+    // * Note: UV flipping is avoided here to keep API-specific dependencies out of the Core system.
+    // -----------------------------------------------------------------------------------------
     unsigned int importFlag = static_cast<unsigned int>(
-        aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs |
+        aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate |
         aiProcess_GenSmoothNormals | aiProcess_ImproveCacheLocality | aiProcess_RemoveRedundantMaterials |
         aiProcess_FindInstances | aiProcess_OptimizeMeshes | aiProcess_LimitBoneWeights |
         aiProcess_ValidateDataStructure | aiProcess_FindDegenerates | aiProcess_FindInvalidData |
-        aiProcess_SortByPType | aiProcess_GenUVCoords | aiProcess_GenBoundingBoxes);
+        aiProcess_SortByPType | aiProcess_GenUVCoords | aiProcess_GenBoundingBoxes | aiProcess_MakeLeftHanded |
+        aiProcess_FlipWindingOrder);
     if (bMakeStatic)
     {
         importFlag |= static_cast<unsigned int>(aiProcess_PreTransformVertices);
@@ -334,10 +336,6 @@ std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeS
     else
     {
         importFlag |= static_cast<unsigned int>(aiProcess_OptimizeGraph);
-    }
-    if (bConvertToLeftHanded)
-    {
-        importFlag |= static_cast<unsigned int>(aiProcess_ConvertToLeftHanded);
     }
 
     pParsingContext->Importer.ReadFile(path.ToString(), importFlag);

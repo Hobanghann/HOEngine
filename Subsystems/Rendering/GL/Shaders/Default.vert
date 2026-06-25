@@ -33,8 +33,8 @@ void main() {
     v_WorldPos = (u_Matrices.World * vec4(a_Pos, 1.0f)).xyz;
     v_Normal = (transpose(u_Matrices.InvWorld) * vec4(a_Normal, 0.0f)).xyz;
     v_Tangent = vec4((u_Matrices.World * vec4(a_Tangent.xyz, 0.0f)).xyz, a_Tangent.w);
-    v_UV0 = a_UV0;
-    v_UV1 = a_UV1;
+    v_UV0 = vec2(a_UV0.x, 1.0 - a_UV0.y);
+    v_UV1 = vec2(a_UV1.x, 1.0 - a_UV1.y);
     v_Color = a_Color;
     gl_Position = u_Matrices.Proj * u_Matrices.View * u_Matrices.World * vec4(a_Pos, 1.0f);
 }

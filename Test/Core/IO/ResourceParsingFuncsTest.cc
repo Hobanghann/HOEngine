@@ -18,7 +18,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
 {
     Path path(std::string("Test/Core/IO/Assets/TestObj/Cube/cube.obj"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -194,7 +194,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_DeduplicatesIdenticalTextures)
 {
     Path path(std::string("Test/Core/IO/Assets/TestObj/CubeWithDuplicatedTexture/cube.obj"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false);
     ASSERT_NE(pModelIR, nullptr);
 
     EXPECT_EQ(pModelIR->pTextureIRs.size(), 1);
@@ -227,7 +227,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_CorrectlyParsesMultipleSubMeshes
 {
     Path path(std::string("Test/Core/IO/Assets/TestObj/MultipleMesh/multi_mesh.obj"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestCube"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -303,7 +303,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
 {
     Path path(std::string("Test/Core/IO/Assets/TestGltf/Box/glTF/Box.gltf"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestBox"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("TestBox"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -405,7 +405,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
 {
     Path path(std::string("Test/Core/IO/Assets/TestGltf/BoxInterleaved/glTF/BoxInterleaved.gltf"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxInterleaved"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxInterleaved"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -503,7 +503,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxVertexColors_ValidatesStandar
 {
     Path path(std::string("Test/Core/IO/Assets/TestGltf/BoxVertexColors/glTF/BoxVertexColors.gltf"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxVertexColors"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxVertexColors"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -521,7 +521,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpe
 {
     Path path(std::string("Test/Core/IO/Assets/TestGltf/BoxTextured/glTF/BoxTextured.gltf"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxTextured"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("BoxTextured"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
 
@@ -602,7 +602,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
 {
     Path path(std::string("Test/Core/IO/Assets/TestGltf/RiggedFigure/glTF/RiggedFigure.gltf"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("RiggedFigure"), false, false);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("RiggedFigure"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
@@ -767,9 +767,9 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     // torso_joint_1
     scale = Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0000001192092896f));
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.03792940452694893f, 0.002913428470492363f, -0.00011058452219003811f, -0.9992762207984924f));
+        Quaternion(-0.03792940452694893f, -0.002913428470492363f, -0.00011058452219003811f, -0.9992762207984924f));
     rotateScale = rotate * scale;
-    translate = Vector3(2.7939699442924854e-9f, -1.4156600514070309e-7f, 0.6860002279281616f);
+    translate = Vector3(2.7939699442924854e-9f, -1.4156600514070309e-7f, -0.6860002279281616f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_1").Matrix;
     Matrix3x3 temp = localTransform.ToMatrix3x3();
@@ -783,10 +783,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.000000238418579f, 0.0f), Vector3(0.0f, 0.0f, 0.9999999403953552f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.02339874766767025f, -0.6542636752128601f, 0.754464864730835f, 0.046630214899778369f));
+        Quaternion(0.02339874766767025f, 0.6542636752128601f, 0.754464864730835f, 0.046630214899778369f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(-0.06845717132091522f, 0.004460853058844805f, -0.07147114723920822f);
+    translate = Vector3(-0.06845717132091522f, 0.004460853058844805f, 0.07147114723920822f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -797,10 +797,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3(Vector3(1.0000001192092896f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.21606147289276124f, 0.08108008652925492f, -0.010079992935061457f, -0.9729552268981934f));
+        Quaternion(-0.21606147289276124f, -0.08108008652925492f, -0.010079992935061457f, -0.9729552268981934f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(0.0f, 0.2661120891571045f, 1.4901200273698124e-8f);
+    translate = Vector3(0.0f, 0.2661120891571045f, -1.4901200273698124e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -811,10 +811,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3(Vector3(0.9999999403953552f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.8471670746803284f, -0.03204828128218651f, -0.024840382859110833f, -0.5297772288322449f));
+        Quaternion(-0.8471670746803284f, 0.03204828128218651f, -0.024840382859110833f, -0.5297772288322449f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(-7.450579708745408e-9f, 0.27582409977912905f, -3.725289854372704e-9f);
+    translate = Vector3(-7.450579708745408e-9f, 0.27582409977912905f, 3.725289854372704e-9f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -827,10 +827,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
                       Vector3(0.0f, 0.0f, 0.9999991655349731f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.03414325416088104f, -0.3191778957843781f, 0.9461711049079896f, -0.04146831855177879f));
+        Quaternion(0.03414325416088104f, 0.3191778957843781f, 0.9461711049079896f, -0.04146831855177879f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(-0.0014585329918190837f, -0.06619873642921448f, 0.027856800705194474f);
+    translate = Vector3(-0.0014585329918190837f, -0.06619873642921448f, -0.027856800705194474f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_5").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -843,10 +843,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
                       Vector3(0.0f, 0.0f, 1.0000001192092896f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.21088078618049625f, -0.6243308186531067f, 0.724772036075592f, -0.2011117935180664f));
+        Quaternion(-0.21088078618049625f, 0.6243308186531067f, 0.724772036075592f, -0.2011117935180664f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(0.06761927157640457f, 0.004461091011762619f, -0.07226461172103882f);
+    translate = Vector3(0.06761927157640457f, 0.004461091011762619f, 0.07226461172103882f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -859,7 +859,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
                       Vector3(0.0f, 0.0f, 0.9999999403953552f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.2111543715000153f, -0.29843246936798098f, -0.04688597097992897f, -0.92959862947464f));
+        Quaternion(-0.2111543715000153f, 0.29843246936798098f, -0.04688597097992897f, -0.92959862947464f));
 
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.2661122083663941f, 0.0f);
@@ -873,7 +873,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0000001192092896f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.8477688431739807f, -0.002281580353155732f, -0.006338709034025669f, -0.530323326587677f));
+        Quaternion(-0.8477688431739807f, 0.002281580353155732f, -0.006338709034025669f, -0.530323326587677f));
 
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.27582401037216189f, 0.0f);
@@ -888,10 +888,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0000007152557374f, 0.0f), Vector3(0.0f, 0.0f, 1.0000009536743165f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.024532083421945573f, -0.3199966549873352f, 0.9446004033088684f, 0.06878151744604111f));
+        Quaternion(-0.024532083421945573f, 0.3199966549873352f, 0.9446004033088684f, 0.06878151744604111f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(-0.0023464928381145f, -0.06617330759763718f, 0.02785675972700119f);
+    translate = Vector3(-0.0023464928381145f, -0.06617330759763718f, -0.02785675972700119f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_5").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -903,10 +903,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0000001192092896f, 0.0f, 0.0f), Vector3(0.0f, 0.9999999403953552f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.7380747199058533f, -0.001967150717973709f, 0.0021518853027373554f, -0.6747126579284668f));
+        Quaternion(0.7380747199058533f, 0.001967150717973709f, 0.0021518853027373554f, -0.6747126579284668f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(0.0009999809553846717f, -4.842879874900064e-8f, 0.1714905947446823f);
+    translate = Vector3(0.0009999809553846717f, -4.842879874900064e-8f, -0.1714905947446823f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -917,10 +917,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0000001192092896f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.6378589272499085f, -4.2587172677244209e-10f, -3.5271871534625629e-10f, -0.770153284072876f));
+        Quaternion(-0.6378589272499085f, 4.2587172677244209e-10f, -3.5271871534625629e-10f, -0.770153284072876f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(0.0f, 0.21801769733428956f, 3.725289854372704e-9f);
+    translate = Vector3(0.0f, 0.21801769733428956f, -3.725289854372704e-9f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_3").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -932,10 +932,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.9999999403953552f, 0.0f), Vector3(0.0f, 0.0f, 0.9999999403953552f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.27643078565597536f, 0.05186379700899124f, -0.665187418460846f, -0.6916804909706116f));
+        Quaternion(-0.27643078565597536f, -0.05186379700899124f, -0.665187418460846f, -0.6916804909706116f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(-0.08800055086612702f, -0.0001992879988392815f, -0.0009773969650268557f);
+    translate = Vector3(-0.08800055086612702f, -0.0001992879988392815f, 0.0009773969650268557f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -948,10 +948,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
                       Vector3(0.0f, 0.0f, 0.9999998211860656f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.2280062586069107f, 0.9096477627754213f, -0.1480233669281006f, -0.3140748739242554f));
+        Quaternion(0.2280062586069107f, -0.9096477627754213f, -0.1480233669281006f, -0.3140748739242554f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(-7.450579708745408e-9f, 0.24452559649944304f, -5.96045985901128e-8f);
+    translate = Vector3(-7.450579708745408e-9f, 0.24452559649944304f, 5.96045985901128e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -963,7 +963,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0000001192092896f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 0.9999999403953552f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.07854889333248139f, 0.14253509044647218f, -0.014102266170084477f, -0.9865672588348388f));
+        Quaternion(0.07854889333248139f, -0.14253509044647218f, -0.014102266170084477f, -0.9865672588348388f));
 
     rotateScale = rotate * scale;
     translate = Vector3(-5.96045985901128e-8f, 0.1855168044567108f, 0.0f);
@@ -978,10 +978,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0000001192092896f, 0.0f, 0.0f), Vector3(0.0f, 1.0000004768371585f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.6789423823356628f, 0.6879449486732483f, -0.24067795276641849f, -0.08856399357318878f));
+        Quaternion(-0.6789423823356628f, -0.6879449486732483f, -0.24067795276641849f, -0.08856399357318878f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(0.08800055086612702f, -0.0001992879988392815f, -0.0009773969650268557f);
+    translate = Vector3(0.08800055086612702f, -0.0001992879988392815f, 0.0009773969650268557f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -992,10 +992,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3::sIdentity;
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(0.0024000618141144516f, -0.13981154561042789f, -0.2718312442302704f, -0.9521317481994628f));
+        Quaternion(-0.0024000618141144516f, 0.13981154561042789f, -0.2718312442302704f, -0.9521317481994628f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(1.8626500342122655e-9f, 0.24452590942382813f, -5.96045985901128e-8f);
+    translate = Vector3(1.8626500342122655e-9f, 0.24452590942382813f, 5.96045985901128e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_2").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -1007,7 +1007,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
         Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0000001192092896f, 0.0f), Vector3(0.0f, 0.0f, 1.0000001192092896f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.05729063600301743f, -0.02822729200124741f, -0.0555599257349968f, -0.996410608291626f));
+        Quaternion(0.05729063600301743f, 0.02822729200124741f, -0.0555599257349968f, -0.996410608291626f));
 
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.1855167001485825f, 0.0f);
@@ -1021,10 +1021,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3::sIdentity;
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(-0.635452151298523f, -1.0367853739773274e-15f, -8.512669473202695e-16f, -0.7721402645111084f));
+        Quaternion(0.635452151298523f, 1.0367853739773274e-15f, -8.512669473202695e-16f, -0.7721402645111084f));
 
     rotateScale = rotate * scale;
-    translate = Vector3(0.0f, 7.450579886381094e-8f, 0.05255972966551781f);
+    translate = Vector3(0.0f, 7.450579886381094e-8f, -0.05255972966551781f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_1").Matrix;
     EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
@@ -1035,7 +1035,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     scale = Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0000001192092896f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
     rotate = Matrix3x3::FromQuaternion(
-        Quaternion(4.2157907720330458e-10f, 0.9999844431877136f, -0.005583992227911949f, -7.549667913053783e-8f));
+        Quaternion(-4.2157907720330458e-10f, -0.9999844431877136f, -0.005583992227911949f, -7.549667913053783e-8f));
 
     rotateScale = rotate * scale;
     translate = Vector3(0.0f, 0.06650590896606446f, 0.0f);
@@ -1089,7 +1089,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
 {
     Path path(std::string("Test/Core/IO/Assets/TestGltf/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf"));
     path.ResolveProjectPath();
-    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("AnimatedMorphCube"), false, true);
+    std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("AnimatedMorphCube"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
     const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();

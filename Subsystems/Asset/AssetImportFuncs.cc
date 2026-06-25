@@ -27,7 +27,6 @@ static eMaterialAlphaBlendMode toAssetAlphaBlendMode(parser::MaterialIR::eAlphaB
 [[maybe_unused]] static eMaterialTextureUsage toAssetTextureUsage(parser::MaterialIR::eTextureUsage usage);
 static parser::MaterialIR::eTextureUsage toIRTextureUsage(eMaterialTextureUsage usage);
 
-static stbir_pixel_layout toStbiFormat(Image::eFormat format);
 static bool isLinearImageFormat(Image::eFormat format);
 static bool isIntegerImageFormat(Image::eFormat format);
 
@@ -323,7 +322,32 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
     int32_t originImgHeight = pNewTexture->Height;
     int32_t resizedImgWidth = originImgWidth;
     int32_t resizedImgHeight = originImgHeight;
-    const int32_t imgPixelBytes = isIntegerImageFormat(srcTextureIR.Img.GetFormat()) ? 4 : 16;
+    int32_t imgPixelBytes = 0;
+    switch (dstFormat)
+    {
+        case eTextureFormat::BC4_SNORM:
+        case eTextureFormat::BC4_UNORM:
+            if (!(isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
+                  isLinearImageFormat(srcTextureIR.Img.GetFormat())))
+            {
+                HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
+                return nullptr;
+            }
+            imgPixelBytes = 1;
+            break;
+        case eTextureFormat::BC5_SNORM:
+        case eTextureFormat::BC5_UNORM:
+            if (!(isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
+                  isLinearImageFormat(srcTextureIR.Img.GetFormat())))
+            {
+                HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
+                return nullptr;
+            }
+            imgPixelBytes = 2;
+            break;
+        default:
+            imgPixelBytes = isIntegerImageFormat(srcTextureIR.Img.GetFormat()) ? 4 : 16;
+    }
 
     const int32_t texPixelBytes =
         isUncompressedTextureFormat(dstFormat) ? getTexturePixelBytes(dstFormat) : getTextureBlockBytes(dstFormat);
@@ -336,12 +360,33 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                                          FixedArray<uint8_t>(pNewTexture->Width * pNewTexture->Height * imgPixelBytes)};
     int32_t frontBufferIndex = 0;
     int32_t backBufferIndex = 1;
+
     // original image is in back buffer initially.
-    for (int32_t i = 0; i < originImgWidth * originImgHeight * imgPixelBytes; ++i)
+    const int32_t pixelStride = isIntegerImageFormat(srcTextureIR.Img.GetFormat()) ? 4 : 16;
+
+    for (int32_t i = 0; i < originImgWidth * originImgHeight; ++i)
     {
-        imgBuffers[backBufferIndex][i] = srcTextureIR.Img.GetBitmap()[i];
+        const uint8_t* pSrcPixel = srcTextureIR.Img.GetBitmap() + (i * pixelStride);
+        for (int32_t byteIdx = 0; byteIdx < imgPixelBytes; ++byteIdx)
+        {
+            imgBuffers[backBufferIndex][i * imgPixelBytes + byteIdx] = pSrcPixel[byteIdx];
+        }
     }
 
+    stbir_pixel_layout layout;
+    switch (dstFormat)
+    {
+        case eTextureFormat::BC4_SNORM:
+        case eTextureFormat::BC4_UNORM:
+            layout = STBIR_1CHANNEL;
+            break;
+        case eTextureFormat::BC5_SNORM:
+        case eTextureFormat::BC5_UNORM:
+            layout = STBIR_2CHANNEL;
+            break;
+        default:
+            layout = STBIR_4CHANNEL;
+    }
     for (int32_t i = 0; i < pNewTexture->MipLevels; ++i)
     {
         const int32_t texWidth = pNewTexture->Layouts[i].RowPitch / texPixelBytes;
@@ -362,7 +407,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                                                            resizedImgWidth,
                                                            resizedImgHeight,
                                                            resizedImgWidth * imgPixelBytes,
-                                                           toStbiFormat(srcTextureIR.Img.GetFormat()));
+                                                           layout);
                 break;
             case Image::eFormat::R8_SRGB:
             case Image::eFormat::R8G8_SRGB:
@@ -376,7 +421,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                                                          resizedImgWidth,
                                                          resizedImgHeight,
                                                          resizedImgWidth * imgPixelBytes,
-                                                         toStbiFormat(srcTextureIR.Img.GetFormat()));
+                                                         layout);
                 break;
             case Image::eFormat::R32_FLOAT:
             case Image::eFormat::R32G32_FLOAT:
@@ -391,7 +436,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                                               resizedImgWidth,
                                               resizedImgHeight,
                                               resizedImgWidth * imgPixelBytes,
-                                              toStbiFormat(srcTextureIR.Img.GetFormat()));
+                                              layout);
                 break;
             default:
                 HO_ASSERT(false, "Invalid image format.");
@@ -637,6 +682,8 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                     return nullptr;
                 }
                 break;
+
+            // Add padding to source image.
             case eTextureFormat::BC1_UNORM:
             case eTextureFormat::BC3_UNORM:
             case eTextureFormat::BC4_UNORM:
@@ -650,14 +697,14 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
             case eTextureFormat::BC6H_UF16:
             case eTextureFormat::BC6H_SF16:
             {
-                bool bIsBC6H = (dstFormat == eTextureFormat::BC6H_UF16 || dstFormat == eTextureFormat::BC6H_SF16);
+                const bool bIsBC6H = (dstFormat == eTextureFormat::BC6H_UF16 || dstFormat == eTextureFormat::BC6H_SF16);
 
                 const uint8_t* pSrcImageBuffer =
                     bIsBC6H ? reinterpret_cast<const uint8_t*>(pSrcImageBufferFloat) : pSrcImageBufferUint8;
 
-                int32_t paddedWidth = math::Max(4, ((resizedImgWidth + 3) / 4) * 4);
-                int32_t paddedHeight = math::Max(4, ((resizedImgHeight + 3) / 4) * 4);
-                int32_t paddedStride = paddedWidth * imgPixelBytes;
+                const int32_t paddedWidth = math::Max(4, ((resizedImgWidth + 3) / 4) * 4);
+                const int32_t paddedHeight = math::Max(4, ((resizedImgHeight + 3) / 4) * 4);
+                const int32_t paddedStride = paddedWidth * imgPixelBytes;
 
                 const uint8_t* pFinalSrcPixels = pSrcImageBuffer;
 
@@ -669,10 +716,10 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
 
                     for (int32_t y = 0; y < paddedHeight; ++y)
                     {
-                        int32_t clampY = math::Min(y, resizedImgHeight - 1);
+                        const int32_t clampY = math::Min(y, resizedImgHeight - 1);
                         for (int32_t x = 0; x < paddedWidth; ++x)
                         {
-                            int32_t clampX = math::Min(x, resizedImgWidth - 1);
+                            const int32_t clampX = math::Min(x, resizedImgWidth - 1);
 
                             const uint8_t* pSrcPixel =
                                 pSrcImageBuffer + (clampY * resizedImgWidth + clampX) * imgPixelBytes;
@@ -684,11 +731,20 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                     pFinalSrcPixels = paddedBuffer.Data();
                 }
 
-                rgba_surface surface;
-                surface.ptr = const_cast<uint8_t*>(pFinalSrcPixels);
-                surface.width = paddedWidth;
-                surface.height = paddedHeight;
-                surface.stride = paddedStride;
+                rgba_surface surface{};
+                surface.ptr = const_cast<uint8_t*>(pFinalSrcPixels); // NOLINT
+                if (paddedWidth != resizedImgWidth || paddedHeight != resizedImgHeight)
+                {
+                    surface.width = paddedWidth;
+                    surface.height = paddedHeight;
+                    surface.stride = paddedStride;
+                }
+                else
+                {
+                    surface.width = resizedImgWidth;
+                    surface.height = resizedImgHeight;
+                    surface.stride = resizedImgWidth * imgPixelBytes;
+                }
 
                 uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
 
@@ -778,7 +834,20 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                     case eTextureFormat::BC6H_SF16:
                         if (!isIntegerImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            bc6h_enc_settings bc6hSettings;
+                            // Convert to half-float first
+                            FixedArray<half_float::half> halfFloatBuffer(surface.width * surface.height * 4);
+
+                            const float* pSrcFloat = reinterpret_cast<const float*>(surface.ptr);
+                            for (int32_t p = 0; p < surface.width * surface.height * 4; ++p)
+                            {
+                                halfFloatBuffer[p] = half_float::half(pSrcFloat[p]);
+                            }
+
+                            surface.ptr = reinterpret_cast<uint8_t*>(halfFloatBuffer.Data());
+                            surface.stride = surface.width * 8;
+
+                            // Compress
+                            bc6h_enc_settings bc6hSettings{};
                             GetProfile_bc6h_basic(&bc6hSettings);
                             CompressBlocksBC6H(&surface, pDstTextureBuffer, &bc6hSettings);
                         }
@@ -792,7 +861,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            bc7_enc_settings bc7Settings;
+                            bc7_enc_settings bc7Settings{};
                             if (srcTextureIR.Img.GetLogicalChannelCount() < 4)
                             {
                                 GetProfile_basic(&bc7Settings);
@@ -815,7 +884,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             !isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            bc7_enc_settings bc7Settings;
+                            bc7_enc_settings bc7Settings{};
                             if (srcTextureIR.Img.GetLogicalChannelCount() < 4)
                             {
                                 GetProfile_basic(&bc7Settings);
@@ -870,6 +939,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                                                    eTextureFormat dstFormat,
                                                    bool bGenerateMipmap)
 {
+    // Validate parameters
     if (srcPosX.Img.GetBitmap() == nullptr || srcNegX.Img.GetBitmap() == nullptr ||
         srcPosY.Img.GetBitmap() == nullptr || srcNegY.Img.GetBitmap() == nullptr ||
         srcPosZ.Img.GetBitmap() == nullptr || srcNegZ.Img.GetBitmap() == nullptr)
@@ -964,7 +1034,30 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
     int32_t originImgHeight = pNewTexture->Height;
     int32_t resizedImgWidth = originImgWidth;
     int32_t resizedImgHeight = originImgHeight;
-    const int32_t imgPixelBytes = isIntegerImageFormat(baseFormat) ? 4 : 16;
+    int32_t imgPixelBytes = 0;
+    switch (dstFormat)
+    {
+        case eTextureFormat::BC4_SNORM:
+        case eTextureFormat::BC4_UNORM:
+            if (!(isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat)))
+            {
+                HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
+                return nullptr;
+            }
+            imgPixelBytes = 1;
+            break;
+        case eTextureFormat::BC5_SNORM:
+        case eTextureFormat::BC5_UNORM:
+            if (!(isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat)))
+            {
+                HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
+                return nullptr;
+            }
+            imgPixelBytes = 2;
+            break;
+        default:
+            imgPixelBytes = isIntegerImageFormat(baseFormat) ? 4 : 16;
+    }
 
     const int32_t texPixelBytes =
         isUncompressedTextureFormat(dstFormat) ? getTexturePixelBytes(dstFormat) : getTextureBlockBytes(dstFormat);
@@ -985,12 +1078,33 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
     int32_t backBufferIndex = 1;
 
     // original image is in back buffer initially.
+    const int32_t pixelStride = isIntegerImageFormat(baseFormat) ? 4 : 16;
+
     for (int32_t face = 0; face < 6; ++face)
     {
-        for (int32_t i = 0; i < originImgWidth * originImgHeight * imgPixelBytes; ++i)
+        for (int32_t i = 0; i < originImgWidth * originImgHeight; ++i)
         {
-            imgBuffers[backBufferIndex][face][i] = pSrcTexIRs[face]->Img.GetBitmap()[i];
+            const uint8_t* pSrcPixel = pSrcTexIRs[face]->Img.GetBitmap() + (i * pixelStride);
+            for (int32_t byteIdx = 0; byteIdx < imgPixelBytes; ++byteIdx)
+            {
+                imgBuffers[backBufferIndex][face][i * imgPixelBytes + byteIdx] = pSrcPixel[byteIdx];
+            }
         }
+    }
+
+    stbir_pixel_layout layout;
+    switch (dstFormat)
+    {
+        case eTextureFormat::BC4_SNORM:
+        case eTextureFormat::BC4_UNORM:
+            layout = STBIR_1CHANNEL;
+            break;
+        case eTextureFormat::BC5_SNORM:
+        case eTextureFormat::BC5_UNORM:
+            layout = STBIR_2CHANNEL;
+            break;
+        default:
+            layout = STBIR_4CHANNEL;
     }
 
     for (int32_t i = 0; i < pNewTexture->MipLevels; ++i)
@@ -1016,7 +1130,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                                                                resizedImgWidth,
                                                                resizedImgHeight,
                                                                resizedImgWidth * imgPixelBytes,
-                                                               toStbiFormat(baseFormat));
+                                                               layout);
                     break;
                 case Image::eFormat::R8_SRGB:
                 case Image::eFormat::R8G8_SRGB:
@@ -1030,7 +1144,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                                                              resizedImgWidth,
                                                              resizedImgHeight,
                                                              resizedImgWidth * imgPixelBytes,
-                                                             toStbiFormat(baseFormat));
+                                                             layout);
                     break;
                 case Image::eFormat::R32_FLOAT:
                 case Image::eFormat::R32G32_FLOAT:
@@ -1045,7 +1159,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         resizedImgWidth,
                         resizedImgHeight,
                         resizedImgWidth * imgPixelBytes,
-                        toStbiFormat(baseFormat));
+                        layout);
                     break;
                 default:
                     HO_ASSERT(false, "Invalid image format.");
@@ -1297,6 +1411,8 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         return nullptr;
                     }
                     break;
+
+                    // Add padding to source image
                 case eTextureFormat::BC1_UNORM:
                 case eTextureFormat::BC3_UNORM:
                 case eTextureFormat::BC4_UNORM:
@@ -1310,14 +1426,15 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                 case eTextureFormat::BC6H_UF16:
                 case eTextureFormat::BC6H_SF16:
                 {
-                    bool bIsBC6H = (dstFormat == eTextureFormat::BC6H_UF16 || dstFormat == eTextureFormat::BC6H_SF16);
+                    const bool bIsBC6H =
+                        (dstFormat == eTextureFormat::BC6H_UF16 || dstFormat == eTextureFormat::BC6H_SF16);
 
                     const uint8_t* pSrcImageBuffer =
                         bIsBC6H ? reinterpret_cast<const uint8_t*>(pSrcImageBufferFloat) : pSrcImageBufferUint8;
 
-                    int32_t paddedWidth = math::Max(4, ((resizedImgWidth + 3) / 4) * 4);
-                    int32_t paddedHeight = math::Max(4, ((resizedImgHeight + 3) / 4) * 4);
-                    int32_t paddedStride = paddedWidth * imgPixelBytes;
+                    const int32_t paddedWidth = math::Max(4, ((resizedImgWidth + 3) / 4) * 4);
+                    const int32_t paddedHeight = math::Max(4, ((resizedImgHeight + 3) / 4) * 4);
+                    const int32_t paddedStride = paddedWidth * imgPixelBytes;
 
                     const uint8_t* pFinalSrcPixels = pSrcImageBuffer;
 
@@ -1329,10 +1446,10 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
 
                         for (int32_t y = 0; y < paddedHeight; ++y)
                         {
-                            int32_t clampY = math::Min(y, resizedImgHeight - 1);
+                            const int32_t clampY = math::Min(y, resizedImgHeight - 1);
                             for (int32_t x = 0; x < paddedWidth; ++x)
                             {
-                                int32_t clampX = math::Min(x, resizedImgWidth - 1);
+                                const int32_t clampX = math::Min(x, resizedImgWidth - 1);
 
                                 const uint8_t* pSrcPixel =
                                     pSrcImageBuffer + (clampY * resizedImgWidth + clampX) * imgPixelBytes;
@@ -1344,11 +1461,20 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         pFinalSrcPixels = paddedBuffer.Data();
                     }
 
-                    rgba_surface surface;
-                    surface.ptr = const_cast<uint8_t*>(pFinalSrcPixels);
-                    surface.width = paddedWidth;
-                    surface.height = paddedHeight;
-                    surface.stride = paddedStride;
+                    rgba_surface surface{};
+                    surface.ptr = const_cast<uint8_t*>(pFinalSrcPixels); // NOLINT
+                    if (paddedWidth != resizedImgWidth || paddedHeight != resizedImgHeight)
+                    {
+                        surface.width = paddedWidth;
+                        surface.height = paddedHeight;
+                        surface.stride = paddedStride;
+                    }
+                    else
+                    {
+                        surface.width = resizedImgWidth;
+                        surface.height = resizedImgHeight;
+                        surface.stride = resizedImgWidth * imgPixelBytes;
+                    }
 
                     uint8_t* pDstTextureBuffer =
                         pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
@@ -1439,7 +1565,20 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         case eTextureFormat::BC6H_SF16:
                             if (!isIntegerImageFormat(baseFormat))
                             {
-                                bc6h_enc_settings bc6hSettings;
+                                // Convert to half-float first
+                                FixedArray<half_float::half> halfFloatBuffer(surface.width * surface.height * 4);
+
+                                const float* pSrcFloat = reinterpret_cast<const float*>(surface.ptr);
+                                for (int32_t p = 0; p < surface.width * surface.height * 4; ++p)
+                                {
+                                    halfFloatBuffer[p] = half_float::half(pSrcFloat[p]);
+                                }
+
+                                surface.ptr = reinterpret_cast<uint8_t*>(halfFloatBuffer.Data());
+                                surface.stride = surface.width * 8;
+
+                                // Compress
+                                bc6h_enc_settings bc6hSettings{};
                                 GetProfile_bc6h_basic(&bc6hSettings);
                                 CompressBlocksBC6H(&surface, pDstTextureBuffer, &bc6hSettings);
                             }
@@ -1453,7 +1592,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         case eTextureFormat::BC7_UNORM:
                             if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                             {
-                                bc7_enc_settings bc7Settings;
+                                bc7_enc_settings bc7Settings{};
                                 if (baseLogicalChannels < 4)
                                 {
                                     GetProfile_basic(&bc7Settings);
@@ -1476,7 +1615,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         case eTextureFormat::BC7_SRGB:
                             if (isIntegerImageFormat(baseFormat) && !isLinearImageFormat(baseFormat))
                             {
-                                bc7_enc_settings bc7Settings;
+                                bc7_enc_settings bc7Settings{};
                                 if (baseLogicalChannels < 4)
                                 {
                                     GetProfile_basic(&bc7Settings);
@@ -1690,32 +1829,6 @@ parser::MaterialIR::eTextureUsage toIRTextureUsage(eMaterialTextureUsage usage)
         default:
             HO_ASSERT(false, "Invalid texture usage.");
             return parser::MaterialIR::eTextureUsage::None;
-    }
-}
-
-stbir_pixel_layout toStbiFormat(Image::eFormat format)
-{
-    switch (format)
-    {
-        case Image::eFormat::R8_UNORM:
-        case Image::eFormat::R8G8_UNORM:
-        case Image::eFormat::R8G8B8_UNORM:
-        case Image::eFormat::R32_FLOAT:
-        case Image::eFormat::R32G32_FLOAT:
-        case Image::eFormat::R32G32B32_FLOAT:
-        case Image::eFormat::R8_SRGB:
-        case Image::eFormat::R8G8_SRGB:
-        case Image::eFormat::R8G8B8_SRGB:
-            return stbir_pixel_layout::STBIR_4CHANNEL;
-
-        case Image::eFormat::R32G32B32A32_FLOAT:
-        case Image::eFormat::R8G8B8A8_UNORM:
-        case Image::eFormat::R8G8B8A8_SRGB:
-            return stbir_pixel_layout::STBIR_RGBA;
-
-        default:
-            HO_ASSERT(false, "Invalid image format.");
-            return stbir_pixel_layout::STBIR_4CHANNEL;
     }
 }
 

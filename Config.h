@@ -6,6 +6,12 @@
 #define THREAD_ENABLED
 #endif
 
+#if defined(LOG_DISABLED)
+#undef LOG_ENABLED
+#else
+#define LOG_ENABLED
+#endif
+
 enum class eEngineApplicationType
 {
     None = 0,

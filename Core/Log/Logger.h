@@ -7,6 +7,7 @@
 #define SPDLOG_LEVEL_NAMES {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL", "OFF"}
 #endif
 
+#include "Config.h"
 #include "LogLevel.h"
 #include "LogSinkImgui.h"
 #include "Macros.h"
@@ -54,6 +55,7 @@ class Logger final
 };
 } // namespace ho
 
+#if defined(LOG_ENABLED)
 #define HO_LOG_TRACE(...)                                                                                              \
     ::ho::Logger::Log(::eLogLevel::Trace, ::ho::Logger::GetFileName(__FILE__), __LINE__, __VA_ARGS__)
 #define HO_LOG_DEBUG(...)                                                                                              \
@@ -69,3 +71,13 @@ class Logger final
 
 #define HO_LOG_TRACE_SCOPE(name)                                                                                       \
     ::ho::Logger::TraceScope trace_##__LINE__(name, ::ho::Logger::GetFileName(__FILE__), __LINE__)
+#else
+#define HO_LOG_TRACE(...) ((void)0)
+#define HO_LOG_DEBUG(...) ((void)0)
+#define HO_LOG_INFO(...) ((void)0)
+#define HO_LOG_WARN(...) ((void)0)
+#define HO_LOG_ERROR(...) ((void)0)
+#define HO_LOG_CRITICAL(...) ((void)0)
+
+#define HO_LOG_TRACE_SCOPE(name) ((void)0)
+#endif

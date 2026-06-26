@@ -145,18 +145,18 @@ void Engine::Run()
         // ===========================================
         // Update
         // ===========================================
-        if (!mpRunningApp->OnPreUpdate())
+        if (!mpRunningApp->OnPreUpdate(mEngineTimer.GetDeltaTime()))
         {
             mbRunning = false;
         }
 
         UISystem::GetInstance().submitDrawCommandForUI();
 
-        if (!mpRunningApp->OnUpdate())
+        if (!mpRunningApp->OnUpdate(mEngineTimer.GetDeltaTime()))
         {
             mbRunning = false;
         }
-        if (!mpRunningApp->OnPostUpdate())
+        if (!mpRunningApp->OnPostUpdate(mEngineTimer.GetDeltaTime()))
         {
             mbRunning = false;
         }

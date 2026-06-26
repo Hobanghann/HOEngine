@@ -19,18 +19,18 @@ bool TestApp::OnInit()
     return true;
 }
 
-bool TestApp::OnPreUpdate()
+bool TestApp::OnPreUpdate(float deltaTime)
 {
     UISystem::GetInstance().SubmitUIDrawable(mpMainWindow.get());
     return true;
 }
 
-bool TestApp::OnUpdate()
+bool TestApp::OnUpdate(float deltaTime)
 {
     return true;
 }
 
-bool TestApp::OnPostUpdate()
+bool TestApp::OnPostUpdate(float deltaTime)
 {
     return true;
 }

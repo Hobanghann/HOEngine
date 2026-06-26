@@ -15,9 +15,9 @@ class IEngineApplication
     virtual ~IEngineApplication() = default;
 
     virtual bool OnInit() = 0;
-    virtual bool OnPreUpdate() = 0;
-    virtual bool OnUpdate() = 0;
-    virtual bool OnPostUpdate() = 0;
+    virtual bool OnPreUpdate(float deltaTime) = 0;
+    virtual bool OnUpdate(float deltaTime) = 0;
+    virtual bool OnPostUpdate(float deltaTime) = 0;
     virtual bool OnRender() = 0;
     virtual void OnShutdown() = 0;
 

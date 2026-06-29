@@ -1,8 +1,7 @@
 #include "TestApp.h"
 
-#include <imgui.h>
-
 #include "Subsystems/UI/UISystem.h"
+#include "TestAppMainWindow.h"
 
 namespace ho
 {
@@ -10,6 +9,8 @@ TestApp::TestApp()
   : IEngineApplication("HOEngine: Test App")
 {
 }
+
+TestApp::~TestApp() = default;
 
 bool TestApp::OnInit()
 {

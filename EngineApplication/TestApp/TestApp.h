@@ -3,15 +3,16 @@
 #include <memory>
 
 #include "../IEngineApplication.h"
-#include "TestAppMainWindow.h"
 
 namespace ho
 {
+class TestAppMainWindow;
+
 class TestApp final : public IEngineApplication
 {
   public:
     TestApp();
-    ~TestApp() override = default;
+    ~TestApp() override;
 
     bool OnInit() override;
     bool OnPreUpdate(float deltaTime) override;

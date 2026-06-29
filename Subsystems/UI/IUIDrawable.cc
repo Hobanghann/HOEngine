@@ -1,6 +1,6 @@
 #include "IUIDrawable.h"
 
-#include <IconsFontAwesome7.h>
+#include <IconsMaterialDesignIcons.h>
 #include <imgui.h>
 
 #include "Platforms/IPlatformApplication.h"
@@ -122,7 +122,7 @@ void IUIDrawable::drawIcon(void* iconNativeHandle, int32_t width, int32_t height
     else
     {
         ImGui::PushFont(nullptr, static_cast<float>(width));
-        ImGui::TextUnformatted(ICON_FA_SQUARE_FULL);
+        ImGui::TextUnformatted(ICON_MDI_SQUARE);
         ImGui::PopFont();
     }
 }
@@ -149,7 +149,7 @@ void IUIDrawable::drawMinimizeButton(const Color128& iconColor,
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
-    const char* buttonText = ICON_FA_WINDOW_MINIMIZE;
+    const char* buttonText = ICON_MDI_WINDOW_MINIMIZE;
     const ImVec2 buttonSize(static_cast<float>(width), static_cast<float>(height));
 
     const bool bPressed = ImGui::InvisibleButton("##MinimizeButton", buttonSize, ImGuiButtonFlags_AllowOverlap);
@@ -171,8 +171,7 @@ void IUIDrawable::drawMinimizeButton(const Color128& iconColor,
     const ImVec2 pMax = ImGui::GetItemRectMax();
     ImGui::GetWindowDrawList()->AddRectFilled(pMin, pMax, ImGui::ColorConvertFloat4ToU32(finalBgColor));
 
-    UISystem::GetInstance().ActivateFaSolid();
-    ImGui::PushFont(nullptr, static_cast<float>(height) * 0.4f);
+    ImGui::PushFont(nullptr, static_cast<float>(height) * 0.6f);
 
     const ImVec2 textSize = ImGui::CalcTextSize(buttonText);
     const ImVec2 textPos =
@@ -181,7 +180,6 @@ void IUIDrawable::drawMinimizeButton(const Color128& iconColor,
     ImGui::GetWindowDrawList()->AddText(textPos, ImGui::ColorConvertFloat4ToU32(textColor), buttonText);
 
     ImGui::PopFont();
-    UISystem::GetInstance().DeactivateIconFont();
 
     if (bPressed)
     {
@@ -197,7 +195,7 @@ void IUIDrawable::drawMaximizeButton(const Color128& iconColor,
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
-    const char* buttonText = pMainWindow->IsWindowMaximized() ? ICON_FA_CLONE : ICON_FA_SQUARE;
+    const char* buttonText = pMainWindow->IsWindowMaximized() ? ICON_MDI_WINDOW_RESTORE : ICON_MDI_WINDOW_MAXIMIZE;
     const ImVec2 buttonSize(static_cast<float>(width), static_cast<float>(height));
 
     const bool bPressed = ImGui::InvisibleButton("##MaximizeButton", buttonSize, ImGuiButtonFlags_AllowOverlap);
@@ -219,8 +217,7 @@ void IUIDrawable::drawMaximizeButton(const Color128& iconColor,
     const ImVec2 pMax = ImGui::GetItemRectMax();
     ImGui::GetWindowDrawList()->AddRectFilled(pMin, pMax, ImGui::ColorConvertFloat4ToU32(finalBgColor));
 
-    UISystem::GetInstance().ActivateFaRegular();
-    ImGui::PushFont(nullptr, static_cast<float>(height) * 0.4f);
+    ImGui::PushFont(nullptr, static_cast<float>(height) * 0.6f);
 
     const ImVec2 textSize = ImGui::CalcTextSize(buttonText);
     const ImVec2 textPos =
@@ -229,7 +226,6 @@ void IUIDrawable::drawMaximizeButton(const Color128& iconColor,
     ImGui::GetWindowDrawList()->AddText(textPos, ImGui::ColorConvertFloat4ToU32(textColor), buttonText);
 
     ImGui::PopFont();
-    UISystem::GetInstance().DeactivateIconFont();
 
     if (bPressed)
     {
@@ -252,7 +248,7 @@ void IUIDrawable::drawCloseButton(const Color128& iconColor,
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
-    const char* buttonText = ICON_FA_XMARK;
+    const char* buttonText = ICON_MDI_WINDOW_CLOSE;
     const ImVec2 buttonSize(static_cast<float>(width), static_cast<float>(height));
 
     const bool bPressed = ImGui::InvisibleButton("##CloseButton", buttonSize, ImGuiButtonFlags_AllowOverlap);
@@ -275,8 +271,7 @@ void IUIDrawable::drawCloseButton(const Color128& iconColor,
     const ImVec2 pMax = ImGui::GetItemRectMax();
     ImGui::GetWindowDrawList()->AddRectFilled(pMin, pMax, ImGui::ColorConvertFloat4ToU32(finalBgColor));
 
-    UISystem::GetInstance().ActivateFaSolid();
-    ImGui::PushFont(nullptr, static_cast<float>(height) * 0.5f);
+    ImGui::PushFont(nullptr, static_cast<float>(height) * 0.6f);
 
     const ImVec2 textSize = ImGui::CalcTextSize(buttonText);
     const ImVec2 textPos =
@@ -285,7 +280,6 @@ void IUIDrawable::drawCloseButton(const Color128& iconColor,
     ImGui::GetWindowDrawList()->AddText(textPos, ImGui::ColorConvertFloat4ToU32(textColor), buttonText);
 
     ImGui::PopFont();
-    UISystem::GetInstance().DeactivateIconFont();
 
     if (bPressed)
     {

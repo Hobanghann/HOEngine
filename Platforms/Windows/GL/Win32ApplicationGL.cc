@@ -1,5 +1,11 @@
 #include "Win32ApplicationGL.h"
 
+// clang-format off
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <ImGuizmo.h>
+// clang-format on
 #include <cmath>
 #include <glad/glad.h>
 #include <imgui_impl_opengl3.h>
@@ -257,7 +263,6 @@ void Win32ApplicationGL::BeginFrame()
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
 }
 
 void Win32ApplicationGL::Shutdown()

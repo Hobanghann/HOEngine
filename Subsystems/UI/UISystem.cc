@@ -1,7 +1,13 @@
 #include "UISystem.h"
 
-#include <IconsFontAwesome7.h>
+#include <IconsMaterialDesignIcons.h>
+// clang-format off
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
+#include <imgui_internal.h>
+#include <ImGuizmo.h>
+#include <imoguizmo.hpp>
+// clang-format on
 
 #include "Core/IO/Path.h"
 #include "Platforms/IPlatformApplication.h"
@@ -13,6 +19,12 @@ UISystem& UISystem::GetInstance()
 {
     HO_ASSERT(spInstance, "UISystem is not created");
     return *spInstance;
+}
+
+void UISystem::BeginFrame()
+{
+    ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void UISystem::SubmitUIDrawable(IUIDrawable* pWindow)
@@ -50,70 +62,40 @@ bool UISystem::init()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    // Load text font
+    // ====================================================================
+    // Load text font (Default - Inter & Korean)
+    // ====================================================================
     const float fontSize = 16.0f;
     const ImWchar* pGlyphRangesKorean = io.Fonts->GetGlyphRangesKorean();
     Path fontPath = Path(std::string("Platforms/Resources/Fonts/Inter_18pt-Regular.ttf"));
     fontPath.ResolveProjectPath();
-    if (!io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean))
+
+    mpIconsMaterialDesignIcons =
+        io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
+    if (!mpIconsMaterialDesignIcons)
     {
-        HO_ASSERT(false, "Failed to load font.");
+        HO_ASSERT(false, "Failed to load base font.");
         return false;
     }
-
-    // Load icon font
     ImFontConfig iconConfig;
     iconConfig.MergeMode = true;
     iconConfig.PixelSnapH = true;
     iconConfig.GlyphMinAdvanceX = 14.f;
     iconConfig.GlyphOffset = ImVec2(0.0f, 2.0f);
-    static const ImWchar sIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
-    mpFaSolidFont = io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
-    if (!mpFaSolidFont)
-    {
-        HO_ASSERT(false, "Failed to load base font for Solid.");
-        return false;
-    }
+    static const ImWchar sIconRangesMDI[] = {static_cast<ImWchar>(ICON_MIN_MDI), static_cast<ImWchar>(ICON_MAX_MDI), 0};
 
-    Path iconPath;
-    iconPath = Path(std::string("Platforms/Resources/Fonts/fa-solid-900.ttf"));
+    Path iconPath = Path(std::string("Platforms/Resources/Fonts/materialdesignicons-webfont.ttf"));
     iconPath.ResolveProjectPath();
-    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRanges))
+
+    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRangesMDI))
     {
-        HO_ASSERT(false, "Failed to merge FaSolid font.");
+        HO_ASSERT(false, "Failed to merge icons.");
         return false;
     }
 
-    mpFaRegularFont = io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
-    if (!mpFaRegularFont)
-    {
-        HO_ASSERT(false, "Failed to load base font for Regular.");
-        return false;
-    }
-
-    iconPath = Path(std::string("Platforms/Resources/Fonts/fa-regular-400.ttf"));
-    iconPath.ResolveProjectPath();
-    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRanges))
-    {
-        HO_ASSERT(false, "Failed to merge FaRegular font.");
-        return false;
-    }
-
-    mpFaBrandsFont = io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
-    if (!mpFaBrandsFont)
-    {
-        HO_ASSERT(false, "Failed to load base font for Brands.");
-        return false;
-    }
-
-    iconPath = Path(std::string("Platforms/Resources/Fonts/fa-brands-400.ttf"));
-    iconPath.ResolveProjectPath();
-    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRanges))
-    {
-        HO_ASSERT(false, "Failed to merge FaBrands font.");
-        return false;
-    }
+    // Setup imgui IO config
+    ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
 
     // Setup imgui colors
     ImGuiStyle& style = ImGui::GetStyle();
@@ -162,10 +144,8 @@ bool UISystem::init()
                                                mTitleBarTheme.BgColor.G * 1.5f,
                                                mTitleBarTheme.BgColor.B * 1.5f,
                                                mTitleBarTheme.BgColor.A};
-    style.Colors[ImGuiCol_MenuBarBg] = {mTitleBarTheme.BgColor.R * 1.2f,
-                                        mTitleBarTheme.BgColor.G * 1.2f,
-                                        mTitleBarTheme.BgColor.B * 1.2f,
-                                        mTitleBarTheme.BgColor.A};
+    style.Colors[ImGuiCol_MenuBarBg] = {
+        mTitleBarTheme.BgColor.R, mTitleBarTheme.BgColor.G, mTitleBarTheme.BgColor.B, mTitleBarTheme.BgColor.A};
 
     style.Colors[ImGuiCol_ScrollbarBg] = {mTitleBarTheme.BgColor.R * 0.8f,
                                           mTitleBarTheme.BgColor.G * 0.8f,
@@ -252,7 +232,7 @@ bool UISystem::init()
     style.Colors[ImGuiCol_DockingPreview] = {mTitleBarTheme.ButtonHoveredColor.R,
                                              mTitleBarTheme.ButtonHoveredColor.G,
                                              mTitleBarTheme.ButtonHoveredColor.B,
-                                             0.6f}; // 가이드 사각형 반투명 회색톤
+                                             0.6f};
     style.Colors[ImGuiCol_DockingEmptyBg] = {mTitleBarTheme.BgColor.R * 0.8f,
                                              mTitleBarTheme.BgColor.G * 0.8f,
                                              mTitleBarTheme.BgColor.B * 0.8f,
@@ -292,7 +272,7 @@ bool UISystem::init()
     style.Colors[ImGuiCol_UnsavedMarker] = {mTitleBarTheme.CloseButtonHoveredColor.R,
                                             mTitleBarTheme.CloseButtonHoveredColor.G,
                                             mTitleBarTheme.CloseButtonHoveredColor.B,
-                                            1.0f}; // 저장안됨 마커는 닫기버튼 빨간색 계열 매칭
+                                            1.0f};
 
     style.Colors[ImGuiCol_NavCursor] = {mTitleBarTheme.ButtonActiveColor.R,
                                         mTitleBarTheme.ButtonActiveColor.G,
@@ -301,30 +281,29 @@ bool UISystem::init()
     style.Colors[ImGuiCol_NavWindowingHighlight] = {1.0f, 1.0f, 1.0f, 0.7f};
     style.Colors[ImGuiCol_NavWindowingDimBg] = {0.0f, 0.0f, 0.0f, 0.2f};
     style.Colors[ImGuiCol_ModalWindowDimBg] = {0.0f, 0.0f, 0.0f, 0.6f};
+
+    // Setup ImGuizmo config
+    ImGuizmo::Style& gizmoStyle = ImGuizmo::GetStyle();
+    gizmoStyle.TranslationLineThickness = 3.0f;
+    gizmoStyle.TranslationLineArrowSize = 6.0f;
+    gizmoStyle.RotationLineThickness = 2.0f;
+    gizmoStyle.RotationOuterLineThickness = 3.0f;
+    gizmoStyle.ScaleLineThickness = 3.0f;
+    gizmoStyle.ScaleLineCircleSize = 6.0f;
+    gizmoStyle.HatchedAxisLineThickness = 6.0f;
+    gizmoStyle.CenterCircleSize = 6.0f;
+
+    // Setup ImOGuizmo config
+    ImOGuizmo::config.lineThicknessScale = 0.03f;
+    ImOGuizmo::config.axisLengthScale = 0.33f;
+    ImOGuizmo::config.positiveRadiusScale = 0.1f;
+    ImOGuizmo::config.negativeRadiusScale = 0.08f;
+    ImOGuizmo::config.hoverCircleRadiusScale = 0.9f;
+    ImOGuizmo::config.dragThreshold = 3.0f;
+    ImOGuizmo::config.dragSensitivity = -0.01f;
+    ImOGuizmo::config.drag = true;
+    ImOGuizmo::config.click = true;
     return true;
-}
-
-void UISystem::ActivateFaSolid()
-{
-    HO_ASSERT(mpFaSolidFont, "Font is not loaded.");
-    ImGui::PushFont(mpFaSolidFont);
-}
-
-void UISystem::ActivateFaRegular()
-{
-    HO_ASSERT(mpFaRegularFont, "Font is not loaded.");
-    ImGui::PushFont(mpFaRegularFont);
-}
-
-void UISystem::ActivateFaBrands()
-{
-    HO_ASSERT(mpFaBrandsFont, "Font is not loaded.");
-    ImGui::PushFont(mpFaBrandsFont);
-}
-
-void UISystem::DeactivateIconFont()
-{
-    ImGui::PopFont();
 }
 
 void UISystem::submitDrawCommandForUI()

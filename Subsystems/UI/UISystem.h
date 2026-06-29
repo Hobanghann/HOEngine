@@ -20,6 +20,8 @@ class UISystem final
 
     static UISystem& GetInstance();
 
+    void BeginFrame();
+
     void SubmitUIDrawable(IUIDrawable* pWindow);
 
     void SetTitleBarTheme(const TitleBarTheme& theme)
@@ -36,11 +38,6 @@ class UISystem final
     {
         return mTitleBarTheme;
     }
-
-    void ActivateFaSolid();
-    void ActivateFaRegular();
-    void ActivateFaBrands();
-    void DeactivateIconFont();
 
   private:
     static const int32_t sUIDrawableQueueSize = 32;
@@ -62,9 +59,7 @@ class UISystem final
 
     FixedQueue<IUIDrawable*> mUIDrawableQueue;
 
-    ImFont* mpFaSolidFont = nullptr;
-    ImFont* mpFaRegularFont = nullptr;
-    ImFont* mpFaBrandsFont = nullptr;
+    ImFont* mpIconsMaterialDesignIcons = nullptr;
 
     static UISystem* spInstance;
 };

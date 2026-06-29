@@ -36,6 +36,17 @@ bool IRenderingSystem::EnqueueDestroyFramebuffer(StringHandle hFrameBufferName)
     return true;
 }
 
+Vector2 IRenderingSystem::GetFrameBufferSize(StringHandle hFrameBufferName) const
+{
+    auto fboItr = mNameToFrameBufferMap.find(hFrameBufferName);
+    if (fboItr == mNameToFrameBufferMap.end())
+    {
+        return Vector2::sZero;
+    }
+
+    return Vector2(static_cast<float>(fboItr->second.Width), static_cast<float>(fboItr->second.Height));
+}
+
 bool IRenderingSystem::BeginRenderPass(RenderPassDesc& renderPassDesc)
 {
     if (mCurrentRenderPassIndex != -1)

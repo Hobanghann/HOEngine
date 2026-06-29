@@ -196,6 +196,8 @@ class IRenderingSystem
                                                             eRenderTargetType type,
                                                             bool bRequireMultisample = false) const = 0;
 
+    [[nodiscard]] Vector2 GetFrameBufferSize(StringHandle hFrameBufferName) const;
+
     bool BeginRenderPass(RenderPassDesc& renderPassDesc);
 
     bool SubmitDrawCommand(const DrawCommandDesc& commandDesc);

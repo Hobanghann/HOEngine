@@ -40,6 +40,8 @@ class IEngineWindow : public IUIDrawable
         return mbOpen;
     }
 
+    // Implements the logic to render a single window, spanning from ImGui::Begin() to ImGui::End().
+    // Derived classes must ensure that the Begin() and End() pair is properly matched to form a complete window scope.
     void DrawUI() override = 0;
 
   protected:

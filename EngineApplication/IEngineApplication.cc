@@ -1,7 +1,6 @@
 #include "IEngineApplication.h"
 
 #include "Macros.h"
-#include "ModelViewer/ModelViewer.h"
 #include "TestApp/TestApp.h"
 
 namespace ho
@@ -12,9 +11,8 @@ std::unique_ptr<IEngineApplication> IEngineApplication::CreateApplication(eEngin
     {
         case eEngineApplicationType::TestApp:
             return std::make_unique<TestApp>();
-        case eEngineApplicationType::ModelViewer:
-            return std::make_unique<ModelViewer>();
         // case eEngineApplicationType::Editor:
+        //     return std::make_unique<Editor>();
         // case eEngineApplicationType::Game:
         //     HO_ASSERT(false, "Currently not supported.");
         //     return nullptr;

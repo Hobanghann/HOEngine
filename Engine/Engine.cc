@@ -24,9 +24,6 @@ bool Engine::Init(const EngineInitParam& param)
         case eEngineApplicationType::TestApp:
             iconPath = Path(std::string("Platforms/Resources/Icons/TestAppIcon64.png"));
             break;
-        case eEngineApplicationType::ModelViewer:
-            iconPath = Path(std::string("Platforms/Resources/Icons/ModelViewerIcon64.png"));
-            break;
         case eEngineApplicationType::Editor:
             iconPath = Path(std::string("Platforms/Resources/Icons/EditorIcon64.png"));
             break;
@@ -74,9 +71,6 @@ bool Engine::Init(const EngineInitParam& param)
     {
         case eEngineApplicationType::TestApp:
             titleStr = "HOEngine: TestApp";
-            break;
-        case eEngineApplicationType::ModelViewer:
-            titleStr = "HOEngine: ModelViewer";
             break;
         case eEngineApplicationType::Editor:
             titleStr = "HOEngine: Editor";
@@ -145,6 +139,8 @@ void Engine::Run()
         // ===========================================
         // Update
         // ===========================================
+        UISystem::GetInstance().BeginFrame();
+
         if (!mpRunningApp->OnPreUpdate(mEngineTimer.GetDeltaTime()))
         {
             mbRunning = false;

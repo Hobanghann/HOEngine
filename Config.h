@@ -16,9 +16,8 @@ enum class eEngineApplicationType
 {
     None = 0,
     TestApp = 1,
-    ModelViewer = 2,
-    Editor = 3,
-    Game = 4,
+    Editor = 2,
+    Game = 3,
 };
 
 enum eGraphicsAPI

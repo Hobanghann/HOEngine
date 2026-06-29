@@ -42,10 +42,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORM_FOLDER} FILES ${PLATFOR
 ################################################################################
 # Add multiple executable targets
 ################################################################################
-set(APP_TYPES TestApp ModelViewer Editor Game)
+set(APP_TYPES TestApp Editor Game)
 
 set(MACRO_TestApp      "TEST_APP")
-set(MACRO_ModelViewer  "MODEL_VIEWER")
 set(MACRO_Editor       "EDITOR")
 set(MACRO_Game         "GAME")
 

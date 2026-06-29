@@ -53,7 +53,7 @@ target_link_libraries(
   COMPILER_FLAGS
   opengl32
   PUBLIC
-  ${THIRD_PARTY_NAME}
+  ${BASE_THIRD_PARTY_NAME}
 )
 target_include_directories(
   ${PLATFORMS_NAME}
@@ -62,7 +62,7 @@ target_include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_compile_definitions(
-  ${PLATFORMS_NAME} 
+  ${PLATFORMS_NAME}
   PRIVATE
   HO_PROJECT_ROOT="${HO_PROJECT_ROOT}"
   HO_ASSET_ROOT="${HO_ASSET_ROOT}"

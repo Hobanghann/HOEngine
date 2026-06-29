@@ -37,17 +37,13 @@ struct ModelParsingContext
 //  Private Function Declarations
 // ===========================================================================
 
-[[nodiscard]] static std::unique_ptr<Image> readImageFile(const Path& path,
-                                                          bool bIsLinear,
-                                                          int32_t desiredChannels = 0);
-[[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path,
-                                                                        bool bMakeStatic,
-                                                                        bool bConvertToLeftHanded);
+[[nodiscard]] static std::unique_ptr<Image> readImageFile(const Path& path, bool bLinear, int32_t desiredChannels = 0);
+[[nodiscard]] static std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic);
 static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOutFlattedScene);
 
 [[nodiscard]] static std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path,
                                                                            const aiTexture& assimpTexture,
-                                                                           bool bIsLinear);
+                                                                           bool bLinear);
 [[nodiscard]] static std::unique_ptr<const MaterialIR> parseMaterial(
     const Path& path,
     const std::string& nameStr,
@@ -81,12 +77,9 @@ static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOu
 //  Public Function Definitions
 // ===========================================================================
 
-std::unique_ptr<const ModelIR> parseModelFile(const Path& path,
-                                              const std::string& nameStr,
-                                              bool bMakeStatic,
-                                              bool bConvertToLeftHanded)
+std::unique_ptr<const ModelIR> parseModelFile(const Path& path, const std::string& nameStr, bool bMakeStatic)
 {
-    const std::unique_ptr<ModelParsingContext> pParsingContext = readModelFile(path, bMakeStatic, bConvertToLeftHanded);
+    const std::unique_ptr<ModelParsingContext> pParsingContext = readModelFile(path, bMakeStatic);
     if (!pParsingContext)
     {
         return nullptr;
@@ -103,6 +96,7 @@ std::unique_ptr<const ModelIR> parseModelFile(const Path& path,
 
     std::unique_ptr<ModelIR> pModelIR = std::make_unique<ModelIR>();
 
+    pModelIR->ResourcePath = path;
     pModelIR->NameStr = nameStr;
 
     // Load materials
@@ -191,10 +185,10 @@ std::unique_ptr<const ModelIR> parseModelFile(const Path& path,
     return pModelIR;
 }
 
-std::unique_ptr<const TextureIR> parseTextureFile(const Path& path, const std::string& nameStr, bool bIsLinear)
+std::unique_ptr<const TextureIR> parseTextureFile(const Path& path, const std::string& nameStr, bool bLinear)
 {
     const int32_t desiredChannel = 4; // for BCn compression.
-    const std::unique_ptr<Image> pImg = readImageFile(path, bIsLinear, desiredChannel);
+    const std::unique_ptr<Image> pImg = readImageFile(path, bLinear, desiredChannel);
 
     if (!pImg)
     {
@@ -234,7 +228,7 @@ std::unique_ptr<const ShaderIR> parseShaderFile(const Path& path, const std::str
 //  Private Function Definitions
 // ===========================================================================
 
-std::unique_ptr<Image> readImageFile(const Path& path, bool bIsLinear, int32_t desiredChannels)
+std::unique_ptr<Image> readImageFile(const Path& path, bool bLinear, int32_t desiredChannels)
 {
     Image::eFormat format = Image::eFormat::None;
     int32_t width = 0;
@@ -294,16 +288,16 @@ std::unique_ptr<Image> readImageFile(const Path& path, bool bIsLinear, int32_t d
         switch (numColorChannels)
         {
             case 1:
-                format = bIsLinear ? Image::eFormat::R8_UNORM : Image::eFormat::R8_SRGB;
+                format = bLinear ? Image::eFormat::R8_UNORM : Image::eFormat::R8_SRGB;
                 break;
             case 2:
-                format = bIsLinear ? Image::eFormat::R8G8_UNORM : Image::eFormat::R8G8_SRGB;
+                format = bLinear ? Image::eFormat::R8G8_UNORM : Image::eFormat::R8G8_SRGB;
                 break;
             case 3:
-                format = bIsLinear ? Image::eFormat::R8G8B8_UNORM : Image::eFormat::R8G8B8_SRGB;
+                format = bLinear ? Image::eFormat::R8G8B8_UNORM : Image::eFormat::R8G8B8_SRGB;
                 break;
             case 4:
-                format = bIsLinear ? Image::eFormat::R8G8B8A8_UNORM : Image::eFormat::R8G8B8A8_SRGB;
+                format = bLinear ? Image::eFormat::R8G8B8A8_UNORM : Image::eFormat::R8G8B8A8_SRGB;
                 break;
             default:
                 stbi_image_free(pStbiBitmap);
@@ -318,16 +312,23 @@ std::unique_ptr<Image> readImageFile(const Path& path, bool bIsLinear, int32_t d
     return pImg;
 }
 
-std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic, bool bConvertToLeftHanded)
+std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeStatic)
 {
     std::unique_ptr<ModelParsingContext> pParsingContext = std::make_unique<ModelParsingContext>();
 
+    // -----------------------------------------------------------------------------------------
+    // Convert source asset (RHS, CCW) to match Engine conventions (LHS, CW).
+    // - aiProcess_MakeLeftHanded: Flips Z-axis to convert asset from RHS to LHS.
+    // - aiProcess_FlipWindingOrder: Flips index order (CCW -> CW) due to the Z-axis inversion.
+    // * Note: UV flipping is avoided here to keep API-specific dependencies out of the Core system.
+    // -----------------------------------------------------------------------------------------
     unsigned int importFlag = static_cast<unsigned int>(
-        aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs |
+        aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate |
         aiProcess_GenSmoothNormals | aiProcess_ImproveCacheLocality | aiProcess_RemoveRedundantMaterials |
         aiProcess_FindInstances | aiProcess_OptimizeMeshes | aiProcess_LimitBoneWeights |
         aiProcess_ValidateDataStructure | aiProcess_FindDegenerates | aiProcess_FindInvalidData |
-        aiProcess_SortByPType | aiProcess_GenUVCoords | aiProcess_GenBoundingBoxes);
+        aiProcess_SortByPType | aiProcess_GenUVCoords | aiProcess_GenBoundingBoxes | aiProcess_MakeLeftHanded |
+        aiProcess_FlipWindingOrder);
     if (bMakeStatic)
     {
         importFlag |= static_cast<unsigned int>(aiProcess_PreTransformVertices);
@@ -335,10 +336,6 @@ std::unique_ptr<ModelParsingContext> readModelFile(const Path& path, bool bMakeS
     else
     {
         importFlag |= static_cast<unsigned int>(aiProcess_OptimizeGraph);
-    }
-    if (bConvertToLeftHanded)
-    {
-        importFlag |= static_cast<unsigned int>(aiProcess_ConvertToLeftHanded);
     }
 
     pParsingContext->Importer.ReadFile(path.ToString(), importFlag);
@@ -364,7 +361,7 @@ void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* outFlatted
     outFlattedScene->push_front(&root);
 }
 
-std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const aiTexture& assimpTexture, bool bIsLinear)
+std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const aiTexture& assimpTexture, bool bLinear)
 {
     int32_t width = 0;
     int32_t height = 0;
@@ -453,16 +450,16 @@ std::unique_ptr<const TextureIR> parseEmbeddedTexture(const Path& path, const ai
         switch (numColorChannels)
         {
             case 1:
-                format = bIsLinear ? Image::eFormat::R8_UNORM : Image::eFormat::R8_SRGB;
+                format = bLinear ? Image::eFormat::R8_UNORM : Image::eFormat::R8_SRGB;
                 break;
             case 2:
-                format = bIsLinear ? Image::eFormat::R8G8_UNORM : Image::eFormat::R8G8_SRGB;
+                format = bLinear ? Image::eFormat::R8G8_UNORM : Image::eFormat::R8G8_SRGB;
                 break;
             case 3:
-                format = bIsLinear ? Image::eFormat::R8G8B8_UNORM : Image::eFormat::R8G8B8_SRGB;
+                format = bLinear ? Image::eFormat::R8G8B8_UNORM : Image::eFormat::R8G8B8_SRGB;
                 break;
             case 4:
-                format = bIsLinear ? Image::eFormat::R8G8B8A8_UNORM : Image::eFormat::R8G8B8A8_SRGB;
+                format = bLinear ? Image::eFormat::R8G8B8A8_UNORM : Image::eFormat::R8G8B8A8_SRGB;
                 break;
             default:
                 stbi_image_free(pStbiBitmapLDR);
@@ -682,7 +679,7 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
     }
 
     // Texture Load Helper
-    auto loadTextureToMaterial = [&](aiTextureType aiType, MaterialIR::eTextureUsage engineType, bool bIsLinear)
+    auto loadTextureToMaterial = [&](aiTextureType aiType, MaterialIR::eTextureUsage engineType, bool bLinear)
     {
         if (pMaterialIR->TextureIRIndices[static_cast<int32_t>(engineType)] != -1)
         {
@@ -725,12 +722,12 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
             std::unique_ptr<const TextureIR> pTextureIR;
             if (bEmbedded)
             {
-                pTextureIR = parseEmbeddedTexture(path, *pAssimpEmbTextures[embTexIdx], bIsLinear);
+                pTextureIR = parseEmbeddedTexture(path, *pAssimpEmbTextures[embTexIdx], bLinear);
             }
             else if (!texFileNameStr.empty())
             {
                 const Path texAbsPath = parentPath / Path(texFileNameStr);
-                pTextureIR = parseTextureFile(texAbsPath, texNameStr, bIsLinear);
+                pTextureIR = parseTextureFile(texAbsPath, texNameStr, bLinear);
             }
 
             if (pTextureIR)

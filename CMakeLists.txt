@@ -52,6 +52,7 @@ if (MSVC)
         /Zc:__cplusplus
         /EHsc
         /D_HAS_EXCEPTIONS=0
+        /utf-8
     )
 
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -83,6 +84,8 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-double-promotion       # allow float to double promotion
             -Wno-sign-conversion
             -fno-exceptions
+            -finput-charset=UTF-8
+            -fexec-charset=UTF-8
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(FATAL_ERROR
@@ -101,9 +104,10 @@ endif ()
 ##########################################################
 # Set module's Name
 ##########################################################
-set(THIRD_PARTY_NAME Lib)
+set(BASE_THIRD_PARTY_NAME BaseThirdParty)
 set(PLATFORMS_NAME Platforms)
 set(CORE_NAME Core)
+set(APP_THIRD_PARTY_NAME AppThirdParty)
 set(SUBSYSTEMS_NAME Subsystems)
 set(ENGINE_APPLICATION_NAME EngineApplication)
 set(ENGINE_NAME Engine)
@@ -112,9 +116,10 @@ set(MAIN_NAME Main)
 ##########################################################
 # Process modules
 ##########################################################
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${THIRD_PARTY_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/${BASE_THIRD_PARTY_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/${APP_THIRD_PARTY_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_APPLICATION_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_NAME})

@@ -13,8 +13,6 @@ int EngineMain(const EngineMainParam& param)
 
 #if defined(HO_APP_TEST_APP)
     engineInitParam.ApplicationType = eEngineApplicationType::TestApp;
-#elif defined(HO_APP_MODEL_VIEWER)
-    engineInitParam.ApplicationType = eEngineApplicationType::ModelViewer;
 #elif defined(HO_APP_EDITOR)
     engineInitParam.ApplicationType = eEngineApplicationType::Editor;
 #elif defined(HO_APP_GAME)

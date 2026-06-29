@@ -14,13 +14,11 @@ class RenderingSystemGL final : public IRenderingSystem
     friend void IRenderingSystem::createInstance(eGraphicsAPI api);
 
   public:
-    bool CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc) override;
-
-    bool DestroyFrameBuffer(StringHandle hFrameBufferName) override;
-
     void* GetRenderTargetNativeHandle(StringHandle hFrameBufferName,
                                       eRenderTargetType type,
                                       bool bRequireMultisample = false) const override;
+
+    void SetVSync(bool bEnabled) override;
 
   private:
     struct GlFBO
@@ -56,6 +54,9 @@ class RenderingSystemGL final : public IRenderingSystem
 
     void flush() override;
 
+    bool createFrameBuffer(const FrameBufferDesc& frameBufferDesc) override;
+    bool destroyFrameBuffer(StringHandle hFrameBufferName) override;
+
     eResourceTransferResult uploadStaticMesh(GpuStaticMeshHandle hPreparedGpuStaticMesh,
                                              uint64_t currentFrame) override;
     eResourceTransferResult uploadMaterial(GpuMaterialHandle hPreparedGpuMaterial, uint64_t currentFrame) override;
@@ -87,6 +88,8 @@ class RenderingSystemGL final : public IRenderingSystem
 
     GLuint mGlProgramPipeline = 0;
     GLuint mGlDefaultVS = 0;
+    GLuint mGlDefaultUnlitFS = 0;
+    GLuint mGlDefaultUnlitMaskedFS = 0;
     GLuint mGlDefaultPhongFS = 0;
     GLuint mGlDefaultPhongMaskedFS = 0;
     GLuint mGlDefaultPbrFS = 0;

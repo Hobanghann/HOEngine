@@ -11,8 +11,8 @@ std::unique_ptr<IEngineApplication> IEngineApplication::CreateApplication(eEngin
     {
         case eEngineApplicationType::TestApp:
             return std::make_unique<TestApp>();
-        // case eEngineApplicationType::ModelViewer:
         // case eEngineApplicationType::Editor:
+        //     return std::make_unique<Editor>();
         // case eEngineApplicationType::Game:
         //     HO_ASSERT(false, "Currently not supported.");
         //     return nullptr;
@@ -22,7 +22,7 @@ std::unique_ptr<IEngineApplication> IEngineApplication::CreateApplication(eEngin
     }
 }
 
-IEngineApplication::IEngineApplication(const std::wstring& titleStr)
+IEngineApplication::IEngineApplication(const std::string& titleStr)
   : mTitleStr(titleStr)
 {
 }

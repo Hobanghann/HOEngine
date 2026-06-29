@@ -2,10 +2,9 @@
 
 namespace ho
 {
-Vector4 Projection::Project(const Vector4& v) const
+Vector4 Projection::Project(const Vector4& v, float ndcNear, float ndcFar) const
 {
-    return Vector4(
-        mMatrix.Data[0][0] * v.X, mMatrix.Data[1][1] * v.Y, mMatrix.Data[2][2] * v.Z + mMatrix.Data[2][3] * v.W, -v.Z);
+    return GetMatrix(ndcNear, ndcFar) * v;
 }
 
 std::string Projection::ToString() const
@@ -13,8 +12,9 @@ std::string Projection::ToString() const
     char buf[200];
     std::snprintf(buf,
                   sizeof(buf),
-                  "Projection(Fov/ViewHeight: %.6f rad, aspectRatio: %.6f, "
+                  "Projection(Type: %s, Fov/ViewHeight: %.6f rad, aspectRatio: %.6f, "
                   "Near: %.6f, Far: %.6f)",
+                  mType == eProjectionType::Orthographic ? "Perspective" : "Orthographic",
                   static_cast<float>(mFov),
                   static_cast<float>(GetAspectRatio()),
                   static_cast<float>(GetNearDistance()),

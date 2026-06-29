@@ -7,6 +7,7 @@
 #include "Core/IO/ResourceParseFuncs.h"
 #include "Core/Log/Logger.h"
 #include "Platforms/IPlatformApplication.h"
+#include "Platforms/Windows/GL/Win32ApplicationGL.h"
 #include "Subsystems/Asset/AssetImportFuncs.h"
 #include "Subsystems/Asset/Assets.h"
 
@@ -34,7 +35,754 @@ struct Vertex
     uint8_t Padding[4] = {}; // 4 byte
 }; // 64 byte
 
-bool RenderingSystemGL::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc)
+void* RenderingSystemGL::GetRenderTargetNativeHandle(StringHandle hFrameBufferName,
+                                                     eRenderTargetType type,
+                                                     bool bRequireMultisample) const
+{
+    auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
+
+    if (fbit == mNameToFrameBufferMap.end())
+    {
+        return nullptr;
+    }
+
+    const FrameBuffer& frameBuffer = fbit->second;
+    HO_ASSERT(frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)].IsValid(),
+              "Frame buffer doesn't have such render target.");
+    const TextureNativeHandleGL* nativeHandle = nullptr;
+    if (bRequireMultisample)
+    {
+        HO_ASSERT(frameBuffer.SampleCount > 1, "Frame buffer has single sample render targets.");
+        nativeHandle =
+            mTextureNativeHandlePool.Get(frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)]
+                                             .Get()
+                                             ->NativeHandlePoolIndex);
+    }
+    else
+    {
+        if (frameBuffer.SampleCount > 1)
+        {
+            HO_ASSERT(type != eRenderTargetType::Depth,
+                      "MultiSample Depth Target must be used in rendering system only.");
+            nativeHandle = mTextureNativeHandlePool.Get(
+                frameBuffer.hResolvedRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)]
+                    .Get()
+                    ->NativeHandlePoolIndex);
+        }
+        else
+        {
+            nativeHandle = mTextureNativeHandlePool.Get(
+                frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)]
+                    .Get()
+                    ->NativeHandlePoolIndex);
+        }
+    }
+
+    HO_ASSERT(nativeHandle, "Texture for render target was not created.");
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(nativeHandle->GlTexture)); // NOLINT
+}
+
+RenderingSystemGL::RenderingSystemGL()
+{
+    HO_ASSERT(!spInstance, "Rendering system must be created by 'createInstance' function.");
+}
+
+bool RenderingSystemGL::init()
+{
+    if (!spInstance)
+    {
+        HO_ASSERT(false, "Rendering system is not created.");
+        return false;
+    }
+    else
+    {
+        // Create default GPU resources.
+
+        // VAO
+        glCreateVertexArrays(1, &mGlVAO);
+
+        glVertexArrayAttribFormat(mGlVAO, mPosAttribIndex, 3, GL_FLOAT, GL_FALSE, 0);
+        glVertexArrayAttribFormat(mGlVAO, mNormalAttribIndex, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3));
+        glVertexArrayAttribFormat(mGlVAO, mTangentsAttribIndex, 4, GL_FLOAT, GL_FALSE, 2 * sizeof(Vector3));
+        glVertexArrayAttribFormat(
+            mGlVAO, mUV0AttribIndex, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Vector3) + sizeof(Vector4));
+        glVertexArrayAttribFormat(
+            mGlVAO, mUV1AttribIndex, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Vector3) + sizeof(Vector4) + sizeof(Vector2));
+        glVertexArrayAttribFormat(mGlVAO,
+                                  mColorAttribIndex,
+                                  4,
+                                  GL_UNSIGNED_BYTE,
+                                  GL_TRUE,
+                                  2 * sizeof(Vector3) + sizeof(Vector4) + 2 * sizeof(Vector2));
+
+        glVertexArrayAttribBinding(mGlVAO, mPosAttribIndex, mAttribBindingIndex);
+        glEnableVertexArrayAttrib(mGlVAO, mPosAttribIndex);
+        glVertexArrayAttribBinding(mGlVAO, mNormalAttribIndex, mAttribBindingIndex);
+        glEnableVertexArrayAttrib(mGlVAO, mNormalAttribIndex);
+        glVertexArrayAttribBinding(mGlVAO, mTangentsAttribIndex, mAttribBindingIndex);
+        glEnableVertexArrayAttrib(mGlVAO, mTangentsAttribIndex);
+        glVertexArrayAttribBinding(mGlVAO, mUV0AttribIndex, mAttribBindingIndex);
+        glEnableVertexArrayAttrib(mGlVAO, mUV0AttribIndex);
+        glVertexArrayAttribBinding(mGlVAO, mUV1AttribIndex, mAttribBindingIndex);
+        glEnableVertexArrayAttrib(mGlVAO, mUV1AttribIndex);
+        glVertexArrayAttribBinding(mGlVAO, mColorAttribIndex, mAttribBindingIndex);
+        glEnableVertexArrayAttrib(mGlVAO, mColorAttribIndex);
+
+        if (!ASSERT_GL())
+        {
+            glDeleteVertexArrays(1, &mGlVAO);
+            return false;
+        }
+
+        // ProgramPipeline
+        glCreateProgramPipelines(1, &mGlProgramPipeline);
+
+        if (!ASSERT_GL())
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        // Shaders
+        Path shaderDirPath(std::string("Subsystems/Rendering/GL/Shaders"));
+        shaderDirPath.ResolveProjectPath();
+
+        auto loadShader = [&](const std::string& shaderFileName,
+                              GLuint* pGlProgram,
+                              eShaderStage stage,
+                              eMaterialAssetType compatibleMaterialTypes) -> bool
+        {
+            const std::unique_ptr<const parser::ShaderIR> pDefaultIR =
+                parser::parseShaderFile(shaderDirPath / Path(shaderFileName), shaderFileName);
+            const std::unique_ptr<const ShaderAsset> pDefaultAsset =
+                importer::importShader(*pDefaultIR, stage, static_cast<uint8_t>(compatibleMaterialTypes));
+            const GLuint glShader = glCreateShader(toGlShaderType(pDefaultAsset->Stage));
+            if (!ASSERT_GL())
+            {
+                glDeleteShader(glShader);
+                return false;
+            }
+            glShaderBinary(1,
+                           &glShader,
+                           GL_SHADER_BINARY_FORMAT_SPIR_V,
+                           pDefaultAsset->Binary.Data(),
+                           static_cast<GLsizei>(pDefaultAsset->Binary.GetSize() * sizeof(uint32_t)));
+            if (!ASSERT_GL())
+            {
+                glDeleteShader(glShader);
+                return false;
+            }
+
+            glSpecializeShader(glShader, "main", 0, nullptr, nullptr);
+            if (!ASSERT_GL())
+            {
+                glDeleteShader(glShader);
+                return false;
+            }
+
+            GLint isCompiled = 0;
+            glGetShaderiv(glShader, GL_COMPILE_STATUS, &isCompiled);
+            if (isCompiled == GL_FALSE)
+            {
+                HO_ASSERT(false, "Shader is not compiled.");
+                glDeleteShader(glShader);
+                return false;
+            }
+
+            *pGlProgram = glCreateProgram();
+
+            glProgramParameteri(*pGlProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);
+
+            glAttachShader(*pGlProgram, glShader);
+            if (!ASSERT_GL())
+            {
+                glDeleteShader(glShader);
+                return false;
+            }
+
+            glLinkProgram(*pGlProgram);
+
+            GLint isLinked = 0;
+            glGetProgramiv(*pGlProgram, GL_LINK_STATUS, &isLinked);
+            if (isLinked == GL_FALSE)
+            {
+                std::string glLogInfo;
+                GLint glLogSize = 0;
+                glGetProgramiv(*pGlProgram, GL_INFO_LOG_LENGTH, &glLogSize);
+                glLogInfo.resize(glLogSize);
+                glGetProgramInfoLog(*pGlProgram, glLogSize, nullptr, glLogInfo.data());
+                HO_LOG_ERROR((std::string("Shader Link Failed:\n") + glLogInfo).c_str());
+                HO_ASSERT(false, "Failed to link shader.");
+                glDeleteShader(glShader);
+                *pGlProgram = 0;
+                return false;
+            }
+
+            glDetachShader(*pGlProgram, glShader);
+            glDeleteShader(glShader);
+            return true;
+        };
+
+        if (!loadShader("Default.vert",
+                        &mGlDefaultVS,
+                        eShaderStage::VertexShader,
+                        eMaterialAssetType::Legacy | eMaterialAssetType::StandardLit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "DefaultUnlit.frag", &mGlDefaultUnlitFS, eShaderStage::FragmentShader, eMaterialAssetType::Unlit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader("DefaultUnlitMasked.frag",
+                        &mGlDefaultUnlitMaskedFS,
+                        eShaderStage::FragmentShader,
+                        eMaterialAssetType::Unlit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "DefaultPhong.frag", &mGlDefaultPhongFS, eShaderStage::FragmentShader, eMaterialAssetType::Legacy))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader("DefaultPhongMasked.frag",
+                        &mGlDefaultPhongMaskedFS,
+                        eShaderStage::FragmentShader,
+                        eMaterialAssetType::Legacy))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "DefaultPBR.frag", &mGlDefaultPbrFS, eShaderStage::FragmentShader, eMaterialAssetType::StandardLit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader("DefaultPBRMasked.frag",
+                        &mGlDefaultPbrMaskedFS,
+                        eShaderStage::FragmentShader,
+                        eMaterialAssetType::StandardLit))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "DefaultSkyMap.vert", &mGlDefaultSkyMapVS, eShaderStage::VertexShader, eMaterialAssetType::None))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "DefaultSkyMap.frag", &mGlDefaultSkyMapFS, eShaderStage::FragmentShader, eMaterialAssetType::None))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "WorldGizmo.vert", &mGlDefaultWorldGizmoVS, eShaderStage::VertexShader, eMaterialAssetType::None))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        if (!loadShader(
+                "WorldGizmo.frag", &mGlDefaultWorldGizmoFS, eShaderStage::FragmentShader, eMaterialAssetType::None))
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        // Cubemap
+        const std::unique_ptr<const parser::TextureIR> p2x2Black = parser::parseTextureFile(
+            Path(std::string("Subsystems/Rendering/BuiltInAssets/2x2Black.png")).ResolvedProjectPath(),
+            "DefaultCubemap",
+            true);
+        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mGlDefaultCubeMap);
+        glTextureStorage2D(mGlDefaultCubeMap, 1, GL_RGBA8, p2x2Black->Img.GetWidth(), p2x2Black->Img.GetHeight());
+        for (int32_t face = 0; face < 6; ++face)
+        {
+            glTextureSubImage3D(mGlDefaultCubeMap,
+                                0,
+                                0,
+                                0,
+                                face,
+                                p2x2Black->Img.GetWidth(),
+                                p2x2Black->Img.GetHeight(),
+                                1,
+                                GL_RGBA,
+                                GL_UNSIGNED_BYTE,
+                                p2x2Black->Img.GetBitmap());
+        }
+        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        // UBOs
+        glCreateBuffers(1, &mGlMatrixUBO);
+        glNamedBufferData(mGlMatrixUBO, sizeof(MatrixLayout), nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, mMatrixUboIndex, mGlMatrixUBO);
+        if (!ASSERT_GL())
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        glCreateBuffers(1, &mGlLightUBO);
+        glNamedBufferData(mGlLightUBO, sizeof(LightLayout), nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, mLightUboIndex, mGlLightUBO);
+        if (!ASSERT_GL())
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        glCreateBuffers(1, &mGlGeneralPurposeUBO);
+        glNamedBufferData(mGlGeneralPurposeUBO, sizeof(GeneralPurposeLayout), nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, mGeneralPurposeUboIndex, mGlGeneralPurposeUBO);
+        if (!ASSERT_GL())
+        {
+            cancelInitialization();
+            return false;
+        }
+
+        // Set initial GL state
+        glFrontFace(GL_CW);
+        glEnable(GL_MULTISAMPLE);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        return true;
+    }
+}
+
+void RenderingSystemGL::SetVSync(bool bEnabled)
+{
+    if (mbVSyncEnabled.TestNotEqual(bEnabled))
+    {
+#if defined(_WIN32)
+        static_cast<Win32ApplicationGL&>(IPlatformApplication::GetInstance()).SetVSync(bEnabled);
+#elif defined(__linux__)
+#error "Linux environment is currently not supported."
+#endif
+        mbVSyncEnabled.Set(bEnabled);
+    }
+}
+
+void RenderingSystemGL::releaseAllResources()
+{
+    flush();
+    // Unload all GPU resources
+    for (auto& nativeHandle : mStaticMeshNativeHandlePool.GetMutableRawPool())
+    {
+        if (nativeHandle.has_value())
+        {
+            glDeleteBuffers(1, &nativeHandle.value().GlVbo);
+            glDeleteBuffers(1, &nativeHandle.value().GlEbo);
+        }
+    }
+    for (auto& nativeHandle : mMaterialNativeHandlePool.GetMutableRawPool())
+    {
+        if (nativeHandle.has_value())
+        {
+            glDeleteBuffers(1, &nativeHandle.value().GlUbo);
+        }
+    }
+    for (auto& nativeHandle : mTextureNativeHandlePool.GetMutableRawPool())
+    {
+        if (nativeHandle.has_value())
+        {
+            glDeleteTextures(1, &nativeHandle.value().GlTexture);
+        }
+    }
+    for (auto& nativeHandle : mShaderNativeHandlePool.GetMutableRawPool())
+    {
+        if (nativeHandle.has_value())
+        {
+            glDeleteProgram(nativeHandle.value().GlProgram);
+        }
+    }
+
+    for (auto& it : mNameToGlFboMap)
+    {
+        glDeleteFramebuffers(2, it.second.FBO);
+        glDeleteFramebuffers(2, it.second.ResolvedFBO);
+    }
+
+    mNameToGlFboMap.clear();
+
+    glDeleteVertexArrays(1, &mGlVAO);
+    glDeleteProgramPipelines(1, &mGlProgramPipeline);
+    glDeleteProgram(mGlDefaultVS);
+    glDeleteProgram(mGlDefaultUnlitFS);
+    glDeleteProgram(mGlDefaultUnlitMaskedFS);
+    glDeleteProgram(mGlDefaultPhongFS);
+    glDeleteProgram(mGlDefaultPhongMaskedFS);
+    glDeleteProgram(mGlDefaultPbrFS);
+    glDeleteProgram(mGlDefaultPbrMaskedFS);
+    glDeleteProgram(mGlDefaultSkyMapVS);
+    glDeleteProgram(mGlDefaultSkyMapFS);
+    glDeleteProgram(mGlDefaultWorldGizmoVS);
+    glDeleteProgram(mGlDefaultWorldGizmoFS);
+    glDeleteTextures(1, &mGlDefaultCubeMap);
+    glDeleteBuffers(1, &mGlMatrixUBO);
+    glDeleteBuffers(1, &mGlLightUBO);
+    glDeleteBuffers(1, &mGlGeneralPurposeUBO);
+
+    mStaticMeshNativeHandlePool.Clear();
+    mMaterialNativeHandlePool.Clear();
+    mTextureNativeHandlePool.Clear();
+    mShaderNativeHandlePool.Clear();
+}
+
+void RenderingSystemGL::applyMaterial(GpuMaterialHandle hGpuMaterial)
+{
+    const GpuMaterial* pMaterial = hGpuMaterial.Get();
+
+    if (pMaterial->PipelineState.AlphaMode == eMaterialAlphaMode::Blend)
+    {
+        switch (pMaterial->PipelineState.AlphaBlendMode)
+        {
+            case eMaterialAlphaBlendMode::Default:
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                break;
+            case eMaterialAlphaBlendMode::Additive:
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (pMaterial->PipelineState.bWireframe)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    else
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    if (pMaterial->PipelineState.bBackfaceCulling)
+    {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+    }
+    else
+    {
+        glDisable(GL_CULL_FACE);
+    }
+
+    glBindBufferBase(GL_UNIFORM_BUFFER,
+                     mMaterialUboIndex,
+                     mMaterialNativeHandlePool.Get(hGpuMaterial.Get()->NativeHandlePoolIndex)->GlUbo);
+
+    for (int32_t i = 1; i < static_cast<int32_t>(eMaterialTextureUsage::Last); ++i)
+    {
+        if (pMaterial->TextureNativeHandlePoolIndices[i] != 0)
+        {
+            glBindTextureUnit(i, mTextureNativeHandlePool.Get(pMaterial->TextureNativeHandlePoolIndices[i])->GlTexture);
+        }
+    }
+
+    const GLuint glVS =
+        pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::VertexShader)] != 0
+            ? mShaderNativeHandlePool
+                  .Get(pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::VertexShader)])
+                  ->GlProgram
+            : mGlDefaultVS;
+
+    glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, glVS);
+
+    GLuint glFS = 0;
+    if (pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::FragmentShader)] != 0)
+    {
+        glFS = mShaderNativeHandlePool
+                   .Get(pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::FragmentShader)])
+                   ->GlProgram;
+    }
+    else
+    {
+        switch (hGpuMaterial.Get()->Type)
+        {
+            case eMaterialAssetType::Unlit:
+                if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
+                {
+                    glFS = mGlDefaultUnlitMaskedFS;
+                }
+                else
+                {
+                    glFS = mGlDefaultUnlitFS;
+                }
+                break;
+            case eMaterialAssetType::Legacy:
+                if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
+                {
+                    glFS = mGlDefaultPhongMaskedFS;
+                }
+                else
+                {
+                    glFS = mGlDefaultPhongFS;
+                }
+                break;
+            case eMaterialAssetType::StandardLit:
+                if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
+                {
+                    glFS = mGlDefaultPbrMaskedFS;
+                }
+                else
+                {
+                    glFS = mGlDefaultPbrFS;
+                }
+                break;
+            default:
+                HO_ASSERT(false, "Invalid material format.");
+        }
+    }
+
+    glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, glFS);
+}
+
+void RenderingSystemGL::executeDrawCommand(const DrawCommand& command)
+{
+    glNamedBufferSubData(mGlMatrixUBO, 0, sizeof(Matrix4x4), &command.WorldMat);
+    Matrix4x4 invWorldMat = command.WorldMat.Inverse();
+    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4), sizeof(Matrix4x4), &invWorldMat);
+
+    const StaticMeshNativeHandleGL* meshNativehandle =
+        mStaticMeshNativeHandlePool.Get(command.hGpuStaticMesh.Get()->NativeHandlePoolIndex);
+    glVertexArrayVertexBuffer(mGlVAO,
+                              mAttribBindingIndex,
+                              meshNativehandle->GlVbo,
+                              static_cast<GLintptr>(command.VertexOffset * sizeof(Vertex)),
+                              sizeof(Vertex));
+    glVertexArrayElementBuffer(mGlVAO, meshNativehandle->GlEbo);
+
+    glDrawElements(GL_TRIANGLES,
+                   command.IndexCount,
+                   GL_UNSIGNED_INT,
+                   reinterpret_cast<void*>(command.IndexOffset * sizeof(uint32_t))); // NOLINT
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::executeSkyMapPass(const GpuTexture* pSkyMap)
+{
+    HO_ASSERT(pSkyMap, "Sky map is null.");
+
+    glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last),
+                      mTextureNativeHandlePool.Get(pSkyMap->NativeHandlePoolIndex)->GlTexture);
+
+    glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, mGlDefaultSkyMapVS);
+    glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, mGlDefaultSkyMapFS);
+
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LEQUAL);
+
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::executeInWorldDebugDrawPass()
+{
+    glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, mGlDefaultWorldGizmoVS);
+    glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, mGlDefaultWorldGizmoFS);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glDisable(GL_BLEND);
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::executeOverlayDebugDrawPass() {}
+
+void RenderingSystemGL::prepareExecuteRenderQueue()
+{
+    glBindVertexArray(mGlVAO);
+    glBindProgramPipeline(mGlProgramPipeline);
+}
+
+void RenderingSystemGL::prepareExecuteRenderPass(const RenderPass& pass)
+{
+    HO_ASSERT(pass.pFrameBuffer, "Render pass must have target frame buffer.");
+    auto it = mNameToGlFboMap.find(pass.pFrameBuffer->hName);
+    HO_ASSERT(it != mNameToGlFboMap.end(),
+              "GL id for frame buffer was not inserted. Frame buffer might be created incompletely.");
+
+    glBindFramebuffer(GL_FRAMEBUFFER, it->second.FBO[mBackRenderQueueIndex]);
+    glViewport(pass.Viewport.X, pass.Viewport.Y, pass.Viewport.Width, pass.Viewport.Height);
+
+    ASSERT_GL();
+
+    for (int32_t i = 0; i < static_cast<int32_t>(eRenderTargetType::Last); ++i)
+    {
+        if (pass.bClearTarget[i])
+        {
+            if (i == static_cast<int32_t>(eRenderTargetType::Depth))
+            {
+                glClearBufferfv(GL_DEPTH, 0, &pass.pFrameBuffer->ClearDepth);
+            }
+            else
+            {
+                glClearBufferfv(GL_COLOR, i, pass.pFrameBuffer->ClearColors[i].Data);
+            }
+        }
+    }
+
+    glNamedBufferSubData(mGlGeneralPurposeUBO, 0, sizeof(float) * 3, &pass.WorldCameraPos);
+    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4) * 2, sizeof(Matrix4x4), &pass.ViewMat);
+    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4) * 3, sizeof(Matrix4x4), &pass.ProjMat);
+    glNamedBufferSubData(mGlLightUBO, 0, sizeof(LightLayout), &pass.Lights);
+
+    ASSERT_GL();
+
+    if (pass.pSkyMap)
+    {
+        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last),
+                          mTextureNativeHandlePool.Get(pass.pSkyMap->NativeHandlePoolIndex)->GlTexture);
+    }
+    else
+    {
+        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last), mGlDefaultCubeMap);
+    }
+
+    if (pass.pIrradianceMap)
+    {
+        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last) + 1,
+                          mTextureNativeHandlePool.Get(pass.pIrradianceMap->NativeHandlePoolIndex)->GlTexture);
+    }
+    else
+    {
+        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last) + 1, mGlDefaultCubeMap);
+    }
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::prepareExecuteOpaqueDrawCommands()
+{
+    glDepthMask(GL_TRUE);
+
+    glDisable(GL_BLEND);
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::prepareExecuteMaskedDrawCommands()
+{
+    glDepthMask(GL_TRUE);
+
+    glDisable(GL_BLEND);
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::prepareExecuteBlendedDrawCommands()
+{
+    glDepthMask(GL_FALSE);
+
+    glEnable(GL_BLEND);
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::finishExecuteRenderPass(const RenderPass& pass)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    ASSERT_GL();
+}
+
+void RenderingSystemGL::finishExecuteRenderQueue() {}
+
+void RenderingSystemGL::resolveFrameBuffer(const FrameBuffer& frameBuffer)
+{
+    if (frameBuffer.SampleCount == 1)
+    {
+        return;
+    }
+
+    auto glFBO = mNameToGlFboMap.find(frameBuffer.hName);
+    HO_ASSERT(glFBO != mNameToGlFboMap.end(),
+              "GL id for frame buffer was not inserted. Frame buffer might be created incompletely.");
+
+    for (int32_t i = 0; i < static_cast<int32_t>(eRenderTargetType::Last); ++i)
+    {
+        if (i != static_cast<int32_t>(eRenderTargetType::Depth) &&
+            frameBuffer.hRenderTargets[mBackRenderQueueIndex][i].IsValid())
+        {
+            HO_ASSERT(frameBuffer.hResolvedRenderTargets[mBackRenderQueueIndex][i].IsValid(),
+                      "Render target for resolving was not created. Frame buffer might be created incompletely.");
+            glNamedFramebufferReadBuffer(glFBO->second.FBO[mBackRenderQueueIndex], GL_COLOR_ATTACHMENT0 + i);
+            glNamedFramebufferDrawBuffer(glFBO->second.ResolvedFBO[mBackRenderQueueIndex], GL_COLOR_ATTACHMENT0 + i);
+            glBlitNamedFramebuffer(glFBO->second.FBO[mBackRenderQueueIndex],
+                                   glFBO->second.ResolvedFBO[mBackRenderQueueIndex],
+                                   0,
+                                   0,
+                                   frameBuffer.Width,
+                                   frameBuffer.Height,
+                                   0,
+                                   0,
+                                   frameBuffer.Width,
+                                   frameBuffer.Height,
+                                   GL_COLOR_BUFFER_BIT,
+                                   GL_NEAREST);
+        }
+    }
+}
+
+void RenderingSystemGL::renderUI()
+{
+    const RenderQueue& queue = mRenderQueues[mBackRenderQueueIndex];
+
+    for (int i = 0; i < queue.ActiveViewportCount; ++i)
+    {
+        const UIViewportData& viewportData = queue.UIViewports[i];
+
+        const IPlatformWindow* pWindow = static_cast<const IPlatformWindow*>(viewportData.pTargetWindow);
+
+        pWindow->ActivateContext();
+
+        ImGui_ImplOpenGL3_RenderDrawData(viewportData.pDrawData.get());
+
+        glFlush();
+
+        pWindow->Present();
+    }
+
+    IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
+}
+
+void RenderingSystemGL::flush()
+{
+    glFlush();
+}
+
+bool RenderingSystemGL::createFrameBuffer(const FrameBufferDesc& frameBufferDesc)
 {
     if (!validateFrameBufferDesc(frameBufferDesc))
     {
@@ -254,7 +1002,7 @@ bool RenderingSystemGL::CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc
     return true;
 }
 
-bool RenderingSystemGL::DestroyFrameBuffer(StringHandle hFrameBufferName)
+bool RenderingSystemGL::destroyFrameBuffer(StringHandle hFrameBufferName)
 {
     auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
     if (fbit == mNameToFrameBufferMap.end())
@@ -300,707 +1048,6 @@ bool RenderingSystemGL::DestroyFrameBuffer(StringHandle hFrameBufferName)
     glDeleteFramebuffers(2, glit->second.ResolvedFBO);
     mNameToGlFboMap.erase(hFrameBufferName);
     return true;
-}
-
-void* RenderingSystemGL::GetRenderTargetNativeHandle(StringHandle hFrameBufferName,
-                                                     eRenderTargetType type,
-                                                     bool bRequireMultisample) const
-{
-    auto fbit = mNameToFrameBufferMap.find(hFrameBufferName);
-
-    HO_ASSERT(fbit != mNameToFrameBufferMap.end(), "There is no frame buffer.");
-
-    const FrameBuffer& frameBuffer = fbit->second;
-    HO_ASSERT(frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)].IsValid(),
-              "Frame buffer doesn't have such render target.");
-    const TextureNativeHandleGL* nativeHandle = nullptr;
-    if (bRequireMultisample)
-    {
-        HO_ASSERT(frameBuffer.SampleCount > 1, "Frame buffer has single sample render targets.");
-        nativeHandle =
-            mTextureNativeHandlePool.Get(frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)]
-                                             .Get()
-                                             ->NativeHandlePoolIndex);
-    }
-    else
-    {
-        if (frameBuffer.SampleCount > 1)
-        {
-            HO_ASSERT(type != eRenderTargetType::Depth,
-                      "MultiSample Depth Target must be used in rendering system only.");
-            nativeHandle = mTextureNativeHandlePool.Get(
-                frameBuffer.hResolvedRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)]
-                    .Get()
-                    ->NativeHandlePoolIndex);
-        }
-        else
-        {
-            nativeHandle = mTextureNativeHandlePool.Get(
-                frameBuffer.hRenderTargets[mFrontRenderQueueIndex][static_cast<int32_t>(type)]
-                    .Get()
-                    ->NativeHandlePoolIndex);
-        }
-    }
-
-    HO_ASSERT(nativeHandle, "Texture for render target was not created.");
-    return reinterpret_cast<void*>(static_cast<uintptr_t>(nativeHandle->GlTexture)); // NOLINT
-}
-
-RenderingSystemGL::RenderingSystemGL()
-{
-    HO_ASSERT(!spInstance, "Rendering system must be created by 'createInstance' function.");
-}
-
-bool RenderingSystemGL::init()
-{
-    IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
-
-    if (!spInstance)
-    {
-        HO_ASSERT(false, "Rendering system is not created.");
-        return false;
-    }
-    else
-    {
-        // Create default GPU resources.
-
-        // VAO
-        glCreateVertexArrays(1, &mGlVAO);
-
-        glVertexArrayAttribFormat(mGlVAO, mPosAttribIndex, 3, GL_FLOAT, GL_FALSE, 0);
-        glVertexArrayAttribFormat(mGlVAO, mNormalAttribIndex, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3));
-        glVertexArrayAttribFormat(mGlVAO, mTangentsAttribIndex, 4, GL_FLOAT, GL_FALSE, 2 * sizeof(Vector3));
-        glVertexArrayAttribFormat(
-            mGlVAO, mUV0AttribIndex, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Vector3) + sizeof(Vector4));
-        glVertexArrayAttribFormat(
-            mGlVAO, mUV1AttribIndex, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Vector3) + sizeof(Vector4) + sizeof(Vector2));
-        glVertexArrayAttribFormat(mGlVAO,
-                                  mColorAttribIndex,
-                                  4,
-                                  GL_UNSIGNED_BYTE,
-                                  GL_TRUE,
-                                  2 * sizeof(Vector3) + sizeof(Vector4) + 2 * sizeof(Vector2));
-
-        glVertexArrayAttribBinding(mGlVAO, mPosAttribIndex, mAttribBindingIndex);
-        glEnableVertexArrayAttrib(mGlVAO, mPosAttribIndex);
-        glVertexArrayAttribBinding(mGlVAO, mNormalAttribIndex, mAttribBindingIndex);
-        glEnableVertexArrayAttrib(mGlVAO, mNormalAttribIndex);
-        glVertexArrayAttribBinding(mGlVAO, mTangentsAttribIndex, mAttribBindingIndex);
-        glEnableVertexArrayAttrib(mGlVAO, mTangentsAttribIndex);
-        glVertexArrayAttribBinding(mGlVAO, mUV0AttribIndex, mAttribBindingIndex);
-        glEnableVertexArrayAttrib(mGlVAO, mUV0AttribIndex);
-        glVertexArrayAttribBinding(mGlVAO, mUV1AttribIndex, mAttribBindingIndex);
-        glEnableVertexArrayAttrib(mGlVAO, mUV1AttribIndex);
-        glVertexArrayAttribBinding(mGlVAO, mColorAttribIndex, mAttribBindingIndex);
-        glEnableVertexArrayAttrib(mGlVAO, mColorAttribIndex);
-
-        if (!ASSERT_GL())
-        {
-            glDeleteVertexArrays(1, &mGlVAO);
-            return false;
-        }
-
-        // ProgramPipeline
-        glCreateProgramPipelines(1, &mGlProgramPipeline);
-
-        if (!ASSERT_GL())
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        // Shaders
-        Path shaderDirPath(std::string("Subsystems/Rendering/GL/Shaders"));
-        shaderDirPath.ResolveProjectPath();
-
-        auto loadShader = [&](const std::string& shaderFileName,
-                              GLuint* pGlProgram,
-                              eShaderStage stage,
-                              eMaterialAssetType compatibleMaterialTypes) -> bool
-        {
-            const std::unique_ptr<const parser::ShaderIR> pDefaultIR =
-                parser::parseShaderFile(shaderDirPath / Path(shaderFileName), shaderFileName);
-            const std::unique_ptr<const ShaderAsset> pDefaultAsset =
-                importer::importShader(*pDefaultIR, stage, static_cast<uint8_t>(compatibleMaterialTypes));
-            const GLuint glShader = glCreateShader(toGlShaderType(pDefaultAsset->Stage));
-            if (!ASSERT_GL())
-            {
-                glDeleteShader(glShader);
-                return false;
-            }
-            glShaderBinary(1,
-                           &glShader,
-                           GL_SHADER_BINARY_FORMAT_SPIR_V,
-                           pDefaultAsset->Binary.Data(),
-                           static_cast<GLsizei>(pDefaultAsset->Binary.GetSize() * sizeof(uint32_t)));
-            if (!ASSERT_GL())
-            {
-                glDeleteShader(glShader);
-                return false;
-            }
-
-            glSpecializeShader(glShader, "main", 0, nullptr, nullptr);
-            if (!ASSERT_GL())
-            {
-                glDeleteShader(glShader);
-                return false;
-            }
-
-            GLint isCompiled = 0;
-            glGetShaderiv(glShader, GL_COMPILE_STATUS, &isCompiled);
-            if (isCompiled == GL_FALSE)
-            {
-                HO_ASSERT(false, "Shader is not compiled.");
-                glDeleteShader(glShader);
-                return false;
-            }
-
-            *pGlProgram = glCreateProgram();
-
-            glProgramParameteri(*pGlProgram, GL_PROGRAM_SEPARABLE, GL_TRUE);
-
-            glAttachShader(*pGlProgram, glShader);
-            if (!ASSERT_GL())
-            {
-                glDeleteShader(glShader);
-                return false;
-            }
-
-            glLinkProgram(*pGlProgram);
-
-            GLint isLinked = 0;
-            glGetProgramiv(*pGlProgram, GL_LINK_STATUS, &isLinked);
-            if (isLinked == GL_FALSE)
-            {
-                std::string glLogInfo;
-                GLint glLogSize = 0;
-                glGetProgramiv(*pGlProgram, GL_INFO_LOG_LENGTH, &glLogSize);
-                glLogInfo.resize(glLogSize);
-                glGetProgramInfoLog(*pGlProgram, glLogSize, nullptr, glLogInfo.data());
-                HO_LOG_ERROR((std::string("Shader Link Failed:\n") + glLogInfo).c_str());
-                HO_ASSERT(false, "Failed to link shader.");
-                glDeleteShader(glShader);
-                *pGlProgram = 0;
-                return false;
-            }
-
-            glDetachShader(*pGlProgram, glShader);
-            glDeleteShader(glShader);
-            return true;
-        };
-
-        if (!loadShader("Default.vert",
-                        &mGlDefaultVS,
-                        eShaderStage::VertexShader,
-                        eMaterialAssetType::Legacy | eMaterialAssetType::StandardLit))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader(
-                "DefaultPhong.frag", &mGlDefaultPhongFS, eShaderStage::FragmentShader, eMaterialAssetType::Legacy))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader("DefaultPhongMasked.frag",
-                        &mGlDefaultPhongMaskedFS,
-                        eShaderStage::FragmentShader,
-                        eMaterialAssetType::Legacy))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader(
-                "DefaultPBR.frag", &mGlDefaultPbrFS, eShaderStage::FragmentShader, eMaterialAssetType::StandardLit))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader("DefaultPBRMasked.frag",
-                        &mGlDefaultPbrMaskedFS,
-                        eShaderStage::FragmentShader,
-                        eMaterialAssetType::StandardLit))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader(
-                "DefaultSkyMap.vert", &mGlDefaultSkyMapVS, eShaderStage::VertexShader, eMaterialAssetType::None))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader(
-                "DefaultSkyMap.frag", &mGlDefaultSkyMapFS, eShaderStage::FragmentShader, eMaterialAssetType::None))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader(
-                "WorldGizmo.vert", &mGlDefaultWorldGizmoVS, eShaderStage::VertexShader, eMaterialAssetType::None))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        if (!loadShader(
-                "WorldGizmo.frag", &mGlDefaultWorldGizmoFS, eShaderStage::FragmentShader, eMaterialAssetType::None))
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        // Cubemap
-        const std::unique_ptr<const parser::TextureIR> p2x2Black = parser::parseTextureFile(
-            Path(std::string("Subsystems/Rendering/BuiltInAssets/2x2Black.png")).ResolvedProjectPath(),
-            "DefaultCubemap",
-            true);
-        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mGlDefaultCubeMap);
-        glTextureStorage2D(mGlDefaultCubeMap, 1, GL_RGBA8, p2x2Black->Img.GetWidth(), p2x2Black->Img.GetHeight());
-        for (int32_t face = 0; face < 6; ++face)
-        {
-            glTextureSubImage3D(mGlDefaultCubeMap,
-                                0,
-                                0,
-                                0,
-                                face,
-                                p2x2Black->Img.GetWidth(),
-                                p2x2Black->Img.GetHeight(),
-                                1,
-                                GL_RGBA,
-                                GL_UNSIGNED_BYTE,
-                                p2x2Black->Img.GetBitmap());
-        }
-        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-        // UBOs
-        glCreateBuffers(1, &mGlMatrixUBO);
-        glNamedBufferData(mGlMatrixUBO, sizeof(MatrixLayout), nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, mMatrixUboIndex, mGlMatrixUBO);
-        if (!ASSERT_GL())
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        glCreateBuffers(1, &mGlLightUBO);
-        glNamedBufferData(mGlLightUBO, sizeof(LightLayout), nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, mLightUboIndex, mGlLightUBO);
-        if (!ASSERT_GL())
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        glCreateBuffers(1, &mGlGeneralPurposeUBO);
-        glNamedBufferData(mGlGeneralPurposeUBO, sizeof(GeneralPurposeLayout), nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, mGeneralPurposeUboIndex, mGlGeneralPurposeUBO);
-        if (!ASSERT_GL())
-        {
-            cancelInitialization();
-            return false;
-        }
-
-        // Set initial GL state
-        glEnable(GL_MULTISAMPLE);
-
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-
-        IPlatformApplication::GetInstance().GetMainWindow()->DeactivateContext();
-        return true;
-    }
-}
-
-void RenderingSystemGL::releaseAllResources()
-{
-    flush();
-    // Unload all GPU resources
-    for (auto& nativeHandle : mStaticMeshNativeHandlePool.GetMutableRawPool())
-    {
-        if (nativeHandle.has_value())
-        {
-            glDeleteBuffers(1, &nativeHandle.value().GlVbo);
-            glDeleteBuffers(1, &nativeHandle.value().GlEbo);
-        }
-    }
-    for (auto& nativeHandle : mMaterialNativeHandlePool.GetMutableRawPool())
-    {
-        if (nativeHandle.has_value())
-        {
-            glDeleteBuffers(1, &nativeHandle.value().GlUbo);
-        }
-    }
-    for (auto& nativeHandle : mTextureNativeHandlePool.GetMutableRawPool())
-    {
-        if (nativeHandle.has_value())
-        {
-            glDeleteTextures(1, &nativeHandle.value().GlTexture);
-        }
-    }
-    for (auto& nativeHandle : mShaderNativeHandlePool.GetMutableRawPool())
-    {
-        if (nativeHandle.has_value())
-        {
-            glDeleteProgram(nativeHandle.value().GlProgram);
-        }
-    }
-
-    for (auto& it : mNameToGlFboMap)
-    {
-        glDeleteFramebuffers(2, it.second.FBO);
-        glDeleteFramebuffers(2, it.second.ResolvedFBO);
-    }
-
-    mNameToGlFboMap.clear();
-
-    glDeleteVertexArrays(1, &mGlVAO);
-    glDeleteProgramPipelines(1, &mGlProgramPipeline);
-    glDeleteProgram(mGlDefaultVS);
-    glDeleteProgram(mGlDefaultPhongFS);
-    glDeleteProgram(mGlDefaultPhongMaskedFS);
-    glDeleteProgram(mGlDefaultPbrFS);
-    glDeleteProgram(mGlDefaultPbrMaskedFS);
-    glDeleteProgram(mGlDefaultSkyMapVS);
-    glDeleteProgram(mGlDefaultSkyMapFS);
-    glDeleteProgram(mGlDefaultWorldGizmoVS);
-    glDeleteProgram(mGlDefaultWorldGizmoFS);
-    glDeleteTextures(1, &mGlDefaultCubeMap);
-    glDeleteBuffers(1, &mGlMatrixUBO);
-    glDeleteBuffers(1, &mGlLightUBO);
-    glDeleteBuffers(1, &mGlGeneralPurposeUBO);
-
-    mStaticMeshNativeHandlePool.Clear();
-    mMaterialNativeHandlePool.Clear();
-    mTextureNativeHandlePool.Clear();
-    mShaderNativeHandlePool.Clear();
-}
-
-void RenderingSystemGL::applyMaterial(GpuMaterialHandle hGpuMaterial)
-{
-    const GpuMaterial* pMaterial = hGpuMaterial.Get();
-
-    if (pMaterial->PipelineState.AlphaMode == eMaterialAlphaMode::Blend)
-    {
-        switch (pMaterial->PipelineState.AlphaBlendMode)
-        {
-            case eMaterialAlphaBlendMode::Default:
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                break;
-            case eMaterialAlphaBlendMode::Additive:
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-                break;
-            default:
-                break;
-        }
-    }
-
-    if (pMaterial->PipelineState.bWireframe)
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
-    else
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    if (pMaterial->PipelineState.bBackfaceCulling)
-    {
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-    }
-    else
-    {
-        glDisable(GL_CULL_FACE);
-    }
-
-    glBindBufferBase(GL_UNIFORM_BUFFER,
-                     mMaterialUboIndex,
-                     mMaterialNativeHandlePool.Get(hGpuMaterial.Get()->NativeHandlePoolIndex)->GlUbo);
-
-    for (int32_t i = 1; i < static_cast<int32_t>(eMaterialTextureUsage::Last); ++i)
-    {
-        if (pMaterial->TextureNativeHandlePoolIndices[i] != 0)
-        {
-            glBindTextureUnit(i, mTextureNativeHandlePool.Get(pMaterial->TextureNativeHandlePoolIndices[i])->GlTexture);
-        }
-    }
-
-    const GLuint glVS =
-        pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::VertexShader)] != 0
-            ? mShaderNativeHandlePool
-                  .Get(pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::VertexShader)])
-                  ->GlProgram
-            : mGlDefaultVS;
-
-    glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, glVS);
-
-    GLuint glFS = 0;
-    if (pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::FragmentShader)] != 0)
-    {
-        glFS = mShaderNativeHandlePool
-                   .Get(pMaterial->ShaderNativeHandlePoolIndices[static_cast<int32_t>(eShaderStage::FragmentShader)])
-                   ->GlProgram;
-    }
-    else
-    {
-        switch (hGpuMaterial.Get()->Type)
-        {
-            case eMaterialAssetType::Legacy:
-                if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
-                {
-                    glFS = mGlDefaultPhongMaskedFS;
-                }
-                else
-                {
-                    glFS = mGlDefaultPhongFS;
-                }
-                break;
-            case eMaterialAssetType::StandardLit:
-                if (hGpuMaterial.Get()->PipelineState.AlphaMode == eMaterialAlphaMode::Mask)
-                {
-                    glFS = mGlDefaultPbrMaskedFS;
-                }
-                else
-                {
-                    glFS = mGlDefaultPbrFS;
-                }
-                break;
-            default:
-                HO_ASSERT(false, "Invalid material format.");
-        }
-    }
-
-    glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, glFS);
-}
-
-void RenderingSystemGL::executeDrawCommand(const DrawCommand& command)
-{
-    glNamedBufferSubData(mGlMatrixUBO, 0, sizeof(Matrix4x4), &command.WorldMat);
-    Matrix4x4 invWorldMat = command.WorldMat.Inverse();
-    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4), sizeof(Matrix4x4), &invWorldMat);
-
-    const StaticMeshNativeHandleGL* meshNativehandle =
-        mStaticMeshNativeHandlePool.Get(command.hGpuStaticMesh.Get()->NativeHandlePoolIndex);
-    glVertexArrayVertexBuffer(mGlVAO,
-                              mAttribBindingIndex,
-                              meshNativehandle->GlVbo,
-                              static_cast<GLintptr>(command.VertexOffset * sizeof(Vertex)),
-                              sizeof(Vertex));
-    glVertexArrayElementBuffer(mGlVAO, meshNativehandle->GlEbo);
-
-    glDrawElements(GL_TRIANGLES,
-                   command.IndexCount,
-                   GL_UNSIGNED_INT,
-                   reinterpret_cast<void*>(command.IndexOffset * sizeof(uint32_t))); // NOLINT
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::executeSkyMapPass(const GpuTexture* pSkyMap)
-{
-    HO_ASSERT(pSkyMap, "Sky map is null.");
-
-    glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last),
-                      mTextureNativeHandlePool.Get(pSkyMap->NativeHandlePoolIndex)->GlTexture);
-
-    glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, mGlDefaultSkyMapVS);
-    glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, mGlDefaultSkyMapFS);
-
-    glDepthMask(GL_FALSE);
-    glDepthFunc(GL_LEQUAL);
-
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LESS);
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::executeInWorldDebugDrawPass()
-{
-    glUseProgramStages(mGlProgramPipeline, GL_VERTEX_SHADER_BIT, mGlDefaultWorldGizmoVS);
-    glUseProgramStages(mGlProgramPipeline, GL_FRAGMENT_SHADER_BIT, mGlDefaultWorldGizmoFS);
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::executeOverlayDebugDrawPass() {}
-
-void RenderingSystemGL::prepareExecuteRenderQueue()
-{
-    glBindVertexArray(mGlVAO);
-    glBindProgramPipeline(mGlProgramPipeline);
-}
-
-void RenderingSystemGL::prepareExecuteRenderPass(const RenderPass& pass)
-{
-    HO_ASSERT(pass.pFrameBuffer, "Render pass must have target frame buffer.");
-    auto it = mNameToGlFboMap.find(pass.pFrameBuffer->hName);
-    HO_ASSERT(it != mNameToGlFboMap.end(),
-              "GL id for frame buffer was not inserted. Frame buffer might be created incompletely.");
-
-    glBindFramebuffer(GL_FRAMEBUFFER, it->second.FBO[mBackRenderQueueIndex]);
-    glViewport(pass.Viewport.X, pass.Viewport.Y, pass.Viewport.Width, pass.Viewport.Height);
-
-    ASSERT_GL();
-
-    for (int32_t i = 0; i < static_cast<int32_t>(eRenderTargetType::Last); ++i)
-    {
-        if (pass.bClearTarget[i])
-        {
-            if (i == static_cast<int32_t>(eRenderTargetType::Depth))
-            {
-                glClearBufferfv(GL_DEPTH, 0, &pass.pFrameBuffer->ClearDepth);
-            }
-            else
-            {
-                glClearBufferfv(GL_COLOR, i, pass.pFrameBuffer->ClearColors[i].Data);
-            }
-        }
-    }
-
-    glNamedBufferSubData(mGlGeneralPurposeUBO, 0, sizeof(float) * 3, &pass.WorldCameraPos);
-    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4) * 2, sizeof(Matrix4x4), &pass.ViewMat);
-    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4) * 3, sizeof(Matrix4x4), &pass.ProjMat);
-    glNamedBufferSubData(mGlLightUBO, 0, sizeof(LightLayout), &pass.Lights);
-
-    ASSERT_GL();
-
-    if (pass.pSkyMap)
-    {
-        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last),
-                          mTextureNativeHandlePool.Get(pass.pSkyMap->NativeHandlePoolIndex)->GlTexture);
-    }
-    else
-    {
-        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last), mGlDefaultCubeMap);
-    }
-
-    if (pass.pIrradianceMap)
-    {
-        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last) + 1,
-                          mTextureNativeHandlePool.Get(pass.pIrradianceMap->NativeHandlePoolIndex)->GlTexture);
-    }
-    else
-    {
-        glBindTextureUnit(static_cast<int32_t>(eMaterialTextureUsage::Last) + 1, mGlDefaultCubeMap);
-    }
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::prepareExecuteOpaqueDrawCommands()
-{
-    glDepthMask(GL_TRUE);
-
-    glDisable(GL_BLEND);
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::prepareExecuteMaskedDrawCommands()
-{
-    glDepthMask(GL_TRUE);
-
-    glDisable(GL_BLEND);
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::prepareExecuteBlendedDrawCommands()
-{
-    glDepthMask(GL_FALSE);
-
-    glEnable(GL_BLEND);
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::finishExecuteRenderPass(const RenderPass& pass)
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    ASSERT_GL();
-}
-
-void RenderingSystemGL::finishExecuteRenderQueue() {}
-
-void RenderingSystemGL::resolveFrameBuffer(const FrameBuffer& frameBuffer)
-{
-    if (frameBuffer.SampleCount == 1)
-    {
-        return;
-    }
-
-    auto glFBO = mNameToGlFboMap.find(frameBuffer.hName);
-    HO_ASSERT(glFBO != mNameToGlFboMap.end(),
-              "GL id for frame buffer was not inserted. Frame buffer might be created incompletely.");
-
-    for (int32_t i = 0; i < static_cast<int32_t>(eRenderTargetType::Last); ++i)
-    {
-        if (i != static_cast<int32_t>(eRenderTargetType::Depth) &&
-            frameBuffer.hRenderTargets[mBackRenderQueueIndex][i].IsValid())
-        {
-            HO_ASSERT(frameBuffer.hResolvedRenderTargets[mBackRenderQueueIndex][i].IsValid(),
-                      "Render target for resolving was not created. Frame buffer might be created incompletely.");
-            glNamedFramebufferReadBuffer(glFBO->second.FBO[mBackRenderQueueIndex], GL_COLOR_ATTACHMENT0 + i);
-            glNamedFramebufferDrawBuffer(glFBO->second.ResolvedFBO[mBackRenderQueueIndex], GL_COLOR_ATTACHMENT0 + i);
-            glBlitNamedFramebuffer(glFBO->second.FBO[mBackRenderQueueIndex],
-                                   glFBO->second.ResolvedFBO[mBackRenderQueueIndex],
-                                   0,
-                                   0,
-                                   frameBuffer.Width,
-                                   frameBuffer.Height,
-                                   0,
-                                   0,
-                                   frameBuffer.Width,
-                                   frameBuffer.Height,
-                                   GL_COLOR_BUFFER_BIT,
-                                   GL_NEAREST);
-        }
-    }
-}
-
-void RenderingSystemGL::renderUI()
-{
-    const RenderQueue& queue = mRenderQueues[mBackRenderQueueIndex];
-
-    for (int i = 0; i < queue.ActiveViewportCount; ++i)
-    {
-        const UIViewportData& viewportData = queue.UIViewports[i];
-
-        const IPlatformWindow* pWindow = static_cast<const IPlatformWindow*>(viewportData.pTargetWindow);
-
-        pWindow->ActivateContext();
-
-        ImGui_ImplOpenGL3_RenderDrawData(viewportData.pDrawData.get());
-
-        glFlush();
-
-        pWindow->Present();
-    }
-
-    IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
-}
-
-void RenderingSystemGL::flush()
-{
-    glFlush();
 }
 
 // TODO: Currently, all vertex attributes are always packed and uploaded interleaved
@@ -1643,6 +1690,8 @@ void RenderingSystemGL::cancelInitialization()
     glDeleteVertexArrays(1, &mGlVAO);
     glDeleteProgramPipelines(1, &mGlProgramPipeline);
     glDeleteProgram(mGlDefaultVS);
+    glDeleteProgram(mGlDefaultUnlitFS);
+    glDeleteProgram(mGlDefaultUnlitMaskedFS);
     glDeleteProgram(mGlDefaultPhongFS);
     glDeleteProgram(mGlDefaultPhongMaskedFS);
     glDeleteProgram(mGlDefaultPbrFS);

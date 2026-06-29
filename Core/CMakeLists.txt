@@ -22,28 +22,28 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ALL_FILES})
 # Add library target
 ################################################################################
 add_library(
-    ${CORE_NAME} 
-    STATIC 
+    ${CORE_NAME}
+    STATIC
     ${ALL_FILES})
 
 ################################################################################
 # Set target properties
 ################################################################################
 target_link_libraries(
-    ${CORE_NAME} 
-    PRIVATE 
+    ${CORE_NAME}
+    PRIVATE
     COMPILER_FLAGS
-    PUBLIC 
-    ${THIRD_PARTY_NAME}
+    PUBLIC
+    ${BASE_THIRD_PARTY_NAME}
     )
 target_include_directories(
-    ${CORE_NAME} 
-    PRIVATE 
-    ${CMAKE_SOURCE_DIR} 
+    ${CORE_NAME}
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 target_compile_definitions(
-  ${CORE_NAME} 
+  ${CORE_NAME}
   PRIVATE
   HO_PROJECT_ROOT="${HO_PROJECT_ROOT}"
   HO_ASSET_ROOT="${HO_ASSET_ROOT}"

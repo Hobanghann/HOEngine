@@ -1,7 +1,10 @@
 #pragma once
 
 #include "Core/Templates/FixedQueue.h"
-#include "IUIWindow.h"
+#include "IUIDrawable.h"
+#include "TitleBarTheme.h"
+
+struct ImFont;
 
 namespace ho
 {
@@ -17,10 +20,27 @@ class UISystem final
 
     static UISystem& GetInstance();
 
-    void SubmitRenderWindow(IUIWindow* pWindow);
+    void BeginFrame();
+
+    void SubmitUIDrawable(IUIDrawable* pWindow);
+
+    void SetTitleBarTheme(const TitleBarTheme& theme)
+    {
+        mTitleBarTheme = theme;
+    }
+
+    TitleBarTheme& GetTitleBarTheme()
+    {
+        return mTitleBarTheme;
+    }
+
+    const TitleBarTheme& GetTitleBarTheme() const
+    {
+        return mTitleBarTheme;
+    }
 
   private:
-    static const int32_t sRenderWindowQueueSize = 32;
+    static const int32_t sUIDrawableQueueSize = 32;
 
     UISystem();
     ~UISystem() = default;
@@ -35,7 +55,11 @@ class UISystem final
 
     void shutdown();
 
-    FixedQueue<IUIWindow*> mRenderWindowQueue;
+    TitleBarTheme mTitleBarTheme;
+
+    FixedQueue<IUIDrawable*> mUIDrawableQueue;
+
+    ImFont* mpIconsMaterialDesignIcons = nullptr;
 
     static UISystem* spInstance;
 };

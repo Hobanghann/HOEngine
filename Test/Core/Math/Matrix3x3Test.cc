@@ -73,17 +73,17 @@ TEST_F(Matrix3x3Test, FromEuler_VariousEulerOrders_MatchesCompositeRotation)
 {
     const float angle = math::PI / 4.0f;
     EXPECT_TRUE(
-        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::XYZ).IsEqualApprox(matPitch * matYaw * matRoll));
+        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::XYZ).IsEqualApprox(matRoll * matYaw * matPitch));
     EXPECT_TRUE(
-        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::XZY).IsEqualApprox(matPitch * matRoll * matYaw));
+        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::XZY).IsEqualApprox(matYaw * matRoll * matPitch));
     EXPECT_TRUE(
-        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::YZX).IsEqualApprox(matYaw * matRoll * matPitch));
+        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::YZX).IsEqualApprox(matPitch * matRoll * matYaw));
     EXPECT_TRUE(
-        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::YXZ).IsEqualApprox(matYaw * matPitch * matRoll));
+        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::YXZ).IsEqualApprox(matRoll * matPitch * matYaw));
     EXPECT_TRUE(
-        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::ZXY).IsEqualApprox(matRoll * matPitch * matYaw));
+        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::ZXY).IsEqualApprox(matYaw * matPitch * matRoll));
     EXPECT_TRUE(
-        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::ZYX).IsEqualApprox(matRoll * matYaw * matPitch));
+        Matrix3x3::FromEuler(angle, angle, angle, math::eEulerOrder::ZYX).IsEqualApprox(matPitch * matYaw * matRoll));
 }
 
 TEST_F(Matrix3x3Test, FromQuaternion_ValidQuaternion_ReturnsRotationMatrix)

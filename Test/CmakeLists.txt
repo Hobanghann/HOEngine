@@ -12,9 +12,9 @@ FetchContent_Declare(${GTEST_NAME}
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-message (STATUS "Start to Download " ${GTEST_NAME} "...")
+message (STATUS "[Download] Start to Download " ${GTEST_NAME} "...")
 FetchContent_MakeAvailable(${GTEST_NAME})
-message (STATUS "Downloading " ${GTEST_NAME} " finished.")
+message (STATUS "[Download] Downloading " ${GTEST_NAME} " finished.")
 
 ################################################################################
 # Set Google Test properties
@@ -22,7 +22,7 @@ message (STATUS "Downloading " ${GTEST_NAME} " finished.")
 foreach(tgt gmock gmock_main gtest gtest_main)
     if (TARGET ${tgt})
         set_target_properties(
-            ${tgt} PROPERTIES 
+            ${tgt} PROPERTIES
             FOLDER "Test/gtest"
             SYSTEM TRUE
             )

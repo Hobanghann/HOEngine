@@ -4,6 +4,7 @@
 #include "Core/Math/Color128.h"
 #include "Core/Math/Matrix4x4.h"
 #include "Core/Math/Vector3.h"
+#include "Core/Templates/AtomicNumeric.h"
 #include "Core/Templates/FixedArray.h"
 #include "Core/Templates/FixedQueue.h"
 #include "Core/Templates/GlobalPoolIndex.h"
@@ -63,7 +64,8 @@ class IRenderingSystem
     static const int32_t sMaxBlendedDrawCommandCount = 1024;
     static const int32_t sMaxRenderPassCount = 4;
     static const int32_t sMaxViewportCount = 16;
-    static const int32_t sPendingQueueSize = 1024;
+    static const int32_t sPendingFrameBufferQueueSize = 10;
+    static const int32_t sPendingResourceQueueSize = 1024;
 
   public:
     enum class eRenderTargetType
@@ -186,9 +188,9 @@ class IRenderingSystem
 
     virtual ~IRenderingSystem() = default;
 
-    virtual bool CreateFrameBuffer(const FrameBufferDesc& frameBufferDesc) = 0;
+    bool EnqueueCreateFramebuffer(const FrameBufferDesc& frameBufferDesc);
 
-    virtual bool DestroyFrameBuffer(StringHandle hFrameBufferName) = 0;
+    bool EnqueueDestroyFramebuffer(StringHandle hFrameBufferName);
 
     [[nodiscard]] virtual void* GetRenderTargetNativeHandle(StringHandle hFrameBufferName,
                                                             eRenderTargetType type,
@@ -206,6 +208,8 @@ class IRenderingSystem
     GpuMaterialHandle EnqueueUploadMaterial(MaterialHandle hMaterial, bool bPersistent = false);
     GpuTextureHandle EnqueueUploadTexture(TextureHandle hTexture, bool bPersistent = false);
     GpuShaderHandle EnqueueUploadShader(ShaderHandle hShader, bool bPersistent = false);
+
+    virtual void SetVSync(bool bEnable) = 0;
 
   protected:
     struct FrameBuffer
@@ -402,6 +406,12 @@ class IRenderingSystem
 
     bool trySwapRenderQueues(uint64_t currentFrame);
 
+    virtual bool createFrameBuffer(const FrameBufferDesc& frameBufferDesc) = 0;
+    virtual bool destroyFrameBuffer(StringHandle hFrameBufferName) = 0;
+
+    void createPendingFrameBuffers();
+    void destroyPendingFrameBuffers();
+
     void uploadPendingResources(uint64_t currentFrame);
 
     int32_t evictStaleResources(uint64_t currentFrame, uint64_t frameThreshold);
@@ -438,6 +448,10 @@ class IRenderingSystem
     RenderQueue mRenderQueues[2];
 
     std::unordered_map<StringHandle, FrameBuffer> mNameToFrameBufferMap;
+    FixedQueue<FrameBufferDesc> mFrameBufferToCreateQueue;
+    SpinLock mFrameBufferToCreateQueueLock;
+    FixedQueue<StringHandle> mhFrameBufferToDestroyQueue;
+    SpinLock mFrameBufferToDestroyQueueLock;
 
     ObjectPool<GpuStaticMesh> mGpuStaticMeshPool;
     ObjectPool<GpuMaterial> mGpuMaterialPool;
@@ -453,7 +467,8 @@ class IRenderingSystem
     FixedQueue<GpuShaderHandle> mhPendingShaderQueue;
     SpinLock mPendingShaderQueueLock;
 
-    bool mbIsRunning = true;
+    bool mbRunning = true;
+    AtomicNumeric<bool> mbVSyncEnabled;
     RenderSync mRenderSync;
 
     std::unique_ptr<Thread> mpRenderThread;

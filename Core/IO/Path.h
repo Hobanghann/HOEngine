@@ -10,7 +10,7 @@ namespace ho
 class Path final
 {
   public:
-    Path() = delete;
+    Path() = default;
     Path(const Path& path) = default;
 
     explicit Path(const std::string& pathStr)
@@ -48,8 +48,8 @@ class Path final
     {
     }
 
-    static std::filesystem::path sProjectRootPath; // root ~ HORenderer3
-    static std::filesystem::path sAssetRootPath;   // root ~ HORenderer3/assets/
+    static std::filesystem::path sProjectRootPath; // System Root ~ HOEngine
+    static std::filesystem::path sAssetRootPath;   // System Root ~ HOEngine/Assets/
 
     std::filesystem::path mPath;
 };

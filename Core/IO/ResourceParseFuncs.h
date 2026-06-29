@@ -16,12 +16,11 @@ namespace parser
 
 [[nodiscard]] std::unique_ptr<const ModelIR> parseModelFile(const Path& path,
                                                             const std::string& nameStr,
-                                                            bool bMakeStatic,
-                                                            bool bConvertToLeftHanded);
+                                                            bool bMakeStatic);
 
 [[nodiscard]] std::unique_ptr<const TextureIR> parseTextureFile(const Path& path,
                                                                 const std::string& nameStr,
-                                                                bool bIsLinear);
+                                                                bool bLinear);
 
 [[nodiscard]] std::unique_ptr<const ShaderIR> parseShaderFile(const Path& path, const std::string& nameStr);
 } // namespace parser

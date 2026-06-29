@@ -7,8 +7,14 @@ namespace ho
 class Win32WindowGL final : public IWin32Window
 {
   public:
-    Win32WindowGL(int32_t clientWidth, int32_t clientHeight, HWND hWnd, HGLRC hGlContext)
-      : IWin32Window(clientWidth, clientHeight, hWnd)
+    Win32WindowGL(int32_t posX,
+                  int32_t posY,
+                  int32_t titleBarHeight,
+                  int32_t clientWidth,
+                  int32_t clientHeight,
+                  HWND hWnd,
+                  HGLRC hGlContext)
+      : IWin32Window(posX, posY, titleBarHeight, clientWidth, clientHeight, hWnd)
       , mhGlContext(hGlContext)
     {
     }
@@ -20,12 +26,16 @@ class Win32WindowGL final : public IWin32Window
 
     void ActivateContext() const override
     {
-        ::wglMakeCurrent(mhDC, mhGlContext);
+        const BOOL bSuccess = ::wglMakeCurrent(mhDC, mhGlContext);
+        // HO_ASSERT(bSuccess != FALSE, "wglMakeCurrent failed.");
+        (void)bSuccess;
     }
 
     void DeactivateContext() const override
     {
-        ::wglMakeCurrent(mhDC, nullptr);
+        const BOOL bSuccess = ::wglMakeCurrent(mhDC, nullptr);
+        HO_ASSERT(bSuccess != FALSE, "wglMakeCurrent failed.");
+        (void)bSuccess;
     }
 
   private:

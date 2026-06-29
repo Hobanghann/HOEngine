@@ -16,8 +16,9 @@ set(IMAGE_LOADER_NAME stb)
 set(INI_PARSER_NAME inicpp)
 set(GLAD_NAME glad)
 set(IMGUI_NAME imgui)
+set(IMGUIZMO_NAME imguizmo)
 set(IM_O_GUIZMO_NAME imoguizmo)
-set(FONT_AWESOME_NAME icons_font_awesome7)
+set(ICON_NAME MaterialSymbol)
 set(SPDLOG_NAME spdlog)
 set(IMAGE_COMPRESSOR_NAME ISPCTextureCompressor)
 set(HALF_NAME half)
@@ -75,6 +76,16 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
     )
 
+# imGuizmo
+FetchContent_Declare(
+    ${IMGUIZMO_NAME}
+    GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git
+    GIT_TAG 1.10
+    GIT_SHALLOW ON
+    EXCLUDE_FROM_ALL
+    )
+set(IMGUIZMO_BUILD_EXAMPLE         OFF CACHE BOOL "" FORCE)
+
 # ImOGuizmo
 FetchContent_Declare(
     ${IM_O_GUIZMO_NAME}
@@ -130,6 +141,10 @@ message (STATUS "[Download] Start to Download " ${IMGUI_NAME} "...")
 FetchContent_MakeAvailable(${IMGUI_NAME})
 message (STATUS "[Download] Downloading " ${IMGUI_NAME} " finished.")
 
+message (STATUS "[Download] Start to Download " ${IMGUIZMO_NAME} "...")
+FetchContent_MakeAvailable(${IMGUIZMO_NAME})
+message (STATUS "[Download] Downloading " ${IMGUIZMO_NAME} " finished.")
+
 message (STATUS "[Download] Start to Download " ${IM_O_GUIZMO_NAME} "...")
 FetchContent_MakeAvailable(${IM_O_GUIZMO_NAME})
 message (STATUS "[Download] Downloading " ${IM_O_GUIZMO_NAME} " finished.")
@@ -155,13 +170,13 @@ target_include_directories(
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
-# iconsFontAwesome7
+# icon
 add_library(
-    ${FONT_AWESOME_NAME}
+    ${ICON_NAME}
     INTERFACE
     )
 target_include_directories(
-    ${FONT_AWESOME_NAME}
+    ${ICON_NAME}
     INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
@@ -319,8 +334,30 @@ set_target_properties(
     FOLDER "ThirdParty/${BASE_THIRD_PARTY_NAME}/${IMGUI_NAME}"
     SYSTEM TRUE
     )
-#imoguizmo
+target_compile_definitions(
+    ${IMGUI_NAME}
+    PUBLIC
+    IMGUI_USE_WCHAR32
+    )
 
+# imguizmo
+target_link_libraries(
+    ${IMGUIZMO_NAME}
+    PRIVATE
+    ${IMGUI_NAME}
+    )
+target_include_directories(
+    ${IMGUIZMO_NAME}
+    PRIVATE
+    ${${IMGUI_NAME}_SOURCE_DIR}
+    )
+set_target_properties(
+    ${IMGUIZMO_NAME} PROPERTIES
+    FOLDER "ThirdParty/${BASE_THIRD_PARTY_NAME}/${IMGUIZMO_NAME}"
+    SYSTEM TRUE
+    )
+
+#imoguizmo
 add_library(
     ${IM_O_GUIZMO_NAME}
     INTERFACE
@@ -473,6 +510,7 @@ target_link_libraries(
     ${INI_PARSER_NAME}
     ${GLAD_NAME}
     ${IMGUI_NAME}
+    ${IMGUIZMO_NAME}
     ${IM_O_GUIZMO_NAME}
     ${FONT_AWESOME_NAME}
     ${SPDLOG_NAME}

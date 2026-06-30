@@ -9,19 +9,24 @@ namespace ho
 {
 struct Basis3D
 {
-    [[nodiscard]] static Basis3D FromAxisAngle(const Vector3& axis, float angle);
-    [[nodiscard]] static Basis3D FromEuler(float angleXRad,
-                                           float angleYRad,
-                                           float angleZRad,
-                                           math::eEulerOrder order = math::eEulerOrder::YXZ);
+    static constexpr Basis3D FromScale(const Vector3& scale);
+    static constexpr Basis3D FromEuler(float angleXRad,
+                                       float angleYRad,
+                                       float angleZRad,
+                                       math::eEulerOrder order = math::eEulerOrder::YXZ);
+    static FORCE_INLINE Basis3D FromAxisAngle(const Vector3& axis, float angleRad);
+    static constexpr Basis3D FromScaleEuler(const Vector3& scale,
+                                            float angleXRad,
+                                            float angleYRad,
+                                            float angleZRad,
+                                            math::eEulerOrder order = math::eEulerOrder::YXZ);
+    static FORCE_INLINE Basis3D FromScaleAxisAngle(const Vector3& scale, const Vector3& axis, float angleRad);
+    static constexpr Basis3D FromQuaternion(const Quaternion& quat);
+    static constexpr Basis3D FromMatrix(const Matrix3x3& mat);
 
     constexpr Basis3D();
-    constexpr Basis3D(const Basis3D& transform) = default;
-    constexpr Basis3D(const Vector3& scaledRight, const Vector3& scaledUp, const Vector3& scaledForward);
-    constexpr Basis3D(
-        float scaleX, float scaleY, float scaleZ, const Vector3& right, const Vector3& up, const Vector3& forward);
+    constexpr Basis3D(const Basis3D&) = default;
     constexpr explicit Basis3D(const Matrix3x3& m);
-    constexpr explicit Basis3D(const Quaternion& q);
     constexpr Basis3D& operator=(const Basis3D& rhs);
     ~Basis3D() = default;
 
@@ -113,24 +118,47 @@ constexpr Basis3D::Basis3D()
 {
 }
 
-constexpr Basis3D::Basis3D(const Vector3& scaledRight, const Vector3& scaledUp, const Vector3& scaledForward)
-  : Matrix(Matrix3x3(scaledRight, scaledUp, scaledForward))
+constexpr Basis3D Basis3D::FromScale(const Vector3& scale)
 {
+    return Basis3D(Matrix3x3(scale.X * Vector3::sUnitX, scale.Y * Vector3::sUnitY, scale.Z * Vector3::sUnitZ));
 }
 
-constexpr Basis3D::Basis3D(
-    float scaleX, float scaleY, float scaleZ, const Vector3& right, const Vector3& up, const Vector3& forward)
-  : Matrix(Matrix3x3(scaleX * right, scaleY * up, scaleZ * forward))
+constexpr Basis3D Basis3D::FromEuler(float angleXRad, float angleYRad, float angleZRad, math::eEulerOrder order)
 {
+    return Basis3D(Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order));
+}
+
+Basis3D Basis3D::FromAxisAngle(const Vector3& axis, float angleRad)
+{
+    return Basis3D(Matrix3x3::FromAxisAngle(axis, angleRad));
+}
+
+constexpr Basis3D Basis3D::FromScaleEuler(
+    const Vector3& scale, float angleXRad, float angleYRad, float angleZRad, math::eEulerOrder order)
+{
+    Matrix3x3 eulerMat = Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order);
+    eulerMat.SetCol0(scale.X * eulerMat.GetCol0());
+    eulerMat.SetCol1(scale.Y * eulerMat.GetCol1());
+    eulerMat.SetCol2(scale.Z * eulerMat.GetCol2());
+    return Basis3D(eulerMat);
+}
+
+Basis3D Basis3D::FromScaleAxisAngle(const Vector3& scale, const Vector3& axis, float angleRad)
+{
+    Matrix3x3 axisAngleMat = Matrix3x3::FromAxisAngle(axis, angleRad);
+    axisAngleMat.SetCol0(scale.X * axisAngleMat.GetCol0());
+    axisAngleMat.SetCol1(scale.Y * axisAngleMat.GetCol1());
+    axisAngleMat.SetCol2(scale.Z * axisAngleMat.GetCol2());
+    return Basis3D(axisAngleMat);
+}
+
+constexpr Basis3D Basis3D::FromQuaternion(const Quaternion& q)
+{
+    return Basis3D(Matrix3x3::FromQuaternion(q));
 }
 
 constexpr Basis3D::Basis3D(const Matrix3x3& m)
   : Matrix(m)
-{
-}
-
-constexpr Basis3D::Basis3D(const Quaternion& q)
-  : Matrix(Matrix3x3::FromQuaternion(q))
 {
 }
 

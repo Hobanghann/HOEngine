@@ -11,22 +11,22 @@ namespace ho
 Frustum Frustum::FromMatrix4x4(const Matrix4x4& m)
 {
     Vector4 coefficients = -(m.Row3 + m.Row0);
-    const Plane left = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane left = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 - m.Row0);
-    const Plane right = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane right = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 + m.Row1);
-    const Plane bottom = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane bottom = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 - m.Row1);
-    const Plane top = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane top = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 + m.Row2);
-    const Plane near = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane near = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 - m.Row2);
-    const Plane far = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane far = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     return Frustum(left, right, bottom, top, near, far);
 }

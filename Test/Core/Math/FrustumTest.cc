@@ -23,12 +23,12 @@ class FrustumTest : public ::testing::Test
     void SetUp() override
     {
         defaultPlane = Plane();
-        left = Plane(Vector3(-1.0f, 0.0f, 0.0f), Vector3(-1.0f, 0.0f, 0.0f));
-        right = Plane(Vector3(1.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f));
-        bottom = Plane(Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f));
-        top = Plane(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-        Near = Plane(Vector3(0.0f, 0.0f, -1.0f), Vector3(0.0f, 0.0f, -1.0f));
-        far = Plane(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 1.0f));
+        left = Plane::FromNormalPoint(Vector3(-1.0f, 0.0f, 0.0f), Vector3(-1.0f, 0.0f, 0.0f));
+        right = Plane::FromNormalPoint(Vector3(1.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f));
+        bottom = Plane::FromNormalPoint(Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f));
+        top = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+        Near = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, -1.0f), Vector3(0.0f, 0.0f, -1.0f));
+        far = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 1.0f));
 
         defaultFrustum = Frustum();
         f1 = Frustum(left, right, bottom, top, Near, far);
@@ -77,11 +77,11 @@ TEST_F(FrustumTest, OperatorComparison_IdenticalAndDifferentFrustums_ReturnsCorr
 
 TEST_F(FrustumTest, IsEqualApprox_VaryingPlaneOffsets_ReturnsCorrectBoolean)
 {
-    Plane far2(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 1.000001f));
+    Plane far2 = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 1.000001f));
     Frustum f2(left, right, bottom, top, Near, far2);
 
     EXPECT_TRUE(f1.IsEqualApprox(f2));
-    Plane far3(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 5.0f));
+    Plane far3 = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 5.0f));
     Frustum f3(left, right, bottom, top, Near, far3);
 
     EXPECT_FALSE(f1.IsEqualApprox(f3));

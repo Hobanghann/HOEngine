@@ -280,7 +280,7 @@ template <typename T>
 }
 
 // NOLINTBEGIN(bugprone-incorrect-roundings)
-FORCE_INLINE void SinCos(float* outSin, float* outCos, float radian)
+FORCE_INLINE constexpr void SinCos(float* outSin, float* outCos, float radian)
 {
     // Copied from UE4 Source Code
     // Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.

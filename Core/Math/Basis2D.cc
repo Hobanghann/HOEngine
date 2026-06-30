@@ -4,43 +4,35 @@
 
 namespace ho
 {
-Basis2D Basis2D::FromAngle(float angle)
+void Basis2D::Rotate(float angleRad)
 {
     float sin = 0.0f;
     float cos = 0.0f;
-    math::SinCos(&sin, &cos, angle);
-    return Basis2D(Vector2(cos, sin), Vector2(-sin, cos));
-}
-
-void Basis2D::Rotate(float angle)
-{
-    float sin = 0.0f;
-    float cos = 0.0f;
-    math::SinCos(&sin, &cos, angle);
+    math::SinCos(&sin, &cos, angleRad);
     const Matrix2x2 rotationMat = Matrix2x2({cos, sin}, {-sin, cos});
     Matrix = rotationMat * Matrix;
 }
 
-Basis2D Basis2D::Rotated(float angle) const
+Basis2D Basis2D::Rotated(float angleRad) const
 {
     Basis2D copy = *this;
-    copy.Rotate(angle);
+    copy.Rotate(angleRad);
     return copy;
 }
 
-void Basis2D::RotateLocal(float angle)
+void Basis2D::RotateLocal(float angleRad)
 {
     float sin = 0.0f;
     float cos = 0.0f;
-    math::SinCos(&sin, &cos, angle);
+    math::SinCos(&sin, &cos, angleRad);
     const Matrix2x2 rotationMat = Matrix2x2({cos, sin}, {-sin, cos});
     Matrix = Matrix * rotationMat;
 }
 
-Basis2D Basis2D::RotatedLocal(float angle) const
+Basis2D Basis2D::RotatedLocal(float angleRad) const
 {
     Basis2D copy = *this;
-    copy.RotateLocal(angle);
+    copy.RotateLocal(angleRad);
     return copy;
 }
 

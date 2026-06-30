@@ -46,7 +46,7 @@ TEST_F(ProjectionTest, CreateOrthographic_StandardDimensions_CalculatesCorrectMa
     EXPECT_NEAR(proj.GetNearDistance(), nearZ, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), farZ, math::EPSILON_CMP);
 
-    Projection projFromMat = Projection::CreateOrthographic(expectedMatrix, testNdcNear, testNdcFar);
+    Projection projFromMat = Projection::CreateOrthographicFromMatrix(expectedMatrix, testNdcNear, testNdcFar);
     EXPECT_TRUE(proj.IsEqualApprox(projFromMat));
 }
 
@@ -68,7 +68,7 @@ TEST_F(ProjectionTest, CreatePerspective_StandardFovAndDimensions_CalculatesCorr
     EXPECT_NEAR(proj.GetNearDistance(), nearZ, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), farZ, math::EPSILON_CMP);
 
-    Projection projFromMat = Projection::CreatePerspective(expectedMatrix, testNdcNear, testNdcFar);
+    Projection projFromMat = Projection::CreatePerspectiveFromMatrix(expectedMatrix, testNdcNear, testNdcFar);
     EXPECT_TRUE(proj.IsEqualApprox(projFromMat));
 }
 

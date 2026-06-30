@@ -15,7 +15,8 @@ class Basis3DTest : public ::testing::Test
     void SetUp() override
     {
         defaultBasis = Basis3D();
-        scaleBasis = Basis3D(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(0.0f, 0.0f, 4.0f));
+        scaleBasis =
+            Basis3D(Matrix3x3(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(0.0f, 0.0f, 4.0f)));
 
         float angle = math::PI / 4.0f;
         float sin = std::sin(angle);
@@ -25,11 +26,48 @@ class Basis3DTest : public ::testing::Test
         yawRotBasis = Basis3D(Matrix3x3(Vector3(cos, 0.0f, -sin), Vector3(0.0f, 1.0f, 0.0f), Vector3(sin, 0.0f, cos)));
         rollRotBasis = Basis3D(Matrix3x3(Vector3(cos, sin, 0.0f), Vector3(-sin, cos, 0.0f), Vector3(0.0f, 0.0f, 1.0f)));
 
-        nonOrthoBasis = Basis3D(Vector3(1.0f, 0.2f, 0.3f), Vector3(0.5f, 1.0f, 0.0f), Vector3(0.0f, 0.5f, 1.0f));
+        nonOrthoBasis =
+            Basis3D(Matrix3x3(Vector3(1.0f, 0.2f, 0.3f), Vector3(0.5f, 1.0f, 0.0f), Vector3(0.0f, 0.5f, 1.0f)));
     }
 
     Basis3D defaultBasis, scaleBasis, pitchRotBasis, yawRotBasis, rollRotBasis, nonOrthoBasis;
 };
+
+TEST_F(Basis3DTest, FactoryFunctions_AllParameters_InitializesBasisCorrectly)
+{
+    Basis3D newScaleBasis = Basis3D::FromScale(Vector3(2.0f, 3.0f, 4.0f));
+    EXPECT_EQ(newScaleBasis.Matrix.Row0, Vector3(2.0f, 0.0f, 0.0f));
+    EXPECT_EQ(newScaleBasis.Matrix.Row1, Vector3(0.0f, 3.0f, 0.0f));
+    EXPECT_EQ(newScaleBasis.Matrix.Row2, Vector3(0.0f, 0.0f, 4.0f));
+
+    float angle = math::PI / 4.0f;
+    Basis3D eulerBasis = Basis3D::FromEuler(0.0f, angle, 0.0f, math::eEulerOrder::YXZ);
+    EXPECT_TRUE(eulerBasis.Matrix.IsEqualApprox(yawRotBasis.Matrix));
+
+    Basis3D axisAngleBasis = Basis3D::FromAxisAngle(Vector3::sUnitY, angle);
+    EXPECT_TRUE(axisAngleBasis.Matrix.IsEqualApprox(yawRotBasis.Matrix));
+
+    Basis3D scaleEulerBasis =
+        Basis3D::FromScaleEuler(Vector3(2.0f, 3.0f, 4.0f), angle, 0.0f, 0.0f, math::eEulerOrder::YXZ);
+
+    Matrix3x3 expectedMat = Matrix3x3::FromEuler(angle, 0.0f, 0.0f, math::eEulerOrder::YXZ);
+    expectedMat.SetCol0(2.0f * expectedMat.GetCol0());
+    expectedMat.SetCol1(3.0f * expectedMat.GetCol1());
+    expectedMat.SetCol2(4.0f * expectedMat.GetCol2());
+    EXPECT_TRUE(scaleEulerBasis.Matrix.IsEqualApprox(expectedMat));
+
+    Basis3D scaleAxisAngleBasis = Basis3D::FromScaleAxisAngle(Vector3(2.0f, 3.0f, 4.0f), Vector3::sUnitY, angle);
+
+    expectedMat = Matrix3x3::FromAxisAngle(Vector3::sUnitY, angle);
+    expectedMat.SetCol0(2.0f * expectedMat.GetCol0());
+    expectedMat.SetCol1(3.0f * expectedMat.GetCol1());
+    expectedMat.SetCol2(4.0f * expectedMat.GetCol2());
+    EXPECT_TRUE(scaleAxisAngleBasis.Matrix.IsEqualApprox(expectedMat));
+
+    Quaternion quat = Quaternion::FromAxisAngle(Vector3::sUnitY, math::PI / 4.0f);
+    Basis3D basisFromQuat = Basis3D::FromQuaternion(quat);
+    EXPECT_TRUE(basisFromQuat.Matrix.IsEqualApprox(yawRotBasis.Matrix));
+}
 
 TEST_F(Basis3DTest, Constructor_DefaultAndAllParameters_InitializesMatrixCorrectly)
 {
@@ -37,17 +75,9 @@ TEST_F(Basis3DTest, Constructor_DefaultAndAllParameters_InitializesMatrixCorrect
     EXPECT_EQ(defaultBasis.Matrix.Row1, Vector3(0.0f, 1.0f, 0.0f));
     EXPECT_EQ(defaultBasis.Matrix.Row2, Vector3(0.0f, 0.0f, 1.0f));
 
-    EXPECT_EQ(scaleBasis.Matrix.Row0, Vector3(2.0f, 0.0f, 0.0f));
-    EXPECT_EQ(scaleBasis.Matrix.Row1, Vector3(0.0f, 3.0f, 0.0f));
-    EXPECT_EQ(scaleBasis.Matrix.Row2, Vector3(0.0f, 0.0f, 4.0f));
-
     Matrix3x3 mat(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f));
     Basis3D basisFromMat(mat);
     EXPECT_EQ(basisFromMat.Matrix, mat);
-
-    Quaternion quat = Quaternion::FromAxisAngle(Vector3::sUnitY, math::PI / 4.0f);
-    Basis3D basisFromQuat(quat);
-    EXPECT_TRUE(basisFromQuat.IsEqualApprox(yawRotBasis));
 }
 
 TEST_F(Basis3DTest, OperatorAssign_AnotherBasis_CopiesValues)
@@ -74,7 +104,7 @@ TEST_F(Basis3DTest, GetVectorsAndScale_ValidBasis_ReturnsCorrectDirectionsAndMag
 
 TEST_F(Basis3DTest, OperatorComparison_DifferentBases_ReturnsCorrectBoolean)
 {
-    Basis3D b1(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
+    Basis3D b1(Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f)));
     Basis3D b2 = b1;
     Basis3D b3 = scaleBasis;
 
@@ -85,8 +115,9 @@ TEST_F(Basis3DTest, OperatorComparison_DifferentBases_ReturnsCorrectBoolean)
 
 TEST_F(Basis3DTest, IsEqualApprox_WithinEpsilon_ReturnsTrue)
 {
-    Basis3D b1(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
-    Basis3D b2(Vector3(1.000001f, 0.0f, 0.0f), Vector3(0.0f, 1.000001f, 0.0f), Vector3(0.0f, 0.0f, 0.999999f));
+    Basis3D b1(Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f)));
+    Basis3D b2(
+        Matrix3x3(Vector3(1.000001f, 0.0f, 0.0f), Vector3(0.0f, 1.000001f, 0.0f), Vector3(0.0f, 0.0f, 0.999999f)));
     EXPECT_TRUE(b1.IsEqualApprox(b2));
     EXPECT_FALSE(b1.IsNotEqualApprox(b2));
 }
@@ -123,7 +154,7 @@ TEST_F(Basis3DTest, Orthonormalize_NonOrthonormalBasis_MakesBasisOrthonormal)
 
 TEST_F(Basis3DTest, Scale_GlobalSpace_AppliesScalingCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 1.0f), Vector3(1.0f, 0.0f, 1.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 1.0f), Vector3(1.0f, 0.0f, 1.0f)));
 
     Basis3D b1 = b;
     b1.Scale(Vector3(2.0f, 3.0f, 4.0f));
@@ -144,7 +175,7 @@ TEST_F(Basis3DTest, Scale_GlobalSpace_AppliesScalingCorrectly)
 
 TEST_F(Basis3DTest, Scale_LocalSpace_AppliesScalingCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 1.0f), Vector3(1.0f, 0.0f, 1.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 1.0f), Vector3(1.0f, 0.0f, 1.0f)));
     Basis3D b1;
 
     b1 = b;
@@ -166,7 +197,7 @@ TEST_F(Basis3DTest, Scale_LocalSpace_AppliesScalingCorrectly)
 
 TEST_F(Basis3DTest, RotateEuler_GlobalSpaceVaryingOrders_AppliesRotationsCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f)));
     Basis3D b1;
 
     b1 = b;
@@ -214,7 +245,7 @@ TEST_F(Basis3DTest, RotateEuler_GlobalSpaceVaryingOrders_AppliesRotationsCorrect
 
 TEST_F(Basis3DTest, RotateAxisAngle_GlobalSpace_AppliesRotationCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 3.0f, 6.0f), Vector3(7.0f, 6.0f, 9.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 3.0f, 6.0f), Vector3(7.0f, 6.0f, 9.0f)));
 
     Vector3 axis = Vector3(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
@@ -232,7 +263,7 @@ TEST_F(Basis3DTest, RotateAxisAngle_GlobalSpace_AppliesRotationCorrectly)
 
 TEST_F(Basis3DTest, RotateQuaternion_GlobalSpace_AppliesRotationCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f)));
 
     Vector3 axis = Vector3(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
@@ -250,7 +281,7 @@ TEST_F(Basis3DTest, RotateQuaternion_GlobalSpace_AppliesRotationCorrectly)
 
 TEST_F(Basis3DTest, RotateEuler_LocalSpaceVaryingOrders_AppliesRotationsCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f)));
     Basis3D b1;
 
     b1 = b;
@@ -298,7 +329,7 @@ TEST_F(Basis3DTest, RotateEuler_LocalSpaceVaryingOrders_AppliesRotationsCorrectl
 
 TEST_F(Basis3DTest, RotateAxisAngle_LocalSpace_AppliesRotationCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f)));
 
     Vector3 axis = Vector3(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
@@ -316,7 +347,7 @@ TEST_F(Basis3DTest, RotateAxisAngle_LocalSpace_AppliesRotationCorrectly)
 
 TEST_F(Basis3DTest, RotateQuaternion_LocalSpace_AppliesRotationCorrectly)
 {
-    Basis3D b(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f));
+    Basis3D b(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f), Vector3(7.0f, 8.0f, 9.0f)));
 
     Vector3 axis = Vector3(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
@@ -450,9 +481,9 @@ TEST_F(Basis3DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 
 TEST_F(Basis3DTest, OperatorMul_TwoBases_ReturnsCombinedTransform)
 {
-    Basis3D b1(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 2.0f), Vector3(3.0f, 0.0f, 1.0f));
+    Basis3D b1(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 2.0f), Vector3(3.0f, 0.0f, 1.0f)));
 
-    Basis3D b2(Vector3(2.0f, 0.0f, 1.0f), Vector3(1.0f, 2.0f, 0.0f), Vector3(0.0f, 1.0f, 3.0f));
+    Basis3D b2(Matrix3x3(Vector3(2.0f, 0.0f, 1.0f), Vector3(1.0f, 2.0f, 0.0f), Vector3(0.0f, 1.0f, 3.0f)));
 
     EXPECT_TRUE((b1 * b2).Matrix.IsEqualApprox(b1.Matrix * b2.Matrix));
     EXPECT_TRUE((b2 * b1).Matrix.IsEqualApprox(b2.Matrix * b1.Matrix));
@@ -460,7 +491,7 @@ TEST_F(Basis3DTest, OperatorMul_TwoBases_ReturnsCombinedTransform)
 
 TEST_F(Basis3DTest, Transform_Vector_ReturnsCorrectlyTransformedVector)
 {
-    Basis3D b1(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 2.0f), Vector3(3.0f, 0.0f, 1.0f));
+    Basis3D b1(Matrix3x3(Vector3(1.0f, 2.0f, 3.0f), Vector3(0.0f, 1.0f, 2.0f), Vector3(3.0f, 0.0f, 1.0f)));
 
     Matrix3x3 m1 = b1.Matrix;
     Vector3 v(1.0f, 1.0f, 1.0f);

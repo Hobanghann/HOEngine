@@ -16,7 +16,8 @@ class Transform3DTest : public ::testing::Test
     void SetUp() override
     {
         defaultBasis = Basis3D();
-        scaleBasis = Basis3D(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(0.0f, 0.0f, 4.0f));
+        scaleBasis =
+            Basis3D(Matrix3x3(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(0.0f, 0.0f, 4.0f)));
 
         float angle = math::PI / 4.0f;
         float sin = std::sin(angle);
@@ -27,25 +28,81 @@ class Transform3DTest : public ::testing::Test
         yawRotBasis = Basis3D(Matrix3x3(Vector3(cos, 0.0f, -sin), Vector3(0.0f, 1.0f, 0.0f), Vector3(sin, 0.0f, cos)));
         rollRotBasis = Basis3D(Matrix3x3(Vector3(cos, sin, 0.0f), Vector3(-sin, cos, 0.0f), Vector3(0.0f, 0.0f, 1.0f)));
 
-        nonOrthoBasis = Basis3D(Vector3(1.0f, 0.2f, 0.3f), Vector3(0.5f, 1.0f, 0.0f), Vector3(0.0f, 0.5f, 1.0f));
+        nonOrthoBasis =
+            Basis3D(Matrix3x3(Vector3(1.0f, 0.2f, 0.3f), Vector3(0.5f, 1.0f, 0.0f), Vector3(0.0f, 0.5f, 1.0f)));
 
         defaultTransform = Transform3D();
-        scaleTransform = Transform3D(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
-        rotationTransform = Transform3D(yawRotBasis, Vector3(4.0f, 5.0f, 6.0f));
-        nonOrthoTransform = Transform3D(nonOrthoBasis, Vector3(2.0f, 3.0f, 4.0f));
+        scaleTransform = Transform3D(Matrix4x4(Vector4(2.0f, 0.0f, 0.0f, 0.0f),
+                                               Vector4(0.0f, 3.0f, 0.0f, 0.0f),
+                                               Vector4(0.0f, 0.0f, 4.0f, 0.0f),
+                                               Vector4(1.0f, 2.0f, 3.0f, 1.0f)));
+        rotationTransform = Transform3D(Matrix4x4(Vector4(cos, 0.0f, -sin, 0.0f),
+                                                  Vector4(0.0f, 1.0f, 0.0f, 0.0f),
+                                                  Vector4(sin, 0.0f, cos, 0.0f),
+                                                  Vector4(4.0f, 5.0f, 6.0f, 1.0f)));
+        nonOrthoTransform = Transform3D(Matrix4x4(Vector4(1.0f, 0.2f, 0.3f, 0.0f),
+                                                  Vector4(0.5f, 1.0f, 0.0f, 0.0f),
+                                                  Vector4(0.0f, 0.5f, 1.0f, 0.0f),
+                                                  Vector4(2.0f, 3.0f, 4.0f, 1.0f)));
     }
 
     Basis3D defaultBasis, scaleBasis, pitchRotBasis, yawRotBasis, rollRotBasis, nonOrthoBasis;
     Transform3D defaultTransform, scaleTransform, rotationTransform, nonOrthoTransform;
 };
 
+TEST_F(Transform3DTest, FactoryFunctions_AllParameters_InitializesTransformCorrectly)
+{
+    Vector3 scale(2.0f, 3.0f, 4.0f);
+    Vector3 origin(1.0f, 2.0f, 3.0f);
+    Transform3D scaleOriginTransform = Transform3D::FromScalePosition(scale, origin);
+
+    EXPECT_EQ(scaleOriginTransform.GetPosition(), origin);
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol0(), Vector4(2.0f, 0.0f, 0.0f, 0.0f));
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol1(), Vector4(0.0f, 3.0f, 0.0f, 0.0f));
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol2(), Vector4(0.0f, 0.0f, 4.0f, 0.0f));
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol3(), Vector4(origin, 1.0f));
+
+    float angle = math::PI / 4.0f;
+    Vector3 rotOrigin(4.0f, 5.0f, 6.0f);
+
+    Transform3D eulerTransform = Transform3D::FromEulerPosition(0.0f, angle, 0.0f, rotOrigin, math::eEulerOrder::YXZ);
+    EXPECT_TRUE(eulerTransform.GetBasis().Matrix.IsEqualApprox(yawRotBasis.Matrix));
+    EXPECT_EQ(eulerTransform.GetPosition(), rotOrigin);
+
+    Transform3D axisAngleTransform = Transform3D::FromAxisAnglePosition(Vector3::sUnitY, angle, rotOrigin);
+    EXPECT_TRUE(axisAngleTransform.GetBasis().Matrix.IsEqualApprox(yawRotBasis.Matrix));
+    EXPECT_EQ(axisAngleTransform.GetPosition(), rotOrigin);
+
+    Transform3D compEulerTransform =
+        Transform3D::FromScaleEulerPosition(scale, 0.0f, angle, 0.0f, rotOrigin, math::eEulerOrder::YXZ);
+    EXPECT_EQ(compEulerTransform.GetPosition(), rotOrigin);
+
+    Matrix3x3 rawYawMat = Matrix3x3::FromEuler(0.0f, angle, 0.0f, math::eEulerOrder::YXZ);
+    EXPECT_TRUE(compEulerTransform.Matrix.GetCol0().IsEqualApprox(scale.X * Vector4(rawYawMat.GetCol0())));
+    EXPECT_TRUE(compEulerTransform.Matrix.GetCol1().IsEqualApprox(scale.Y * Vector4(rawYawMat.GetCol1())));
+    EXPECT_TRUE(compEulerTransform.Matrix.GetCol2().IsEqualApprox(scale.Z * Vector4(rawYawMat.GetCol2())));
+
+    Transform3D compAxisTransform = Transform3D::FromScaleAxisAnglePosition(scale, Vector3::sUnitY, angle, rotOrigin);
+    EXPECT_EQ(compAxisTransform.GetPosition(), rotOrigin);
+    EXPECT_TRUE(compAxisTransform.Matrix.GetCol0().IsEqualApprox(scale.X * Vector4(rawYawMat.GetCol0())));
+    EXPECT_TRUE(compAxisTransform.Matrix.GetCol1().IsEqualApprox(scale.Y * Vector4(rawYawMat.GetCol1())));
+    EXPECT_TRUE(compAxisTransform.Matrix.GetCol2().IsEqualApprox(scale.Z * Vector4(rawYawMat.GetCol2())));
+
+    Transform3D basisOnlyTransform = Transform3D::FromBasis(yawRotBasis);
+    EXPECT_TRUE(basisOnlyTransform.GetBasis().Matrix.IsEqualApprox(yawRotBasis.Matrix));
+    EXPECT_EQ(basisOnlyTransform.GetPosition(), Vector3(0.0f, 0.0f, 0.0f));
+    EXPECT_EQ(basisOnlyTransform.Matrix.GetCol3(), Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    Transform3D basisWithPositionTransform = Transform3D::FromBasisPosition(yawRotBasis, Vector3(1.0f, 1.0f, 1.0f));
+    EXPECT_TRUE(basisWithPositionTransform.GetBasis().Matrix.IsEqualApprox(yawRotBasis.Matrix));
+    EXPECT_EQ(basisWithPositionTransform.GetPosition(), Vector3(1.0f, 1.0f, 1.0f));
+    EXPECT_EQ(basisWithPositionTransform.Matrix.GetCol3(), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+}
+
 TEST_F(Transform3DTest, Constructor_DefaultAndAllParameters_InitializesMatrixCorrectly)
 {
     EXPECT_EQ(defaultTransform.GetBasis(), defaultBasis);
-    EXPECT_EQ(defaultTransform.GetOrigin(), Vector3(0.0f, 0.0f, 0.0f));
-
-    EXPECT_EQ(scaleTransform.GetBasis(), scaleBasis);
-    EXPECT_EQ(scaleTransform.GetOrigin(), Vector3(1.0f, 2.0f, 3.0f));
+    EXPECT_EQ(defaultTransform.GetPosition(), Vector3(0.0f, 0.0f, 0.0f));
 
     Matrix4x4 m = scaleTransform.Matrix;
     Transform3D transformFromMat(m);
@@ -73,9 +130,9 @@ TEST_F(Transform3DTest, GetAndSet_ValidTransform_UpdatesAndReturnsProperties)
     EXPECT_NEAR(t.GetScaleY(), Vector3(0.0f, 3.0f, 0.0f).Magnitude(), math::EPSILON_CMP);
     EXPECT_NEAR(t.GetScaleZ(), Vector3(0.0f, 0.0f, 4.0f).Magnitude(), math::EPSILON_CMP);
 
-    EXPECT_EQ(scaleTransform.GetOrigin(), Vector3(1.0f, 2.0f, 3.0f));
-    scaleTransform.SetOrigin(Vector3(3.0, 2.0f, 1.0f));
-    EXPECT_EQ(scaleTransform.GetOrigin(), Vector3(3.0, 2.0f, 1.0f));
+    EXPECT_EQ(scaleTransform.GetPosition(), Vector3(1.0f, 2.0f, 3.0f));
+    scaleTransform.SetPosition(Vector3(3.0, 2.0f, 1.0f));
+    EXPECT_EQ(scaleTransform.GetPosition(), Vector3(3.0, 2.0f, 1.0f));
 
     EXPECT_EQ(scaleTransform.GetBasis(), scaleBasis);
     scaleTransform.SetBasis(rollRotBasis);
@@ -84,9 +141,9 @@ TEST_F(Transform3DTest, GetAndSet_ValidTransform_UpdatesAndReturnsProperties)
 
 TEST_F(Transform3DTest, OperatorComparison_DifferentTransforms_ReturnsCorrectBoolean)
 {
-    Transform3D t1(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
-    Transform3D t2(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
-    Transform3D t3(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t1 = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t2 = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t3 = Transform3D::FromBasisPosition(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
 
     EXPECT_TRUE(t1 == t2);
     EXPECT_FALSE(t1 != t2);
@@ -95,9 +152,10 @@ TEST_F(Transform3DTest, OperatorComparison_DifferentTransforms_ReturnsCorrectBoo
 
 TEST_F(Transform3DTest, IsEqualApprox_WithinEpsilon_ReturnsTrue)
 {
-    Transform3D t1(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
-    Transform3D t2(
-        Basis3D(Vector3(2.000001f, 0.0f, 0.0f), Vector3(0.0f, 3.000001f, 0.0f), Vector3(0.0f, 0.0f, 4.000001f)),
+    Transform3D t1 = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t2 = Transform3D::FromBasisPosition(
+        Basis3D(
+            Matrix3x3(Vector3(2.000001f, 0.0f, 0.0f), Vector3(0.0f, 3.000001f, 0.0f), Vector3(0.0f, 0.0f, 4.000001f))),
         Vector3(1.000001f, 2.000001f, 3.000001f));
     EXPECT_TRUE(t1.IsEqualApprox(t2));
     EXPECT_FALSE(t1.IsNotEqualApprox(t2));
@@ -135,7 +193,7 @@ TEST_F(Transform3DTest, Orthonormalize_NonOrthonormalTransform_MakesTransformOrt
 
 TEST_F(Transform3DTest, Scale_GlobalSpace_AppliesScalingCorrectly)
 {
-    Transform3D t(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Matrix4x4 baseMat = t.Matrix;
 
     Matrix4x4 scaleMat(Vector4(2.0f, 0.0f, 0.0f, 0.0f),
@@ -165,7 +223,7 @@ TEST_F(Transform3DTest, Scale_GlobalSpace_AppliesScalingCorrectly)
 
 TEST_F(Transform3DTest, Scale_LocalSpace_AppliesScalingCorrectly)
 {
-    Transform3D t(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Matrix4x4 baseMat = t.Matrix;
 
     Matrix4x4 scaleMat(Vector4(2.0f, 0.0f, 0.0f, 0.0f),
@@ -194,7 +252,7 @@ TEST_F(Transform3DTest, Scale_LocalSpace_AppliesScalingCorrectly)
 
 TEST_F(Transform3DTest, Rotate_GlobalSpace_AppliesRotationCorrectly)
 {
-    Transform3D t(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Vector3 axis = Vector3(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
     Matrix3x3 m = Matrix3x3::FromAxisAngle(axis, angle);
@@ -211,7 +269,7 @@ TEST_F(Transform3DTest, Rotate_GlobalSpace_AppliesRotationCorrectly)
 
 TEST_F(Transform3DTest, Rotate_LocalSpace_AppliesRotationCorrectly)
 {
-    Transform3D t(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Vector3 axis = Vector3(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
     Matrix3x3 m = Matrix3x3::FromAxisAngle(axis, angle);
@@ -228,7 +286,7 @@ TEST_F(Transform3DTest, Rotate_LocalSpace_AppliesRotationCorrectly)
 
 TEST_F(Transform3DTest, RotateEuler_GlobalSpaceVaryingOrders_AppliesRotationsCorrectly)
 {
-    Transform3D t(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     float angle = math::PI / 4.0f;
 
     Transform3D t1;
@@ -308,7 +366,7 @@ TEST_F(Transform3DTest, RotateEuler_GlobalSpaceVaryingOrders_AppliesRotationsCor
 
 TEST_F(Transform3DTest, RotateEuler_LocalSpaceVaryingOrders_AppliesRotationsCorrectly)
 {
-    Transform3D t(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     float angle = math::PI / 4.0f;
     Transform3D t1;
 
@@ -387,7 +445,7 @@ TEST_F(Transform3DTest, RotateEuler_LocalSpaceVaryingOrders_AppliesRotationsCorr
 
 TEST_F(Transform3DTest, RotateQuaternion_GlobalSpace_AppliesRotationCorrectly)
 {
-    Transform3D t(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Vector3 axis(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
     Quaternion q = Quaternion::FromAxisAngle(axis, angle);
@@ -405,7 +463,7 @@ TEST_F(Transform3DTest, RotateQuaternion_GlobalSpace_AppliesRotationCorrectly)
 
 TEST_F(Transform3DTest, RotateQuaternion_LocalSpace_AppliesRotationCorrectly)
 {
-    Transform3D t(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(pitchRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Vector3 axis(1.0f, 2.0f, 3.0f);
     float angle = math::PI / 4.0f;
     Quaternion q = Quaternion::FromAxisAngle(axis, angle);
@@ -423,7 +481,7 @@ TEST_F(Transform3DTest, RotateQuaternion_LocalSpace_AppliesRotationCorrectly)
 
 TEST_F(Transform3DTest, Translate_GlobalSpace_AppliesTranslationCorrectly)
 {
-    Transform3D t(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
     Vector3 translationVector(3.0f, 4.0f, 5.0f);
     Matrix4x4 translationMat(Vector4(1.0f, 0.0f, 0.0f, 0.f),
                              Vector4(0.0f, 1.0f, 0.0f, 0.f),
@@ -440,7 +498,7 @@ TEST_F(Transform3DTest, Translate_GlobalSpace_AppliesTranslationCorrectly)
 
 TEST_F(Transform3DTest, Translate_LocalSpace_AppliesTranslationCorrectly)
 {
-    Transform3D t(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
     Vector3 translationVector(3.0f, 4.0f, 5.0f);
     Matrix4x4 translationMat(Vector4(1.0f, 0.0f, 0.0f, 0.f),
                              Vector4(0.0f, 1.0f, 0.0f, 0.f),
@@ -489,14 +547,14 @@ TEST_F(Transform3DTest, LookAt_StandardTargetAndUp_OrientsTransformCorrectly)
 
     EXPECT_TRUE(t.GetBasis().IsOrthogonal());
 
-    Vector3 dir = (at - scaleTransform.GetOrigin()).Normalized();
+    Vector3 dir = (at - scaleTransform.GetPosition()).Normalized();
     EXPECT_TRUE(t.GetForward().IsEqualApprox(-dir));
 
     Vector3 right = t.GetRight();
     Vector3 crossRightUp = right.Cross(t.GetUp());
     EXPECT_TRUE(crossRightUp.IsEqualApprox(t.GetForward()));
 
-    EXPECT_EQ(t.GetOrigin(), scaleTransform.GetOrigin());
+    EXPECT_EQ(t.GetPosition(), scaleTransform.GetPosition());
 }
 
 TEST_F(Transform3DTest, LookAt_FacingTargetFlagTrue_OrientsForwardToTarget)
@@ -509,20 +567,20 @@ TEST_F(Transform3DTest, LookAt_FacingTargetFlagTrue_OrientsForwardToTarget)
 
     EXPECT_TRUE(t.GetBasis().IsOrthogonal());
 
-    Vector3 dir = (at - scaleTransform.GetOrigin()).Normalized();
+    Vector3 dir = (at - scaleTransform.GetPosition()).Normalized();
     EXPECT_TRUE(t.GetForward().Normalized().IsEqualApprox(dir));
 
     Vector3 right = t.GetRight();
     Vector3 crossRightUp = right.Cross(t.GetUp());
     EXPECT_TRUE(crossRightUp.IsEqualApprox(t.GetForward()));
 
-    EXPECT_EQ(t.GetOrigin(), scaleTransform.GetOrigin());
+    EXPECT_EQ(t.GetPosition(), scaleTransform.GetPosition());
 }
 
 TEST_F(Transform3DTest, LookAt_TargetIsOrigin_DoesNotChangeOrientation)
 {
     Transform3D t = scaleTransform;
-    Vector3 at = t.GetOrigin();
+    Vector3 at = t.GetPosition();
     t.LookAt(at, Vector3::sUnitY, false);
 
     EXPECT_TRUE(t == scaleTransform);
@@ -539,19 +597,19 @@ TEST_F(Transform3DTest, LookAt_TargetCollinearWithUp_HandlesGracefully)
 
     EXPECT_TRUE(t.GetBasis().IsOrthogonal());
 
-    Vector3 dir = (at - scaleTransform.GetOrigin()).Normalized();
+    Vector3 dir = (at - scaleTransform.GetPosition()).Normalized();
     EXPECT_TRUE(t.GetForward().Normalized().IsEqualApprox(dir));
 
     Vector3 right = t.GetRight();
     Vector3 crossRightUp = right.Cross(t.GetUp());
     EXPECT_TRUE(crossRightUp.IsEqualApprox(t.GetForward()));
 
-    EXPECT_EQ(t.GetOrigin(), scaleTransform.GetOrigin());
+    EXPECT_EQ(t.GetPosition(), scaleTransform.GetPosition());
 }
 
 TEST_F(Transform3DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 {
-    Vector3 at = (scaleTransform.GetScaledForward() * 2.0f) + scaleTransform.GetOrigin();
+    Vector3 at = (scaleTransform.GetScaledForward() * 2.0f) + scaleTransform.GetPosition();
     Transform3D t = scaleTransform;
     t.LookAt(at, Vector3::sUnitY, true);
 
@@ -560,8 +618,8 @@ TEST_F(Transform3DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 
 TEST_F(Transform3DTest, OperatorMul_TwoTransforms_ReturnsCombinedTransform)
 {
-    Transform3D t1(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
-    Transform3D t2(yawRotBasis, Vector3(3.0f, 4.0f, 5.0f));
+    Transform3D t1 = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t2 = Transform3D::FromBasisPosition(yawRotBasis, Vector3(3.0f, 4.0f, 5.0f));
 
     EXPECT_TRUE((t1 * t2).Matrix.IsEqualApprox(t1.Matrix * t2.Matrix));
     EXPECT_TRUE((t2 * t1).Matrix.IsEqualApprox(t2.Matrix * t1.Matrix));
@@ -573,7 +631,7 @@ TEST_F(Transform3DTest, OperatorMul_TwoTransforms_ReturnsCombinedTransform)
 
 TEST_F(Transform3DTest, Transform_Vector_ReturnsCorrectlyTransformedCartesianVector)
 {
-    Transform3D t(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(yawRotBasis, Vector3(1.0f, 2.0f, 3.0f));
     Matrix4x4 m = t.Matrix;
     Vector3 v(1.0f, 1.0f, 1.0f);
 
@@ -593,7 +651,7 @@ TEST_F(Transform3DTest, Transform_Vector_ReturnsCorrectlyTransformedCartesianVec
 
 TEST_F(Transform3DTest, MatrixProperty_ValidTransform_MaintainsHomogeneousLayout)
 {
-    Transform3D t(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
+    Transform3D t = Transform3D::FromBasisPosition(scaleBasis, Vector3(1.0f, 2.0f, 3.0f));
     Matrix4x4 m = t.Matrix;
 
     EXPECT_TRUE(m.Row0.IsEqualApprox(Vector4(2.0f, 0.0f, 0.0f, 1.0f)));

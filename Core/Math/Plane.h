@@ -14,14 +14,16 @@ struct Sphere;
 
 struct Plane
 {
+    FORCE_INLINE static Plane FromCoefficients(float a, float b, float c, float d);
+    FORCE_INLINE static Plane FromNormalPoint(const Vector3& normal, const Vector3& point);
+    FORCE_INLINE static Plane FromPoints(const Vector3& v1,
+                                         const Vector3& v2,
+                                         const Vector3& v3,
+                                         math::eClockDirection dir = math::eClockDirection::CounterClockWise);
+
     FORCE_INLINE Plane();
-    FORCE_INLINE Plane(float a, float b, float c, float d);
-    FORCE_INLINE Plane(const Vector3& normal, const Vector3& point);
-    FORCE_INLINE Plane(const Vector3& v1,
-                       const Vector3& v2,
-                       const Vector3& v3,
-                       math::eClockDirection dir = math::eClockDirection::CounterClockWise);
     FORCE_INLINE Plane(const Plane&) = default;
+    FORCE_INLINE Plane(const Vector3& normal, float minusNornalDotPoint);
     FORCE_INLINE Plane& operator=(const Plane& rhs);
     ~Plane() = default;
 
@@ -53,38 +55,43 @@ struct Plane
     [[nodiscard]] FORCE_INLINE math::eSide getSide(const std::array<Vector3, N>& points) const;
 };
 
+Plane Plane::FromCoefficients(float a, float b, float c, float d)
+{
+    Vector3 normal = Vector3(a, b, c);
+    const float mag = normal.Magnitude();
+    return Plane(normal / mag, d / mag);
+}
+
+Plane Plane::FromNormalPoint(const Vector3& normal, const Vector3& point)
+{
+    return Plane(normal.Normalized(), -normal.Dot(point));
+}
+
+Plane Plane::FromPoints(const Vector3& v1, const Vector3& v2, const Vector3& v3, math::eClockDirection dir)
+{
+    Vector3 normal;
+    switch (dir)
+    {
+        case math::eClockDirection::ClockWise:
+            normal = (v3 - v1).Cross(v2 - v1).Normalized();
+            break;
+        case math::eClockDirection::CounterClockWise:
+            normal = (v2 - v1).Cross(v3 - v1).Normalized();
+            break;
+    }
+    return Plane(normal, -normal.Dot(v1));
+}
+
 Plane::Plane()
   : Normal(Vector3::sZero)
   , D(0.0f)
 {
 }
 
-Plane::Plane(float a, float b, float c, float d)
+Plane::Plane(const Vector3& normal, float minusNornalDotPoint)
+  : Normal(normal)
+  , D(minusNornalDotPoint)
 {
-    Normal = Vector3(a, b, c);
-    const float mag = Normal.Magnitude();
-    Normal /= mag;
-    D = d / mag;
-}
-
-Plane::Plane(const Vector3& normal, const Vector3& point)
-  : Normal(normal.Normalized())
-  , D(-normal.Dot(point))
-{
-}
-
-Plane::Plane(const Vector3& v1, const Vector3& v2, const Vector3& v3, math::eClockDirection dir)
-{
-    switch (dir)
-    {
-        case math::eClockDirection::ClockWise:
-            Normal = (v3 - v1).Cross(v2 - v1).Normalized();
-            break;
-        case math::eClockDirection::CounterClockWise:
-            Normal = (v2 - v1).Cross(v3 - v1).Normalized();
-            break;
-    }
-    D = -Normal.Dot(v1);
 }
 
 Plane& Plane::operator=(const Plane& rhs)

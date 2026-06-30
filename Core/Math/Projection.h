@@ -20,16 +20,16 @@ class Projection final
                                                                               float aspectRatio,
                                                                               float near,
                                                                               float far);
-    [[nodiscard]] FORCE_INLINE static constexpr Projection CreateOrthographic(const Matrix4x4& m,
-                                                                              float ndcNear,
-                                                                              float ndcFar);
+    [[nodiscard]] FORCE_INLINE static constexpr Projection CreateOrthographicFromMatrix(const Matrix4x4& m,
+                                                                                        float ndcNear,
+                                                                                        float ndcFar);
     [[nodiscard]] FORCE_INLINE static constexpr Projection CreatePerspective(float fov,
                                                                              float aspectRatio,
                                                                              float near,
                                                                              float far);
-    [[nodiscard]] FORCE_INLINE static constexpr Projection CreatePerspective(const Matrix4x4& m,
-                                                                             float ndcNear,
-                                                                             float ndcFar);
+    [[nodiscard]] FORCE_INLINE static constexpr Projection CreatePerspectiveFromMatrix(const Matrix4x4& m,
+                                                                                       float ndcNear,
+                                                                                       float ndcFar);
 
     FORCE_INLINE constexpr Projection(const Projection&) = default;
     FORCE_INLINE constexpr Projection& operator=(const Projection& rhs);
@@ -88,7 +88,7 @@ constexpr Projection Projection::CreateOrthographic(float viewHeight, float aspe
     return proj;
 }
 
-constexpr Projection Projection::CreateOrthographic(const Matrix4x4& m, float ndcNear, float ndcFar)
+constexpr Projection Projection::CreateOrthographicFromMatrix(const Matrix4x4& m, float ndcNear, float ndcFar)
 {
     Projection proj;
     proj.mType = eProjectionType::Orthographic;
@@ -143,7 +143,7 @@ constexpr Projection Projection::CreatePerspective(float fov, float aspectRatio,
     return proj;
 }
 
-constexpr Projection Projection::CreatePerspective(const Matrix4x4& m, float ndcNear, float ndcFar)
+constexpr Projection Projection::CreatePerspectiveFromMatrix(const Matrix4x4& m, float ndcNear, float ndcFar)
 {
     Projection proj;
     proj.mType = eProjectionType::Perspective;

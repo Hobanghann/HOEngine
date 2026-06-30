@@ -18,8 +18,8 @@ struct alignas(16) Vector4 final
 {
     constexpr Vector4();
     constexpr Vector4(float x, float y, float z, float w);
-    constexpr Vector4(const Vector2& v);
-    constexpr Vector4(const Vector3& v);
+    constexpr explicit Vector4(const Vector2& v, float z = 0.0f, float w = 0.0f);
+    constexpr explicit Vector4(const Vector3& v, float w = 0.0f);
     explicit Vector4(const Quaternion& q);
     explicit Vector4(const Color128& c);
     constexpr Vector4(const Vector4&) = default;
@@ -113,19 +113,19 @@ constexpr Vector4::Vector4(float x, float y, float z, float w)
 {
 }
 
-constexpr Vector4::Vector4(const Vector2& v)
+constexpr Vector4::Vector4(const Vector2& v, float z, float w)
   : X(v.X)
   , Y(v.Y)
-  , Z(0.0f)
-  , W(0.0f)
+  , Z(z)
+  , W(w)
 {
 }
 
-constexpr Vector4::Vector4(const Vector3& v)
+constexpr Vector4::Vector4(const Vector3& v, float w)
   : X(v.X)
   , Y(v.Y)
   , Z(v.Z)
-  , W(0.0f)
+  , W(w)
 {
 }
 

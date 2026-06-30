@@ -101,14 +101,18 @@ class RenderingSystemGL final : public IRenderingSystem
 
     GLuint mGlDefaultCubeMap = 0;
 
+    GLuint mGlInstanceDataBufferSSBO = 0;
+
     GLuint mGlMatrixUBO = 0;
     GLuint mGlLightUBO = 0;
     GLuint mGlGeneralPurposeUBO = 0;
 
-    GLuint mMaterialUboIndex = 0;
+    GLuint mInstanceDataBufferSSBOIndex = 0;
+
     GLuint mMatrixUboIndex = 1;
-    GLuint mLightUboIndex = 2;
-    GLuint mGeneralPurposeUboIndex = 3;
+    GLuint mMaterialUboIndex = 2;
+    GLuint mLightUboIndex = 3;
+    GLuint mGeneralPurposeUboIndex = 4;
 
     ObjectPool<StaticMeshNativeHandleGL> mStaticMeshNativeHandlePool;
     ObjectPool<MaterialNativeHandleGL> mMaterialNativeHandlePool;

@@ -335,9 +335,15 @@ bool RenderingSystemGL::init()
         glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(mGlDefaultCubeMap, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+        // SSBO
+        glCreateBuffers(1, &mGlInstanceDataBufferSSBO);
+        glNamedBufferStorage(
+            mGlInstanceDataBufferSSBO, sizeof(InstanceData) * sMaxInstanceCount, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, mInstanceDataBufferSSBOIndex, mGlInstanceDataBufferSSBO);
+
         // UBOs
         glCreateBuffers(1, &mGlMatrixUBO);
-        glNamedBufferData(mGlMatrixUBO, sizeof(MatrixLayout), nullptr, GL_DYNAMIC_DRAW);
+        glNamedBufferStorage(mGlMatrixUBO, sizeof(MatrixLayout), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glBindBufferBase(GL_UNIFORM_BUFFER, mMatrixUboIndex, mGlMatrixUBO);
         if (!ASSERT_GL())
         {
@@ -346,7 +352,7 @@ bool RenderingSystemGL::init()
         }
 
         glCreateBuffers(1, &mGlLightUBO);
-        glNamedBufferData(mGlLightUBO, sizeof(LightLayout), nullptr, GL_DYNAMIC_DRAW);
+        glNamedBufferStorage(mGlLightUBO, sizeof(LightLayout), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glBindBufferBase(GL_UNIFORM_BUFFER, mLightUboIndex, mGlLightUBO);
         if (!ASSERT_GL())
         {
@@ -355,7 +361,7 @@ bool RenderingSystemGL::init()
         }
 
         glCreateBuffers(1, &mGlGeneralPurposeUBO);
-        glNamedBufferData(mGlGeneralPurposeUBO, sizeof(GeneralPurposeLayout), nullptr, GL_DYNAMIC_DRAW);
+        glNamedBufferStorage(mGlGeneralPurposeUBO, sizeof(GeneralPurposeLayout), nullptr, GL_DYNAMIC_STORAGE_BIT);
         glBindBufferBase(GL_UNIFORM_BUFFER, mGeneralPurposeUboIndex, mGlGeneralPurposeUBO);
         if (!ASSERT_GL())
         {
@@ -442,6 +448,7 @@ void RenderingSystemGL::releaseAllResources()
     glDeleteProgram(mGlDefaultWorldGizmoVS);
     glDeleteProgram(mGlDefaultWorldGizmoFS);
     glDeleteTextures(1, &mGlDefaultCubeMap);
+    glDeleteBuffers(1, &mGlInstanceDataBufferSSBO);
     glDeleteBuffers(1, &mGlMatrixUBO);
     glDeleteBuffers(1, &mGlLightUBO);
     glDeleteBuffers(1, &mGlGeneralPurposeUBO);
@@ -562,23 +569,21 @@ void RenderingSystemGL::applyMaterial(GpuMaterialHandle hGpuMaterial)
 
 void RenderingSystemGL::executeDrawCommand(const DrawCommand& command)
 {
-    glNamedBufferSubData(mGlMatrixUBO, 0, sizeof(Matrix4x4), &command.WorldMat);
-    Matrix4x4 invWorldMat = command.WorldMat.Inverse();
-    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4), sizeof(Matrix4x4), &invWorldMat);
-
     const StaticMeshNativeHandleGL* meshNativehandle =
         mStaticMeshNativeHandlePool.Get(command.hGpuStaticMesh.Get()->NativeHandlePoolIndex);
-    glVertexArrayVertexBuffer(mGlVAO,
-                              mAttribBindingIndex,
-                              meshNativehandle->GlVbo,
-                              static_cast<GLintptr>(command.VertexOffset * sizeof(Vertex)),
-                              sizeof(Vertex));
+
+    glVertexArrayVertexBuffer(mGlVAO, mAttribBindingIndex, meshNativehandle->GlVbo, 0, sizeof(Vertex));
+
     glVertexArrayElementBuffer(mGlVAO, meshNativehandle->GlEbo);
 
-    glDrawElements(GL_TRIANGLES,
-                   command.IndexCount,
-                   GL_UNSIGNED_INT,
-                   reinterpret_cast<void*>(command.IndexOffset * sizeof(uint32_t))); // NOLINT
+    glDrawElementsInstancedBaseVertexBaseInstance(
+        GL_TRIANGLES,
+        command.IndexCount,
+        GL_UNSIGNED_INT,
+        reinterpret_cast<void*>(command.IndexOffset * sizeof(uint32_t)), // NOLINT
+        command.InstanceCount,
+        command.VertexOffset,
+        command.InstanceOffset);
 
     ASSERT_GL();
 }
@@ -625,6 +630,10 @@ void RenderingSystemGL::prepareExecuteRenderQueue()
 {
     glBindVertexArray(mGlVAO);
     glBindProgramPipeline(mGlProgramPipeline);
+    glNamedBufferSubData(mGlInstanceDataBufferSSBO,
+                         0,
+                         sizeof(InstanceData) * mRenderQueues[mBackRenderQueueIndex].InstanceDataCount,
+                         mRenderQueues[mBackRenderQueueIndex].InstanceDataBuffer);
 }
 
 void RenderingSystemGL::prepareExecuteRenderPass(const RenderPass& pass)
@@ -654,9 +663,9 @@ void RenderingSystemGL::prepareExecuteRenderPass(const RenderPass& pass)
         }
     }
 
+    glNamedBufferSubData(mGlMatrixUBO, 0, sizeof(Matrix4x4), &pass.ViewMat);
+    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4), sizeof(Matrix4x4), &pass.ProjMat);
     glNamedBufferSubData(mGlGeneralPurposeUBO, 0, sizeof(float) * 3, &pass.WorldCameraPos);
-    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4) * 2, sizeof(Matrix4x4), &pass.ViewMat);
-    glNamedBufferSubData(mGlMatrixUBO, sizeof(Matrix4x4) * 3, sizeof(Matrix4x4), &pass.ProjMat);
     glNamedBufferSubData(mGlLightUBO, 0, sizeof(LightLayout), &pass.Lights);
 
     ASSERT_GL();
@@ -1701,6 +1710,7 @@ void RenderingSystemGL::cancelInitialization()
     glDeleteProgram(mGlDefaultWorldGizmoVS);
     glDeleteProgram(mGlDefaultWorldGizmoFS);
     glDeleteTextures(1, &mGlDefaultCubeMap);
+    glDeleteBuffers(1, &mGlInstanceDataBufferSSBO);
     glDeleteBuffers(1, &mGlMatrixUBO);
     glDeleteBuffers(1, &mGlLightUBO);
     glDeleteBuffers(1, &mGlGeneralPurposeUBO);

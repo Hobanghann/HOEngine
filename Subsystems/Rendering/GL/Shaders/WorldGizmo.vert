@@ -1,7 +1,9 @@
 #version 460 core
 
 const int UNIFORM_MATRICES_BINDING = 1;
-const int UNIFORM_GENERAL_BINDING = 3;
+const int UNIFORM_MATERIAL_BINDING = 2;
+const int UNIFORM_LIGHTS_BINDING = 3;
+const int UNIFORM_GENERAL_BINDING = 4;
 
 const vec3 FarPlaneNDC[6] = vec3[6](
     vec3(1.0f, 1.0f, 0.99999f),
@@ -15,8 +17,6 @@ const vec3 FarPlaneNDC[6] = vec3[6](
 
 layout (std140, row_major, binding = UNIFORM_MATRICES_BINDING) uniform Matrices
 {
-    mat4 World;
-    mat4 InvWorld;
     mat4 View;
     mat4 Proj;
 } u_Matrices;

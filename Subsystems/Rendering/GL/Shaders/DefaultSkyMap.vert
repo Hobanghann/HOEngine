@@ -30,8 +30,6 @@ const vec3 skyboxVertices[36] = vec3[36](
 
 layout (std140, row_major, binding = UNIFORM_MATRICES_BINDING) uniform Matrices
 {
-    mat4 World;
-    mat4 InvWorld;
     mat4 View;
     mat4 Proj;
 } u_Matrices;

@@ -153,10 +153,16 @@ bool IRenderingSystem::BeginRenderPass(RenderPassDesc& renderPassDesc)
     return true;
 }
 
-bool IRenderingSystem::SubmitDrawCommand(const DrawCommandDesc& commandDesc)
+bool IRenderingSystem::SubmitDrawCommands(const DrawCommandDesc& commandDesc,
+                                          int32_t instanceCount,
+                                          const InstanceData* pInstanceData)
 {
+    HO_ASSERT(pInstanceData, "Instance data is null.");
+    HO_ASSERT(instanceCount > 0, "Instance count must be greater than zero.");
     HO_ASSERT(commandDesc.hGpuStaticMesh.IsValid(), "Static mesh is not uploaded at all.");
     HO_ASSERT(commandDesc.hGpuMaterial.IsValid(), "Material is not uploaded at all.");
+    HO_ASSERT(mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount < sMaxInstanceCount,
+              "Instance data buffer is full.");
 
     if (mCurrentRenderPassIndex == -1)
     {
@@ -175,10 +181,64 @@ bool IRenderingSystem::SubmitDrawCommand(const DrawCommandDesc& commandDesc)
     newCommand.VertexOffset = commandDesc.VertexOffset;
     newCommand.IndexOffset = commandDesc.IndexOffset;
     newCommand.IndexCount = commandDesc.IndexCount;
-    newCommand.WorldMat = commandDesc.WorldMat;
+    newCommand.InstanceOffset = mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount;
+    if (mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount + instanceCount > sMaxInstanceCount)
+    {
+        HO_ASSERT(false, "instance data count exceeds the maximum limit. Excess instances will be truncated.");
+        instanceCount = mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount + instanceCount - sMaxInstanceCount;
+    }
+    newCommand.InstanceCount = instanceCount;
+    std::memcpy(mRenderQueues[mFrontRenderQueueIndex].InstanceDataBuffer + newCommand.InstanceOffset,
+                pInstanceData,
+                sizeof(InstanceData) * instanceCount);
+    mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount += instanceCount;
+    // sort instances
+    switch (commandDesc.AlphaMode)
+    {
+        case eMaterialAlphaMode::Opaque:
+        case eMaterialAlphaMode::Mask:
+            std::sort(
+                &mRenderQueues[mFrontRenderQueueIndex].InstanceDataBuffer[newCommand.InstanceOffset],
+                &mRenderQueues[mFrontRenderQueueIndex].InstanceDataBuffer[newCommand.InstanceOffset + instanceCount],
+                [&](const InstanceData& a, const InstanceData& b)
+                {
+                    const float aDist =
+                        (mRenderQueues[mFrontRenderQueueIndex].RenderPasses[mCurrentRenderPassIndex].WorldCameraPos -
+                         Vector3(a.WorldMat.GetCol3()))
+                            .SqrdMagnitude();
+                    const float bDist =
+                        (mRenderQueues[mFrontRenderQueueIndex].RenderPasses[mCurrentRenderPassIndex].WorldCameraPos -
+                         Vector3(b.WorldMat.GetCol3()))
+                            .SqrdMagnitude();
+                    return aDist < bDist;
+                });
+            break;
+        case eMaterialAlphaMode::Blend:
+            std::sort(
+                &mRenderQueues[mFrontRenderQueueIndex].InstanceDataBuffer[newCommand.InstanceOffset],
+                &mRenderQueues[mFrontRenderQueueIndex].InstanceDataBuffer[newCommand.InstanceOffset + instanceCount],
+                [&](const InstanceData& a, const InstanceData& b)
+                {
+                    const float aDist =
+                        (mRenderQueues[mFrontRenderQueueIndex].RenderPasses[mCurrentRenderPassIndex].WorldCameraPos -
+                         Vector3(a.WorldMat.GetCol3()))
+                            .SqrdMagnitude();
+                    const float bDist =
+                        (mRenderQueues[mFrontRenderQueueIndex].RenderPasses[mCurrentRenderPassIndex].WorldCameraPos -
+                         Vector3(b.WorldMat.GetCol3()))
+                            .SqrdMagnitude();
+                    return aDist > bDist;
+                });
+            break;
+        default:
+            HO_ASSERT(false, "Invalid alpha mode.");
+            mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount -= instanceCount;
+            return false;
+    }
     newCommand.SqrdDistanceFromCamera =
         (mRenderQueues[mFrontRenderQueueIndex].RenderPasses[mCurrentRenderPassIndex].WorldCameraPos -
-         Vector3(newCommand.WorldMat.GetCol3()))
+         Vector3(
+             mRenderQueues[mFrontRenderQueueIndex].InstanceDataBuffer[newCommand.InstanceOffset].WorldMat.GetCol3()))
             .SqrdMagnitude();
 
     RenderPass& pass = mRenderQueues[mFrontRenderQueueIndex].RenderPasses[mCurrentRenderPassIndex];
@@ -195,6 +255,7 @@ bool IRenderingSystem::SubmitDrawCommand(const DrawCommandDesc& commandDesc)
             {
                 HO_ASSERT(false,
                           "Opaque draw command count exceeds the maximum limit. Excess commands will be truncated.");
+                mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount -= instanceCount;
                 return false;
             }
         }
@@ -210,6 +271,7 @@ bool IRenderingSystem::SubmitDrawCommand(const DrawCommandDesc& commandDesc)
             {
                 HO_ASSERT(false,
                           "Masked draw command count exceeds the maximum limit. Excess commands will be truncated.");
+                mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount -= instanceCount;
                 return false;
             }
         }
@@ -225,12 +287,14 @@ bool IRenderingSystem::SubmitDrawCommand(const DrawCommandDesc& commandDesc)
             {
                 HO_ASSERT(false,
                           "Blended draw command count exceeds the maximum limit. Excess commands will be truncated.");
+                mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount -= instanceCount;
                 return false;
             }
         }
         break;
         default:
             HO_ASSERT(false, "Invalid alpha mode.");
+            mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount -= instanceCount;
             return false;
     }
     return true;
@@ -651,6 +715,7 @@ void IRenderingSystem::swapRenderQueues(uint64_t currentFrame)
 
     mFrontRenderQueueIndex = (mFrontRenderQueueIndex + 1) % 2;
     mRenderQueues[mFrontRenderQueueIndex].ActivePassCount = 0;
+    mRenderQueues[mFrontRenderQueueIndex].InstanceDataCount = 0;
     mRenderQueues[mFrontRenderQueueIndex].ActiveViewportCount = 0;
     mCurrentRenderPassIndex = -1;
 

@@ -56,6 +56,7 @@ class IRenderingSystem
     friend Engine;
 
   protected:
+    static const int32_t sMaxInstanceCount = 1000000;
     static const int32_t sMaxDirLightCount = 4;
     static const int32_t sMaxPointLightCount = 32;
     static const int32_t sMaxSpotLightCount = 16;
@@ -145,8 +146,12 @@ class IRenderingSystem
         int32_t VertexOffset = 0;
         int32_t IndexCount = 0;
         int32_t IndexOffset = 0;
-        Matrix4x4 WorldMat = Matrix4x4::sIdentity;
         eMaterialAlphaMode AlphaMode = eMaterialAlphaMode::None;
+    };
+
+    struct InstanceData
+    {
+        Matrix4x4 WorldMat;
     };
 
     struct Rect
@@ -200,7 +205,9 @@ class IRenderingSystem
 
     bool BeginRenderPass(RenderPassDesc& renderPassDesc);
 
-    bool SubmitDrawCommand(const DrawCommandDesc& commandDesc);
+    bool SubmitDrawCommands(const DrawCommandDesc& commandDesc,
+                            int32_t instanceCount,
+                            const InstanceData* pInstanceData);
 
     bool SubmitUIViewportData(const IPlatformWindow* pTargetWindow, const ImDrawData& srcDrawData);
 
@@ -233,17 +240,16 @@ class IRenderingSystem
         GpuStaticMeshHandle hGpuStaticMesh = GpuStaticMeshHandle::sNULL;
         GpuMaterialHandle hGpuMaterial = GpuMaterialHandle::sNULL;
         int32_t VertexOffset = 0;
-        int32_t IndexCount = 0;
         int32_t IndexOffset = 0;
-        Matrix4x4 WorldMat = Matrix4x4::sIdentity;
+        int32_t IndexCount = 0;
+        int32_t InstanceOffset = 0;
+        int32_t InstanceCount = 0;
         float SqrdDistanceFromCamera = 0.0f;
     };
 
     // Layout struct used for uploading to GPU.
     struct MatrixLayout
     {
-        Matrix4x4 WorldMat;
-        Matrix4x4 InvWorldMat;
         Matrix4x4 ViewMat;
         Matrix4x4 ProjMat;
     };
@@ -349,6 +355,9 @@ class IRenderingSystem
         RenderPass RenderPasses[sMaxRenderPassCount] = {};
         int32_t ActivePassCount = 0;
 
+        InstanceData InstanceDataBuffer[sMaxInstanceCount] = {};
+        int32_t InstanceDataCount = 0;
+
         UIViewportData UIViewports[sMaxViewportCount] = {};
         int32_t ActiveViewportCount = 0;
     };
@@ -368,7 +377,6 @@ class IRenderingSystem
     // 'init' called by engine.
     virtual bool init() = 0;
     // 'run' function creates rendering thread.
-    // Engine must be create all needed frame buffers before create render thread.
     void run();
     static void runInternal(void* unused);
     // 'shutdown' called by engine and it will terminate 'run' function

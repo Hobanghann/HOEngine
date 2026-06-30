@@ -7,6 +7,8 @@
 
 namespace ho
 {
+struct Matrix2x2;
+struct Matrix4x4;
 
 struct alignas(16) Matrix3x3
 {
@@ -18,8 +20,10 @@ struct alignas(16) Matrix3x3
     [[nodiscard]] static constexpr Matrix3x3 FromQuaternion(const Quaternion& q);
 
     constexpr Matrix3x3();
-    constexpr Matrix3x3(const Vector3& col0, const Vector3& col1, const Vector3& col2);
     constexpr Matrix3x3(const Matrix3x3&) = default;
+    constexpr Matrix3x3(const Vector3& col0, const Vector3& col1, const Vector3& col2);
+    explicit Matrix3x3(const Matrix2x2& mat);
+    explicit Matrix3x3(const Matrix4x4& mat);
     constexpr Matrix3x3& operator=(const Matrix3x3& rhs);
     ~Matrix3x3() = default;
 

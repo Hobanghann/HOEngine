@@ -1,10 +1,24 @@
 #include "Matrix3x3.h"
 
-#include "MathFuncs.h"
-#include "Quaternion.h"
+#include "Matrix2x2.h"
+#include "Matrix4x4.h"
 
 namespace ho
 {
+Matrix3x3::Matrix3x3(const Matrix2x2& mat)
+  : Row0(mat.Row0)
+  , Row1(mat.Row1)
+  , Row2(Vector3::sUnitZ)
+{
+}
+
+Matrix3x3::Matrix3x3(const Matrix4x4& mat)
+  : Row0(mat.Row0)
+  , Row1(mat.Row1)
+  , Row2(mat.Row2)
+{
+}
+
 std::string Matrix3x3::ToString() const
 {
     char res[300];

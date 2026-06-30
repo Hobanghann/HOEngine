@@ -772,10 +772,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(2.7939699442924854e-9f, -1.4156600514070309e-7f, -0.6860002279281616f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_1").Matrix;
-    Matrix3x3 temp = localTransform.ToMatrix3x3();
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale)) << "Expected:\n"
-                                                                         << rotateScale.ToString() << "\nActural:\n"
-                                                                         << temp.ToString() << "\n";
+    Matrix3x3 temp(localTransform);
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale)) << "Expected:\n"
+                                                                      << rotateScale.ToString() << "\nActural:\n"
+                                                                      << temp.ToString() << "\n";
     EXPECT_TRUE(Vector3(localTransform.GetCol3()).IsEqualApprox(translate));
 
     // leg_joint_R_1
@@ -789,7 +789,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.06845717132091522f, 0.004460853058844805f, 0.07147114723920822f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -803,7 +803,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.2661120891571045f, -1.4901200273698124e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -817,7 +817,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-7.450579708745408e-9f, 0.27582409977912905f, 3.725289854372704e-9f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -833,7 +833,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.0014585329918190837f, -0.06619873642921448f, -0.027856800705194474f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_5").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -849,7 +849,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.06761927157640457f, 0.004461091011762619f, 0.07226461172103882f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -865,7 +865,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.2661122083663941f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -879,7 +879,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.27582401037216189f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -894,7 +894,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.0023464928381145f, -0.06617330759763718f, -0.02785675972700119f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_5").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -909,7 +909,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0009999809553846717f, -4.842879874900064e-8f, -0.1714905947446823f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -923,7 +923,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.21801769733428956f, -3.725289854372704e-9f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -938,7 +938,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.08800055086612702f, -0.0001992879988392815f, 0.0009773969650268557f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -954,7 +954,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-7.450579708745408e-9f, 0.24452559649944304f, 5.96045985901128e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -969,7 +969,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-5.96045985901128e-8f, 0.1855168044567108f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -984,7 +984,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.08800055086612702f, -0.0001992879988392815f, 0.0009773969650268557f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -998,7 +998,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(1.8626500342122655e-9f, 0.24452590942382813f, 5.96045985901128e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1013,7 +1013,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.1855167001485825f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1027,7 +1027,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 7.450579886381094e-8f, -0.05255972966551781f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1041,7 +1041,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.06650590896606446f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 

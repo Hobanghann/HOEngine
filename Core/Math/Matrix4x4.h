@@ -6,14 +6,17 @@
 
 namespace ho
 {
+struct Matrix2x2;
 struct Matrix3x3;
 struct Vector3;
 
 struct alignas(16) Matrix4x4
 {
     constexpr Matrix4x4();
-    constexpr Matrix4x4(const Vector4& col0, const Vector4& col1, const Vector4& col2, const Vector4& col3);
     constexpr Matrix4x4(const Matrix4x4&) = default;
+    constexpr Matrix4x4(const Vector4& col0, const Vector4& col1, const Vector4& col2, const Vector4& col3);
+    explicit Matrix4x4(const Matrix2x2& mat);
+    explicit Matrix4x4(const Matrix3x3& mat);
     constexpr Matrix4x4& operator=(const Matrix4x4& rhs);
     ~Matrix4x4() = default;
 
@@ -64,7 +67,6 @@ struct alignas(16) Matrix4x4
     [[nodiscard]] constexpr float Trace() const;
     [[nodiscard]] constexpr float Determinant() const;
 
-    [[nodiscard]] Matrix3x3 ToMatrix3x3() const;
     [[nodiscard]] std::string ToString() const;
 
     static const Matrix4x4 sIdentity;

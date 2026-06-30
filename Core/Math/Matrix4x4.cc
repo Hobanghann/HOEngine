@@ -1,17 +1,25 @@
 #include "Matrix4x4.h"
 
+#include "Matrix2x2.h"
 #include "Matrix3x3.h"
 #include "Vector3.h"
 
 namespace ho
 {
-Matrix3x3 Matrix4x4::ToMatrix3x3() const
+Matrix4x4::Matrix4x4(const Matrix2x2& mat)
+  : Row0(mat.Row0)
+  , Row1(mat.Row1)
+  , Row2(Vector4::sUnitZ)
+  , Row3(Vector4::sUnitW)
 {
-    Matrix3x3 res;
-    res.Row0 = Vector3(Row0.X, Row0.Y, Row0.Z);
-    res.Row1 = Vector3(Row1.X, Row1.Y, Row1.Z);
-    res.Row2 = Vector3(Row2.X, Row2.Y, Row2.Z);
-    return res;
+}
+
+Matrix4x4::Matrix4x4(const Matrix3x3& mat)
+  : Row0(mat.Row0)
+  , Row1(mat.Row1)
+  , Row2(mat.Row2)
+  , Row3(Vector4::sUnitW)
+{
 }
 
 std::string Matrix4x4::ToString() const

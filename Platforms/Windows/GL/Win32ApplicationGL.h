@@ -34,17 +34,15 @@ class Win32ApplicationGL final : public IWin32Application
     // Renderering system should downcast the platform instance to call this method during API-specific initialization.
     void SetVSync(bool bEnable);
 
-    static void RendererCreateWindow_Hook(ImGuiViewport* pViewport);
-    static void RendererDestroyWindow_Hook(ImGuiViewport* pViewport);
-    static void RendererSwapBuffers_Hook(ImGuiViewport* pViewport, void* pUnused);
-    static void PlatformRenderWindow_Hook(ImGuiViewport* pViewport, void* pUnused);
+    static void Renderer_CreateWindow_Hook(ImGuiViewport* pViewport);
+    static void Renderer_SwapBuffers_Hook(ImGuiViewport* pViewport, void* pUnused);
+    static void Platform_DestroyWindow_Hook(ImGuiViewport* pViewport);
+    static void Platform_RenderWindow_Hook(ImGuiViewport* pViewport, void* pUnused);
 
   private:
     Win32ApplicationGL(HINSTANCE hApp);
 
     void uploadIconTexture(const std::string& path) override;
-
-    static void (*pOriginalPlatformCreateWindow_Hook)(ImGuiViewport*);
 
     // Dummy window and device context handles.
     // These are temporary scaffolding used to correctly initialize GLAD

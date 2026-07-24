@@ -108,8 +108,6 @@ bool Engine::Init(const EngineInitParam& param)
     // Run render thread
     IRenderingSystem::GetInstance().run();
 
-    HO_LOG_INFO("Engine Init Complete.");
-
     return true;
 }
 
@@ -167,6 +165,8 @@ void Engine::Run()
         }
 
         IRenderingSystem::GetInstance().swapRenderQueues(mFrameCount);
+
+        IPlatformApplication::GetInstance().DestroyPendingSubWindows();
     }
 }
 

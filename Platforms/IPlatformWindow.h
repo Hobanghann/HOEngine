@@ -96,6 +96,11 @@ class IPlatformWindow
         mbResizing = bResizing;
     }
 
+    void SetWindowDestroyed(bool bDestroyed)
+    {
+        mbDestroyed = bDestroyed;
+    }
+
     bool IsWindowMinimized() const
     {
         return mbMinimized;
@@ -109,6 +114,11 @@ class IPlatformWindow
     bool IsWindowResizing() const
     {
         return mbResizing;
+    }
+
+    bool IsDestroyed() const
+    {
+        return mbDestroyed;
     }
 
     virtual void ActivateContext() const = 0;
@@ -136,5 +146,7 @@ class IPlatformWindow
     bool mbMinimized = false;
     bool mbMaximized = false;
     bool mbResizing = false;
+
+    bool mbDestroyed = false;
 };
 } // namespace ho

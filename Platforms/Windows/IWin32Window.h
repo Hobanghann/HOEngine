@@ -45,7 +45,12 @@ class IWin32Window : public IPlatformWindow
 
     ~IWin32Window() override
     {
-        ::ReleaseDC(mhWnd, mhDC);
+        if (mhWnd)
+        {
+            ::ReleaseDC(mhWnd, mhDC);
+            ::DestroyWindow(mhWnd);
+            mhWnd = nullptr;
+        }
     }
 
     void* GetNativeHandle() const override

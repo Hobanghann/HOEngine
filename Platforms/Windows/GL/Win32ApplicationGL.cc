@@ -131,21 +131,6 @@ bool Win32ApplicationGL::Init(const std::string& iconPathStr)
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    // Win32+GL needs specific hooks for viewport, as there are specific things needed to tie Win32 and GL api.
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-        HO_ASSERT(platform_io.Renderer_CreateWindow == nullptr, "");
-        HO_ASSERT(platform_io.Renderer_DestroyWindow == nullptr, "");
-        HO_ASSERT(platform_io.Renderer_SwapBuffers == nullptr, "");
-        HO_ASSERT(platform_io.Platform_RenderWindow == nullptr, "");
-
-        platform_io.Renderer_CreateWindow = RendererCreateWindow_Hook;
-        platform_io.Renderer_DestroyWindow = RendererDestroyWindow_Hook;
-        platform_io.Renderer_SwapBuffers = RendererSwapBuffers_Hook;
-        platform_io.Platform_RenderWindow = PlatformRenderWindow_Hook;
-    }
-
     return true;
 }
 
@@ -252,6 +237,18 @@ bool Win32ApplicationGL::CreateMainWindow(const std::string& mainWindowTitleStr,
         return false;
     }
 
+    ImGuiIO& io = ImGui::GetIO();
+    // Win32+GL needs specific hooks for viewport, as there are specific things needed to tie Win32 and GL api.
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+
+        platform_io.Renderer_CreateWindow = Renderer_CreateWindow_Hook;
+        platform_io.Renderer_SwapBuffers = Renderer_SwapBuffers_Hook;
+        platform_io.Platform_DestroyWindow = Platform_DestroyWindow_Hook;
+        platform_io.Platform_RenderWindow = Platform_RenderWindow_Hook;
+    }
+
     // It's to prevent imgui initialize GL in 'ImGui_ImplOpenGL3_NewFrame()'.
     ImGui_ImplOpenGL3_CreateDeviceObjects();
 
@@ -271,15 +268,21 @@ void Win32ApplicationGL::Shutdown()
     // main thread.
     IPlatformApplication::GetInstance().GetMainWindow()->ActivateContext();
 
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::DestroyPlatformWindows();
+    }
+
+    for (auto& pSubWindow : spSubWindows)
+    {
+        pSubWindow.reset();
+    }
+    spMainWindow.reset();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 
-    spMainWindow.reset();
-    if (!::DestroyWindow(mhMainWnd))
-    {
-        HO_ASSERT(false, "Failed to destroy main window.");
-    }
     const std::wstring mainWndNameStrUTF16 = toUTF16(mMainWndNameStr);
     if (!::UnregisterClassW(mainWndNameStrUTF16.c_str(), mhApp))
     {
@@ -352,19 +355,22 @@ void Win32ApplicationGL::uploadIconTexture(const std::string& path)
     stbi_image_free(pIconBitmap);
 }
 
-void Win32ApplicationGL::RendererCreateWindow_Hook(ImGuiViewport* viewport)
+void Win32ApplicationGL::Renderer_CreateWindow_Hook(ImGuiViewport* viewport)
 {
     HO_ASSERT(viewport->RendererUserData == nullptr, "");
 
-    Win32WindowGL* pWindow = new Win32WindowGL(static_cast<int32_t>(viewport->Pos.x),
-                                               static_cast<int32_t>(viewport->Pos.y),
-                                               0,
-                                               static_cast<int32_t>(viewport->Size.x),
-                                               static_cast<int32_t>(viewport->Size.y),
-                                               static_cast<HWND>(viewport->PlatformHandle),
-                                               shGlContext);
+    // Add sub window in PlatformApplication's sub window list!
+    spSubWindows.push_back(std::make_unique<Win32WindowGL>(static_cast<int32_t>(viewport->Pos.x),
+                                                           static_cast<int32_t>(viewport->Pos.y),
+                                                           0,
+                                                           static_cast<int32_t>(viewport->Size.x),
+                                                           static_cast<int32_t>(viewport->Size.y),
+                                                           static_cast<HWND>(viewport->PlatformHandle),
+                                                           shGlContext));
 
-    pWindow->SetTitle(viewport->GetDebugName());
+    IPlatformWindow* pNewWindow = spSubWindows.back().get();
+
+    pNewWindow->SetTitle(viewport->GetDebugName());
 
     ::SendMessageW(static_cast<HWND>(viewport->PlatformHandle),
                    WM_SETICON,
@@ -376,29 +382,113 @@ void Win32ApplicationGL::RendererCreateWindow_Hook(ImGuiViewport* viewport)
                    ICON_BIG,
                    reinterpret_cast<LPARAM>(static_cast<Win32ApplicationGL*>(spInstance)->mhIcon));
 
-    viewport->RendererUserData = static_cast<void*>(pWindow);
+    viewport->RendererUserData = static_cast<void*>(pNewWindow);
 }
 
-void Win32ApplicationGL::RendererDestroyWindow_Hook(ImGuiViewport* viewport)
+void Win32ApplicationGL::Renderer_SwapBuffers_Hook(ImGuiViewport* pViewport, void* unused)
 {
-    if (viewport->RendererUserData != nullptr)
-    {
-        const Win32WindowGL* window = static_cast<Win32WindowGL*>(viewport->RendererUserData);
-        delete window;
-        viewport->RendererUserData = nullptr;
-    }
-}
-
-void Win32ApplicationGL::RendererSwapBuffers_Hook(ImGuiViewport* viewport, void* unused)
-{
-    if (const Win32WindowGL* pWindow = static_cast<const Win32WindowGL*>(viewport->RendererUserData))
+    if (const Win32WindowGL* pWindow = static_cast<const Win32WindowGL*>(pViewport->RendererUserData))
     {
         pWindow->Present();
     }
     (void)unused;
 }
 
-void Win32ApplicationGL::PlatformRenderWindow_Hook(ImGuiViewport* viewport, void* unused)
+// ===================================================================================================================
+// Idiot defs. To modify ImGui Backend 'Platform_DestroyWindow' function.
+// ===================================================================================================================
+
+// Using XInput for gamepad (will load DLL dynamically)
+#ifndef IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
+#include <xinput.h>
+typedef DWORD(WINAPI* PFN_XInputGetCapabilities)(DWORD, DWORD, XINPUT_CAPABILITIES*);
+typedef DWORD(WINAPI* PFN_XInputGetState)(DWORD, XINPUT_STATE*);
+#endif
+typedef BOOL(WINAPI* PFN_AdjustWindowRectExForDpi)(LPRECT, DWORD, BOOL, DWORD, UINT);
+
+struct ImGui_ImplWin32_Data
+{
+    HWND hWnd;
+    HWND MouseHwnd;
+    int MouseTrackedArea; // 0: not tracked, 1: client area, 2: non-client area
+    int MouseButtonsDown;
+    INT64 Time;
+    INT64 TicksPerSecond;
+    ImGuiMouseCursor LastMouseCursor;
+    UINT32 KeyboardCodePage;
+    bool WantUpdateMonitors;
+    bool IsPerMonitorDpiAwareV2;
+    PFN_AdjustWindowRectExForDpi AdjustWindowRectExForDpi;
+
+#ifndef IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
+    bool HasGamepad;
+    bool WantUpdateHasGamepad;
+    HMODULE XInputDLL;
+    PFN_XInputGetCapabilities XInputGetCapabilities;
+    PFN_XInputGetState XInputGetState;
+    DWORD XInputPacketNumber;
+#endif
+
+    ImGui_ImplWin32_Data()
+    {
+        memset((void*)this, 0, sizeof(*this));
+    }
+};
+
+struct ImGui_ImplWin32_ViewportData
+{
+    HWND Hwnd; // Stored in ImGuiViewport::PlatformHandle + PlatformHandleRaw
+    HWND HwndParent;
+    bool HwndOwned;
+    DWORD DwStyle;
+    DWORD DwExStyle;
+
+    ImGui_ImplWin32_ViewportData()
+    {
+        Hwnd = HwndParent = nullptr;
+        HwndOwned = false;
+        DwStyle = DwExStyle = 0;
+    }
+
+    ~ImGui_ImplWin32_ViewportData()
+    {
+        IM_ASSERT(Hwnd == nullptr);
+    }
+};
+
+static ImGui_ImplWin32_Data* ImGui_ImplWin32_GetBackendData()
+{
+    return ImGui::GetCurrentContext() ? (ImGui_ImplWin32_Data*)ImGui::GetIO().BackendPlatformUserData : nullptr;
+}
+
+// ===================================================================================================================
+
+// Defers OS window destruction to prevent dangling pointer crashes in the rendering thread.
+// This ensures the main thread doesn't delete a window while the rendering thread is  still processing the draw lists
+// submitted in the previous frame.
+void Win32ApplicationGL::Platform_DestroyWindow_Hook(ImGuiViewport* pViewport)
+{
+    ImGui_ImplWin32_Data* bd = ImGui_ImplWin32_GetBackendData();
+    if (ImGui_ImplWin32_ViewportData* vd = reinterpret_cast<ImGui_ImplWin32_ViewportData*>(pViewport->PlatformUserData))
+    {
+        if (::GetCapture() == vd->Hwnd)
+        {
+            ::ReleaseCapture();
+            ::SetCapture(bd->hWnd);
+        }
+        if (vd->Hwnd && vd->HwndOwned)
+        {
+            Win32WindowGL* pWindow = static_cast<Win32WindowGL*>(pViewport->RendererUserData);
+            // Defer OS window destruction!
+            pWindow->SetWindowDestroyed(true);
+        }
+        vd->Hwnd = nullptr;
+        IM_DELETE(vd);
+    }
+    pViewport->PlatformUserData = pViewport->PlatformHandle = pViewport->RendererUserData = nullptr;
+}
+
+void Win32ApplicationGL::Platform_RenderWindow_Hook(ImGuiViewport* viewport, void* unused)
 {
     // Activate the platform window DC in the OpenGL rendering context
     if (const Win32WindowGL* pWindow = static_cast<const Win32WindowGL*>(viewport->RendererUserData))
@@ -414,8 +504,6 @@ Win32ApplicationGL::Win32ApplicationGL(HINSTANCE hApp)
   , mhDummyDC(nullptr)
 {
 }
-
-void (*Win32ApplicationGL::pOriginalPlatformCreateWindow_Hook)(ImGuiViewport*) = nullptr;
 
 HGLRC Win32ApplicationGL::shGlContext = nullptr;
 } // namespace ho

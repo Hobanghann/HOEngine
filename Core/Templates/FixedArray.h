@@ -1,5 +1,6 @@
 #pragma once
 
+#include <initializer_list>
 #include <memory>
 
 #include "Macros.h"
@@ -22,6 +23,27 @@ class FixedArray
         }
     }
 
+    FixedArray(int32_t size, const T& value)
+      : FixedArray(size)
+    {
+        std::fill_n(mpArray.get(), size, value);
+    }
+
+    FixedArray(std::initializer_list<T> initList)
+      : mSize(static_cast<int32_t>(initList.size()))
+    {
+        if (mSize > 0)
+        {
+            mpArray = std::make_unique<T[]>(mSize);
+
+            const T* it = initList.begin();
+            for (int32_t i = 0; i < mSize; ++i)
+            {
+                mpArray[i] = *it++;
+            }
+        }
+    }
+
     FixedArray(const FixedArray&) = delete;
     FixedArray& operator=(const FixedArray&) = delete;
 
@@ -29,6 +51,7 @@ class FixedArray
       : mpArray(std::move(other.mpArray))
       , mSize(other.mSize)
     {
+        other.mSize = 0;
     }
 
     FixedArray& operator=(FixedArray&& rhs) noexcept
@@ -40,6 +63,7 @@ class FixedArray
 
         mpArray = std::move(rhs.mpArray);
         mSize = rhs.mSize;
+        rhs.mSize = 0;
         return *this;
     }
 
@@ -92,6 +116,11 @@ class FixedArray
     int32_t GetSize() const
     {
         return mSize;
+    }
+
+    int64_t GetByteSize() const
+    {
+        return sizeof(T) * mSize;
     }
 
     void Release()

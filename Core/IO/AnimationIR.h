@@ -59,35 +59,38 @@ struct AnimationIR
     {
         float Time;
         Vector3 TranslationVector;
+        eInterpolationMode InterpMode;
     };
 
     struct RotationKey
     {
         float Time;
         Quaternion Rotation;
+        eInterpolationMode InterpMode;
     };
 
     struct ScalingKey
     {
         float Time;
         Vector3 Scale;
+        eInterpolationMode InterpMode;
     };
 
-    struct MorphingKey
+    struct MorphKey
     {
-        MorphingKey(float time, std::vector<int32_t>&& morphTargetIndices, std::vector<float>&& weights) noexcept
+        MorphKey(float time, std::vector<int32_t>&& morphTargetIndices, std::vector<float>&& weights) noexcept
           : Time(time)
           , MorphTargetIndices(std::move(morphTargetIndices))
           , Weights(std::move(weights))
         {
-            HO_ASSERT(MorphTargetIndices.size() == Weights.size(), "Invalid MorphingKey format.");
+            HO_ASSERT(MorphTargetIndices.size() == Weights.size(), "Invalid MorphKey format.");
         }
 
-        MorphingKey(const MorphingKey& rhs) = delete;
-        MorphingKey& operator=(const MorphingKey& rhs) = delete;
+        MorphKey(const MorphKey& rhs) = delete;
+        MorphKey& operator=(const MorphKey& rhs) = delete;
 
-        MorphingKey(MorphingKey&& rhs) noexcept = default;
-        MorphingKey& operator=(MorphingKey&& rhs) noexcept = default;
+        MorphKey(MorphKey&& rhs) noexcept = default;
+        MorphKey& operator=(MorphKey&& rhs) noexcept = default;
 
         float Time;
         std::vector<int32_t> MorphTargetIndices;
@@ -98,20 +101,14 @@ struct AnimationIR
     {
         SkeletalTrack(int32_t boneIndex,
                       std::vector<TranslationKey>&& translationKeySequence,
-                      eInterpolationMode translationInterpMode,
                       std::vector<RotationKey>&& rotationKeySequence,
-                      eInterpolationMode rotationInterpMode,
                       std::vector<ScalingKey>&& scalingKeySequence,
-                      eInterpolationMode scalingInterpMode,
                       eExtrapolationMode preExtrapMode,
                       eExtrapolationMode postExtrapMode) noexcept
           : BoneIndex(boneIndex)
           , TranslationKeySequence(std::move(translationKeySequence))
-          , TranslationInterpMode(translationInterpMode)
           , RotationKeySequence(std::move(rotationKeySequence))
-          , RotationInterpMode(rotationInterpMode)
           , ScalingKeySequence(std::move(scalingKeySequence))
-          , ScalingInterpMode(scalingInterpMode)
           , PreExtrapMode(preExtrapMode)
           , PostExtrapMode(postExtrapMode)
         {
@@ -125,20 +122,17 @@ struct AnimationIR
 
         int32_t BoneIndex;
         std::vector<TranslationKey> TranslationKeySequence;
-        eInterpolationMode TranslationInterpMode;
         std::vector<RotationKey> RotationKeySequence;
-        eInterpolationMode RotationInterpMode;
         std::vector<ScalingKey> ScalingKeySequence;
-        eInterpolationMode ScalingInterpMode;
         eExtrapolationMode PreExtrapMode;
         eExtrapolationMode PostExtrapMode;
     };
 
     struct MorphTargetTrack
     {
-        MorphTargetTrack(int32_t boneIndex, std::vector<MorphingKey>&& keySequence) noexcept
-          : BoneIndex(boneIndex)
-          , KeySequance(std::move(keySequence))
+        MorphTargetTrack(std::vector<int32_t>&& subMeshIndices, std::vector<MorphKey>&& keySequence) noexcept
+          : SubMeshIndices(std::move(subMeshIndices))
+          , KeySequence(std::move(keySequence))
         {
         }
 
@@ -148,8 +142,8 @@ struct AnimationIR
         MorphTargetTrack(MorphTargetTrack&& rhs) noexcept = default;
         MorphTargetTrack& operator=(MorphTargetTrack&& rhs) noexcept = default;
 
-        int32_t BoneIndex;
-        std::vector<MorphingKey> KeySequance;
+        std::vector<int32_t> SubMeshIndices;
+        std::vector<MorphKey> KeySequence;
     };
 
     AnimationIR(const Path& path,
@@ -163,16 +157,6 @@ struct AnimationIR
       , SkeletalTracks(std::move(skeletalTracks))
       , MorphTargetTracks(std::move(morphTargetTracks))
     {
-        BoneIndexToSkeletalTrackIndexMap.reserve(SkeletalTracks.size());
-        for (int32_t i = 0; i < static_cast<int32_t>(SkeletalTracks.size()); ++i)
-        {
-            BoneIndexToSkeletalTrackIndexMap[SkeletalTracks[i].BoneIndex] = i;
-        }
-        BoneIndexToMorphTargetTrackIndexMap.reserve(MorphTargetTracks.size());
-        for (int32_t i = 0; i < static_cast<int32_t>(MorphTargetTracks.size()); ++i)
-        {
-            BoneIndexToMorphTargetTrackIndexMap[MorphTargetTracks[i].BoneIndex] = i;
-        }
     }
 
     AnimationIR(const AnimationIR&) = delete;
@@ -181,30 +165,11 @@ struct AnimationIR
     AnimationIR(AnimationIR&& rhs) noexcept = default;
     AnimationIR& operator=(AnimationIR&& rhs) noexcept = default;
 
-    const SkeletalTrack& GetSkeletalTrackByBoneIndex(int32_t boneIndex) const
-    {
-        auto it = BoneIndexToSkeletalTrackIndexMap.find(boneIndex);
-        HO_ASSERT(it != BoneIndexToSkeletalTrackIndexMap.end(), "Invalid bone index.");
-        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(SkeletalTracks.size()), "Invalid bone index.");
-        return SkeletalTracks[it->second];
-    }
-
-    const MorphTargetTrack& GetMorphTargetTrackByBoneIndex(int32_t boneIndex) const
-    {
-        auto it = BoneIndexToMorphTargetTrackIndexMap.find(boneIndex);
-        HO_ASSERT(it != BoneIndexToMorphTargetTrackIndexMap.end(), "Invalid bone index.");
-        HO_ASSERT(it->second >= 0 && it->second < static_cast<int32_t>(MorphTargetTracks.size()),
-                  "Invalid bone index.");
-        return MorphTargetTracks[it->second];
-    }
-
     Path ResourcePath;
     std::string NameStr;
     float Duration;
     std::vector<SkeletalTrack> SkeletalTracks;
     std::vector<MorphTargetTrack> MorphTargetTracks;
-    std::unordered_map<int32_t, int32_t> BoneIndexToSkeletalTrackIndexMap;
-    std::unordered_map<int32_t, int32_t> BoneIndexToMorphTargetTrackIndexMap;
 };
 } // namespace parser
 } // namespace ho

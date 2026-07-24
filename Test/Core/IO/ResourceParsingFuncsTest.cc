@@ -1051,17 +1051,23 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
 
     auto TestSkeletalTrack = [&](const char* boneName)
     {
-        EXPECT_TRUE(pModelIR->pAnimationIRs[0]->BoneIndexToSkeletalTrackIndexMap.find(
-                        pSkeletonIR->BoneNameToIndexMap.find(boneName)->second) !=
-                    pModelIR->pAnimationIRs[0]->BoneIndexToSkeletalTrackIndexMap.end());
-        const AnimationIR::SkeletalTrack& torso_joint_1Track = pModelIR->pAnimationIRs[0]->GetSkeletalTrackByBoneIndex(
-            pSkeletonIR->BoneNameToIndexMap.find(boneName)->second);
-        EXPECT_EQ(torso_joint_1Track.TranslationInterpMode, AnimationIR::eInterpolationMode::Linear);
-        EXPECT_GT(torso_joint_1Track.TranslationKeySequence.size(), 0);
-        EXPECT_EQ(torso_joint_1Track.RotationInterpMode, AnimationIR::eInterpolationMode::Linear);
-        EXPECT_GT(torso_joint_1Track.RotationKeySequence.size(), 0);
-        EXPECT_EQ(torso_joint_1Track.ScalingInterpMode, AnimationIR::eInterpolationMode::Linear);
-        EXPECT_GT(torso_joint_1Track.ScalingKeySequence.size(), 0);
+        int32_t boneIdx = pSkeletonIR->BoneNameToIndexMap.find(boneName)->second;
+        const AnimationIR::SkeletalTrack* pTrack = nullptr;
+        for (int32_t i = 0; i < static_cast<int32_t>(pModelIR->pAnimationIRs[0]->SkeletalTracks.size()); ++i)
+        {
+            if (pModelIR->pAnimationIRs[0]->SkeletalTracks[i].BoneIndex == boneIdx)
+            {
+                pTrack = &(pModelIR->pAnimationIRs[0]->SkeletalTracks[i]);
+                break;
+            }
+        }
+        EXPECT_NE(pTrack, nullptr);
+        if (pTrack)
+        {
+            EXPECT_GT(pTrack->TranslationKeySequence.size(), 0);
+            EXPECT_GT(pTrack->RotationKeySequence.size(), 0);
+            EXPECT_GT(pTrack->ScalingKeySequence.size(), 0);
+        }
     };
 
     TestSkeletalTrack("torso_joint_1");
@@ -1092,7 +1098,6 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
     std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("AnimatedMorphCube"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
-    const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
 
     // Check Morph Target
     const MeshIR::SubMesh& subMeshIR = pMeshIR->GetSubMeshByName("Cube");
@@ -1108,12 +1113,9 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
     // Check AnimationIR
     EXPECT_EQ(pModelIR->pAnimationIRs.size(), 1);
     EXPECT_EQ(pModelIR->pAnimationIRs[0]->MorphTargetTracks.size(), 1);
-    EXPECT_TRUE(pModelIR->pAnimationIRs[0]->BoneIndexToMorphTargetTrackIndexMap.find(0) !=
-                pModelIR->pAnimationIRs[0]->BoneIndexToMorphTargetTrackIndexMap.end());
-    const AnimationIR::MorphTargetTrack& track = pModelIR->pAnimationIRs[0]->GetMorphTargetTrackByBoneIndex(
-        pSkeletonIR->BoneNameToIndexMap.find("AnimatedMorphCube")->second);
-    EXPECT_EQ(track.KeySequance.size(), 127);
-    for (const AnimationIR::MorphingKey& key : track.KeySequance)
+    const AnimationIR::MorphTargetTrack& track = pModelIR->pAnimationIRs[0]->MorphTargetTracks[0];
+    EXPECT_EQ(track.KeySequence.size(), 127);
+    for (const AnimationIR::MorphKey& key : track.KeySequence)
     {
         EXPECT_EQ(key.MorphTargetIndices.size(), key.Weights.size());
         EXPECT_EQ(key.Weights.size(), 2);

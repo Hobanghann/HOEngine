@@ -62,6 +62,7 @@ static void topologicalSortSceneRecursive(aiNode& root, std::deque<aiNode*>* pOu
     const std::vector<std::unique_ptr<const MaterialIR>>& materialIRs);
 [[nodiscard]] static std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
                                                                        const std::string& nameStr,
+                                                                       const ModelParsingContext& parsingContext,
                                                                        const aiAnimation& assimpAnim,
                                                                        const SkeletonIR& skeletonIR);
 [[nodiscard]] static std::unique_ptr<SkinIR> parseSkin(const Path& path,
@@ -172,7 +173,7 @@ std::unique_ptr<const ModelIR> parseModelFile(const Path& path, const std::strin
             }
         }
         std::unique_ptr<const AnimationIR> pAnimIR =
-            parseAnimation(path, animNameStr, *pAssimpAnim, *(pModelIR->pSkeletonIR));
+            parseAnimation(path, animNameStr, *pParsingContext, *pAssimpAnim, *(pModelIR->pSkeletonIR));
         HO_ASSERT(pAnimIR, (std::string("Failed to parse animation of ") + fileNameStr).c_str());
         pModelIR->pAnimationIRs.emplace_back(std::move(pAnimIR));
     }
@@ -1200,6 +1201,7 @@ std::unique_ptr<const MeshIR> parseMesh(const Path& path,
 
 std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
                                                   const std::string& nameStr,
+                                                  const ModelParsingContext& parsingContext,
                                                   const aiAnimation& assimpAnim,
                                                   const SkeletonIR& skeletonIR)
 {
@@ -1225,10 +1227,13 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
 
         std::vector<AnimationIR::TranslationKey> translationKeys;
         translationKeys.reserve(pAssimpChannel->mNumPositionKeys);
-        AnimationIR::eInterpolationMode translationInterpMode = AnimationIR::eInterpolationMode::Step;
-        if (pAssimpChannel->mNumPositionKeys > 0)
+
+        for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumPositionKeys); ++ki)
         {
-            switch (pAssimpChannel->mPositionKeys[0].mInterpolation)
+            const aiVectorKey& key = pAssimpChannel->mPositionKeys[ki];
+
+            AnimationIR::eInterpolationMode translationInterpMode = AnimationIR::eInterpolationMode::Linear;
+            switch (key.mInterpolation)
             {
                 case aiAnimInterpolation_Step:
                     translationInterpMode = AnimationIR::eInterpolationMode::Step;
@@ -1246,12 +1251,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
                     HO_ASSERT(false, "Invalid Assimp interpolation enum.");
                     return nullptr;
             }
-        }
-        for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumPositionKeys); ++ki)
-        {
-            const aiVectorKey& key = pAssimpChannel->mPositionKeys[ki];
-            translationKeys.push_back(
-                {static_cast<float>(key.mTime) / ticksPerSecond, Vector3(key.mValue.x, key.mValue.y, key.mValue.z)});
+
+            translationKeys.push_back({static_cast<float>(key.mTime) / ticksPerSecond,
+                                       Vector3(key.mValue.x, key.mValue.y, key.mValue.z),
+                                       translationInterpMode});
         }
         std::sort(translationKeys.begin(),
                   translationKeys.end(),
@@ -1260,10 +1263,13 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
 
         std::vector<AnimationIR::RotationKey> rotationKeys;
         rotationKeys.reserve(pAssimpChannel->mNumRotationKeys);
-        AnimationIR::eInterpolationMode rotationInterpMode = AnimationIR::eInterpolationMode::Step;
-        if (pAssimpChannel->mNumRotationKeys > 0)
+
+        for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumRotationKeys); ++ki)
         {
-            switch (pAssimpChannel->mRotationKeys[0].mInterpolation)
+            const aiQuatKey& key = pAssimpChannel->mRotationKeys[ki];
+
+            AnimationIR::eInterpolationMode rotationInterpMode = AnimationIR::eInterpolationMode::Linear;
+            switch (key.mInterpolation)
             {
                 case aiAnimInterpolation_Step:
                     rotationInterpMode = AnimationIR::eInterpolationMode::Step;
@@ -1281,12 +1287,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
                     HO_ASSERT(false, "Invalid Assimp interpolation enum.");
                     return nullptr;
             }
-        }
-        for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumRotationKeys); ++ki)
-        {
-            const aiQuatKey& key = pAssimpChannel->mRotationKeys[ki];
+
             rotationKeys.push_back({static_cast<float>(key.mTime) / ticksPerSecond,
-                                    Quaternion(key.mValue.x, key.mValue.y, key.mValue.z, key.mValue.w)});
+                                    Quaternion(key.mValue.x, key.mValue.y, key.mValue.z, key.mValue.w),
+                                    rotationInterpMode});
         }
 
         std::sort(rotationKeys.begin(),
@@ -1295,10 +1299,13 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
 
         std::vector<AnimationIR::ScalingKey> scalingKeys;
         scalingKeys.reserve(pAssimpChannel->mNumScalingKeys);
-        AnimationIR::eInterpolationMode scalingInterpMode = AnimationIR::eInterpolationMode::Step;
-        if (pAssimpChannel->mNumScalingKeys > 0)
+
+        for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumScalingKeys); ++ki)
         {
-            switch (pAssimpChannel->mScalingKeys[0].mInterpolation)
+            const aiVectorKey& key = pAssimpChannel->mScalingKeys[ki];
+
+            AnimationIR::eInterpolationMode scalingInterpMode = AnimationIR::eInterpolationMode::Linear;
+            switch (key.mInterpolation)
             {
                 case aiAnimInterpolation_Step:
                     scalingInterpMode = AnimationIR::eInterpolationMode::Step;
@@ -1316,12 +1323,10 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
                     HO_ASSERT(false, "Invalid Assimp interpolation enum.");
                     return nullptr;
             }
-        }
-        for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumScalingKeys); ++ki)
-        {
-            const aiVectorKey& key = pAssimpChannel->mScalingKeys[ki];
-            scalingKeys.push_back(
-                {static_cast<float>(key.mTime) / ticksPerSecond, Vector3(key.mValue.x, key.mValue.y, key.mValue.z)});
+
+            scalingKeys.push_back({static_cast<float>(key.mTime) / ticksPerSecond,
+                                   Vector3(key.mValue.x, key.mValue.y, key.mValue.z),
+                                   scalingInterpMode});
         }
 
         std::sort(scalingKeys.begin(),
@@ -1369,11 +1374,8 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
 
         skeletalTracks.emplace_back(boneIndex,
                                     std::move(translationKeys),
-                                    translationInterpMode,
                                     std::move(rotationKeys),
-                                    rotationInterpMode,
                                     std::move(scalingKeys),
-                                    scalingInterpMode,
                                     preExtrapMode,
                                     postExtrapMode);
     }
@@ -1389,10 +1391,16 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
             continue;
         }
 
-        const std::string boneNameStr = pAssimpChannel->mName.C_Str();
-        const int32_t boneIndex = skeletonIR.BoneNameToIndexMap.at(boneNameStr);
+        std::vector<int32_t> subMeshIndices;
+        for (int32_t i = 0; i < static_cast<int32_t>(parsingContext.pAssimpScene->mNumMeshes); ++i)
+        {
+            if (parsingContext.pAssimpScene->mMeshes[i]->mName == pAssimpChannel->mName)
+            {
+                subMeshIndices.push_back(i);
+            }
+        }
 
-        std::vector<AnimationIR::MorphingKey> morphingKeys;
+        std::vector<AnimationIR::MorphKey> morphingKeys;
         morphingKeys.reserve(pAssimpChannel->mNumKeys);
         for (int32_t ki = 0; ki < static_cast<int32_t>(pAssimpChannel->mNumKeys); ++ki)
         {
@@ -1412,9 +1420,9 @@ std::unique_ptr<const AnimationIR> parseAnimation(const Path& path,
 
         std::sort(morphingKeys.begin(),
                   morphingKeys.end(),
-                  [](const AnimationIR::MorphingKey& a, const AnimationIR::MorphingKey& b) { return a.Time < b.Time; });
+                  [](const AnimationIR::MorphKey& a, const AnimationIR::MorphKey& b) { return a.Time < b.Time; });
 
-        morphTargetTracks.emplace_back(boneIndex, std::move(morphingKeys));
+        morphTargetTracks.emplace_back(std::move(subMeshIndices), std::move(morphingKeys));
     }
 
     return std::make_unique<AnimationIR>(path,

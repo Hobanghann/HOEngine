@@ -33,23 +33,23 @@ class IUIDrawable
     void drawMainWindowTitleBar(const TitleBarTheme& theme) const;
 
   private:
-    void drawIcon(void* iconNativeHandle, int32_t width, int32_t height) const;
-    void drawTitle(const std::string& titleStr, const Color128& textColor, float textSize) const;
-    void drawMinimizeButton(const Color128& iconColor,
-                            const Color128& hoveredColor,
-                            const Color128& activateColor,
-                            int32_t width,
-                            int32_t height) const;
-    void drawMaximizeButton(const Color128& iconColor,
-                            const Color128& hoveredColor,
-                            const Color128& activateColor,
-                            int32_t width,
-                            int32_t height) const;
-    void drawCloseButton(const Color128& iconColor,
-                         const Color128& hoveredColor,
-                         const Color128& activateColor,
-                         int32_t width,
-                         int32_t height) const;
+    void drawTitleBarIcon(void* iconNativeHandle, int32_t width, int32_t height) const;
+    void drawTitleBarTitle(const std::string& titleStr, const Color128& textColor, float textSize) const;
+    void drawTitleBarMinimizeButton(const Color128& iconColor,
+                                    const Color128& hoveredColor,
+                                    const Color128& activateColor,
+                                    int32_t width,
+                                    int32_t height) const;
+    void drawTitleBarMaximizeButton(const Color128& iconColor,
+                                    const Color128& hoveredColor,
+                                    const Color128& activateColor,
+                                    int32_t width,
+                                    int32_t height) const;
+    void drawTitleBarCloseButton(const Color128& iconColor,
+                                 const Color128& hoveredColor,
+                                 const Color128& activateColor,
+                                 int32_t width,
+                                 int32_t height) const;
 };
 
 } // namespace ho

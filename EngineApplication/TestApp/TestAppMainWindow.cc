@@ -19,36 +19,40 @@ void TestAppMainWindow::DrawUI()
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0.0f, 0.0f));
 
-    static const ImGuiWindowFlags sFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-                                           ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
-                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
+    static const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                          ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
+                                          ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-    if (ImGui::Begin("##MainWindow", nullptr, sFlags))
+    if (ImGui::Begin("##TestAppMainWindowID", nullptr, flags))
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
         const auto& titleBarTheme = UISystem::GetInstance().GetTitleBarTheme();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
         drawMainWindowTitleBar(titleBarTheme);
         ImGui::PopStyleVar();
 
-        const ImVec2 clientAreaSize = ImGui::GetContentRegionAvail();
+        ImVec2 clientAreaSize = ImGui::GetContentRegionAvail();
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
 
-        static const ImGuiWindowFlags sChildFlags =
+        static const ImGuiWindowFlags childFlags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
 
-        if (ImGui::BeginChild("##ClientArea", clientAreaSize, 0, sChildFlags))
+        if (ImGui::BeginChild("##ClientArea", clientAreaSize, 0, childFlags))
         {
+            // Draw docking space
+            ImGuiID dockspaceId = ImGui::GetID("TestAppWindowDockSpace");
+            ImVec2 remainingSpace = ImGui::GetContentRegionAvail();
+            ImGui::DockSpace(dockspaceId, remainingSpace, ImGuiDockNodeFlags_None);
         }
         ImGui::EndChild();
-        ImGui::PopStyleVar(3);
+
+        ImGui::PopStyleVar();
     }
     ImGui::End();
-    ImGui::PopStyleVar(3);
+
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace ho

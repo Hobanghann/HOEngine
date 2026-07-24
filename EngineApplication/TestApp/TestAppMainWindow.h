@@ -17,6 +17,5 @@ class TestAppMainWindow final : public IEngineWindow
     void DrawUI() override;
 
   private:
-    StringHandle mhMainFrameBufferName;
 };
 } // namespace ho

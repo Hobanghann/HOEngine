@@ -1,8 +1,11 @@
+#define LOG_ENABLED
 #include "Core/Log/Logger.h"
 
 #include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
+
+#include "Core/Log/LogSinkImgui.h"
 
 using namespace ho;
 
@@ -42,12 +45,12 @@ TEST_F(LoggerTest, Init_WithImguiSink_IsAvailableAndEmpty)
 
 TEST_F(LoggerTest, Macros_AllLogLevels_AreSuccessfullyCapturedBySink)
 {
-    HO_LOG_TRACE("Trace Message");
-    HO_LOG_DEBUG("Debug Message");
-    HO_LOG_INFO("Info Message");
-    HO_LOG_WARN("Warn Message");
-    HO_LOG_ERROR("Error Message");
-    HO_LOG_CRITICAL("Critical Message");
+    HO_LOG_TRACE(LogCategory_None, "Trace Message");
+    HO_LOG_DEBUG(LogCategory_None, "Debug Message");
+    HO_LOG_INFO(LogCategory_None, "Info Message");
+    HO_LOG_WARN(LogCategory_None, "Warn Message");
+    HO_LOG_ERROR(LogCategory_None, "Error Message");
+    HO_LOG_CRITICAL(LogCategory_None, "Critical Message");
 
     FlushAsyncLogs();
 
@@ -58,27 +61,27 @@ TEST_F(LoggerTest, Macros_AllLogLevels_AreSuccessfullyCapturedBySink)
     LogEntry entry;
 
     pSink->PopLog(&entry);
-    EXPECT_EQ(entry.Level, eLogLevel::Trace);
+    EXPECT_EQ(entry.Level, eLogLevel::LogLevel_Trace);
     EXPECT_TRUE(entry.Message.find("Trace Message") != std::string::npos);
 
     pSink->PopLog(&entry);
-    EXPECT_EQ(entry.Level, eLogLevel::Debug);
+    EXPECT_EQ(entry.Level, eLogLevel::LogLevel_Debug);
     EXPECT_TRUE(entry.Message.find("Debug Message") != std::string::npos);
 
     pSink->PopLog(&entry);
-    EXPECT_EQ(entry.Level, eLogLevel::Info);
+    EXPECT_EQ(entry.Level, eLogLevel::LogLevel_Info);
     EXPECT_TRUE(entry.Message.find("Info Message") != std::string::npos);
 
     pSink->PopLog(&entry);
-    EXPECT_EQ(entry.Level, eLogLevel::Warn);
+    EXPECT_EQ(entry.Level, eLogLevel::LogLevel_Warn);
     EXPECT_TRUE(entry.Message.find("Warn Message") != std::string::npos);
 
     pSink->PopLog(&entry);
-    EXPECT_EQ(entry.Level, eLogLevel::Error);
+    EXPECT_EQ(entry.Level, eLogLevel::LogLevel_Error);
     EXPECT_TRUE(entry.Message.find("Error Message") != std::string::npos);
 
     pSink->PopLog(&entry);
-    EXPECT_EQ(entry.Level, eLogLevel::Critical);
+    EXPECT_EQ(entry.Level, eLogLevel::LogLevel_Critical);
     EXPECT_TRUE(entry.Message.find("Critical Message") != std::string::npos);
 
     EXPECT_TRUE(pSink->IsEmpty());
@@ -88,7 +91,7 @@ TEST_F(LoggerTest, Macro_WithFormattingAndMetadata_CapturesCorrectContext)
 {
     int32_t theAnswer = 42;
     int32_t currentLine = __LINE__ + 1;
-    HO_LOG_INFO("The answer to life is %d", theAnswer);
+    HO_LOG_INFO(LogCategory_None, "The answer to life is %d", theAnswer);
 
     FlushAsyncLogs();
 
@@ -99,13 +102,13 @@ TEST_F(LoggerTest, Macro_WithFormattingAndMetadata_CapturesCorrectContext)
     EXPECT_TRUE(entry.Message.find("The answer to life is 42") != std::string::npos);
 
     std::string expectedFileInfo = "LoggerTest.cc:" + std::to_string(currentLine);
-    EXPECT_TRUE(entry.Message.find(expectedFileInfo) != std::string::npos) << entry.Message;
+    EXPECT_TRUE(std::string(entry.SourceLocation).find(expectedFileInfo) != std::string::npos) << entry.Message;
 }
 
 TEST_F(LoggerTest, TraceScope_BasicFlow_CapturesExecutionTime)
 {
     {
-        HO_LOG_TRACE_SCOPE("PhysicsUpdate");
+        HO_LOG_TRACE_SCOPE(LogCategory_None, "PhysicsUpdate");
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -122,5 +125,5 @@ TEST_F(LoggerTest, TraceScope_BasicFlow_CapturesExecutionTime)
     EXPECT_TRUE(entry2.Message.find("[END] PhysicsUpdate") != std::string::npos);
 
     EXPECT_TRUE(entry2.Message.find("Took") != std::string::npos);
-    EXPECT_TRUE(entry2.Message.find("ms)") != std::string::npos);
+    EXPECT_TRUE(entry2.Message.find("sec)") != std::string::npos);
 }

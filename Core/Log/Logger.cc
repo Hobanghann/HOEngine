@@ -5,6 +5,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include "Core/Log/LogSinkImgui.h"
+
 namespace ho
 {
 static std::shared_ptr<spdlog::logger> gLogger;
@@ -16,11 +18,10 @@ void Logger::Init()
 
     gSink_imgui = std::make_shared<LogSinkImgui>();
 
-    gLogger = std::make_shared<spdlog::async_logger>("HOEngine", gSink_imgui, spdlog::thread_pool());
+    gLogger = std::make_shared<spdlog::async_logger>("HOEngineLogger", gSink_imgui, spdlog::thread_pool());
 
     gLogger->set_level(spdlog::level::trace);
     spdlog::register_logger(gLogger);
-    gLogger->set_pattern("[%T] [%^%l%$] %v");
 }
 
 void Logger::Shutdown()
@@ -35,7 +36,7 @@ void Logger::Shutdown()
     gLogger.reset();
 }
 
-void Logger::Log(eLogLevel level, const char* file, int32_t line, const char* fmt, ...)
+void Logger::Log(eLogLevel level, eLogCategory category, const char* file, int32_t line, const char* fmt, ...)
 {
     if (!gLogger)
     {
@@ -47,30 +48,35 @@ void Logger::Log(eLogLevel level, const char* file, int32_t line, const char* fm
     vsnprintf(msgBuf, sizeof(msgBuf), fmt, args);
     va_end(args);
 
-    char finalMsgBuf[1152];
-    snprintf(finalMsgBuf, sizeof(finalMsgBuf), "[%s:%d] %s", file, line, msgBuf);
+    spdlog::source_loc loc{file, line, nullptr};
 
+    spdlog::level::level_enum spdLevel = spdlog::level::off;
     switch (level)
     {
-        case eLogLevel::Trace:
-            gLogger->trace(finalMsgBuf);
+        case eLogLevel::LogLevel_Trace:
+            spdLevel = spdlog::level::trace;
             break;
-        case eLogLevel::Debug:
-            gLogger->debug(finalMsgBuf);
+        case eLogLevel::LogLevel_Debug:
+            spdLevel = spdlog::level::debug;
             break;
-        case eLogLevel::Info:
-            gLogger->info(finalMsgBuf);
+        case eLogLevel::LogLevel_Info:
+            spdLevel = spdlog::level::info;
             break;
-        case eLogLevel::Warn:
-            gLogger->warn(finalMsgBuf);
+        case eLogLevel::LogLevel_Warn:
+            spdLevel = spdlog::level::warn;
             break;
-        case eLogLevel::Error:
-            gLogger->error(finalMsgBuf);
+        case eLogLevel::LogLevel_Error:
+            spdLevel = spdlog::level::err;
             break;
-        case eLogLevel::Critical:
-            gLogger->critical(finalMsgBuf);
+        case eLogLevel::LogLevel_Critical:
+            spdLevel = spdlog::level::critical;
             break;
     }
+
+    char categoryMsgBuf[1200];
+    snprintf(categoryMsgBuf, sizeof(categoryMsgBuf), "%d %s", category, msgBuf);
+
+    gLogger->log(loc, spdLevel, categoryMsgBuf);
 }
 
 LogSinkImgui* Logger::GetImGuiSink()
@@ -78,19 +84,26 @@ LogSinkImgui* Logger::GetImGuiSink()
     return gSink_imgui.get();
 }
 
-Logger::TraceScope::TraceScope(const std::string& scopeNameStr, const char* file, int32_t line)
-  : NameStr(scopeNameStr)
-  , File(file)
+Logger::TraceScope::TraceScope(eLogCategory category, const char* file, int32_t line, const std::string& scopeNameStr)
+  : Category(category)
   , Line(line)
+  , File(file)
+  , NameStr(scopeNameStr)
   , StartTime(std::chrono::steady_clock::now())
 {
-    Logger::Log(eLogLevel::Trace, file, line, "[START] %s", NameStr.c_str());
+    Logger::Log(eLogLevel::LogLevel_Trace, category, file, line, "[START] %s", NameStr.c_str());
 }
 
 Logger::TraceScope::~TraceScope()
 {
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - StartTime).count();
-    Logger::Log(eLogLevel::Trace, File, Line, "[END] %s (Took %lld ms)", NameStr.c_str(), duration);
+    Logger::Log(eLogLevel::LogLevel_Trace,
+                Category,
+                File,
+                Line,
+                "[END] %s (Took %f sec)",
+                NameStr.c_str(),
+                static_cast<double>(duration) / 1000.0);
 }
 } // namespace ho

@@ -13,6 +13,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ################################################################################
 set(ASSIMP_NAME assimp)
 set(IMAGE_LOADER_NAME stb)
+set(IMAGE_RESIZER_NAME stb_image_resize)
 set(INI_PARSER_NAME inicpp)
 set(GLAD_NAME glad)
 set(IMGUI_NAME imgui)
@@ -54,6 +55,15 @@ FetchContent_Declare(
     ${IMAGE_LOADER_NAME}
     GIT_REPOSITORY https://github.com/nothings/stb.git
     GIT_TAG master
+    GIT_SHALLOW ON
+    EXCLUDE_FROM_ALL
+    )
+
+# stb_image_resize
+FetchContent_Declare(
+    ${IMAGE_RESIZER_NAME}
+    GIT_REPOSITORY https://github.com/nothings/stb_image_resize
+    GIT_TAG main
     GIT_SHALLOW ON
     EXCLUDE_FROM_ALL
     )
@@ -132,6 +142,10 @@ message (STATUS "[Download] Downloading " ${ASSIMP_NAME} " finished.")
 message (STATUS "[Download] Start to Download " ${IMAGE_LOADER_NAME} "...")
 FetchContent_MakeAvailable(${IMAGE_LOADER_NAME})
 message (STATUS "[Download] Downloading " ${IMAGE_LOADER_NAME} " finished.")
+
+message (STATUS "[Download] Start to Download " ${IMAGE_RESIZER_NAME} "...")
+FetchContent_MakeAvailable(${IMAGE_RESIZER_NAME})
+message (STATUS "[Download] Downloading " ${IMAGE_RESIZER_NAME} " finished.")
 
 message (STATUS "[Download] Start to Download " ${INI_PARSER_NAME} "...")
 FetchContent_MakeAvailable(${INI_PARSER_NAME})
@@ -277,6 +291,22 @@ set_target_properties(
     SYSTEM TRUE
     )
 
+# stb
+add_library(
+    ${IMAGE_RESIZER_NAME}
+    INTERFACE
+    )
+target_include_directories(
+    ${IMAGE_RESIZER_NAME}
+    INTERFACE
+    ${${IMAGE_RESIZER_NAME}_SOURCE_DIR}
+    )
+set_target_properties(
+    ${IMAGE_RESIZER_NAME} PROPERTIES
+    FOLDER "ThirdParty/${BASE_THIRD_PARTY_NAME}/${IMAGE_RESIZER_NAME}"
+    SYSTEM TRUE
+    )
+
 # ini parser
 set_target_properties(
     ${INI_PARSER_NAME} PROPERTIES
@@ -300,8 +330,8 @@ endif()
 file(GLOB IMGUI_CORE_SOURCES "${${IMGUI_NAME}_SOURCE_DIR}/*.cpp")
 file(GLOB IMGUI_CORE_HEADERS "${${IMGUI_NAME}_SOURCE_DIR}/*.h")
 
-file(GLOB IMGUI_BACKEND_SOURCES "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp" "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_win32.cpp")
-file(GLOB IMGUI_BACKEND_HEADERS "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_opengl3.h" "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_win32.h")
+file(GLOB IMGUI_BACKEND_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${IMGUI_NAME}/backends/imgui_impl_opengl3.cpp" "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_win32.cpp")
+file(GLOB IMGUI_BACKEND_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${IMGUI_NAME}/backends/imgui_impl_opengl3.h" "${${IMGUI_NAME}_SOURCE_DIR}/backends/imgui_impl_win32.h")
 
 source_group(
     "core"
@@ -468,6 +498,7 @@ target_link_libraries(
     ${BASE_THIRD_PARTY_IMPLEMENTATION_NAME}
     PRIVATE
     ${IMAGE_LOADER_NAME}
+    ${IMAGE_RESIZER_NAME}
     )
 
 set_target_properties(
@@ -507,6 +538,7 @@ target_link_libraries(
     INTERFACE
     ${ASSIMP_NAME}
     ${IMAGE_LOADER_NAME}
+    ${IMAGE_RESIZER_NAME}
     ${INI_PARSER_NAME}
     ${GLAD_NAME}
     ${IMGUI_NAME}

@@ -1,8 +1,9 @@
 #include "Sphere.h"
 
+#include "AABB.h"
+
 namespace ho
 {
-
 Sphere Sphere::FromPositionsCentroid(const Vector3* pPositions, int32_t count)
 {
     HO_ASSERT(pPositions, "pPositions is null.");
@@ -35,30 +36,6 @@ Sphere Sphere::FromPositionsCentroid(const Vector3* pPositions, int32_t count)
     return Sphere(center, radius);
 }
 
-// @brief Constructs a bounding sphere for the mesh using Ritter's Algorithm.
-//
-// This method provides a fast, linear-time (O(N)) approximation of the
-// minimum bounding sphere. While not perfectly optimal, it produces a
-// sphere that is generally much tighter than one based on the simple
-// average of vertex positions.
-//
-// The algorithm proceeds in two main steps:
-//
-// 1.  Find Initial Sphere:
-// - An initial guess is made by finding the two most distant points in the
-// vertex set to form the sphere's initial diameter.
-// - (Optimization: To avoid an O(N^2) search, we find the min/max points
-// along each axis (X, Y, Z) and use the most distant pair among them).
-//
-// 2.  Expand the Sphere:
-// - The algorithm iterates through all vertices one more time.
-// - If a vertex is found outside the current sphere, the sphere is expanded
-// just enough to include both the old sphere and this new point. The new
-// sphere will pass through the new point and the point on the old
-// sphere's surface farthest from the new point.
-//
-// This process is repeated until all vertices are contained within the sphere.
-
 Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
 {
     HO_ASSERT(pPositions, "pPositions is null.");
@@ -68,103 +45,50 @@ Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
         return Sphere(pPositions[0], 0.0f);
     }
 
-    // Seed the initial sphere using the most separated pair among axis extremes
-    int32_t xMinIdx = 0;
-    int32_t xMaxIdx = 0;
-    int32_t yMinIdx = 0;
-    int32_t yMaxIdx = 0;
-    int32_t zMinIdx = 0;
-    int32_t zMaxIdx = 0;
-
-    float xMin = math::FLOAT_MAX;
-    float yMin = math::FLOAT_MAX;
-    float zMin = math::FLOAT_MAX;
-    float xMax = -math::FLOAT_MAX;
-    float yMax = -math::FLOAT_MAX;
-    float zMax = -math::FLOAT_MAX;
+    // Set initial sphere
+    Vector3 basePos = pPositions[0];
+    Vector3 p1;
+    float maxSqrdDist = -math::FLOAT_MAX;
 
     for (int32_t i = 0; i < count; ++i)
     {
-        const Vector3& pos = pPositions[i];
-        if (pos.X < xMin)
+        float sqrdDist = math::SqrdDistance(basePos, pPositions[i]);
+        if (sqrdDist > maxSqrdDist)
         {
-            xMin = pos.X;
-            xMinIdx = i;
-        }
-        if (pos.X > xMax)
-        {
-            xMax = pos.X;
-            xMaxIdx = i;
-        }
-        if (pos.Y < yMin)
-        {
-            yMin = pos.Y;
-            yMinIdx = i;
-        }
-        if (pos.Y > yMax)
-        {
-            yMax = pos.Y;
-            yMaxIdx = i;
-        }
-        if (pos.Z < zMin)
-        {
-            zMin = pos.Z;
-            zMinIdx = i;
-        }
-        if (pos.Z > zMax)
-        {
-            zMax = pos.Z;
-            zMaxIdx = i;
+            maxSqrdDist = sqrdDist;
+            p1 = pPositions[i];
         }
     }
 
-    const Vector3& xMinVec = pPositions[xMinIdx];
-    const Vector3& xMaxVec = pPositions[xMaxIdx];
-    const Vector3& yMinVec = pPositions[yMinIdx];
-    const Vector3& yMaxVec = pPositions[yMaxIdx];
-    const Vector3& zMinVec = pPositions[zMinIdx];
-    const Vector3& zMaxVec = pPositions[zMaxIdx];
+    basePos = p1;
+    Vector3 p2;
+    maxSqrdDist = -math::FLOAT_MAX;
 
-    const float xSqrdDist = math::SqrdDistance(xMinVec, xMaxVec);
-    const float ySqrdDist = math::SqrdDistance(yMinVec, yMaxVec);
-    const float zSqrdDist = math::SqrdDistance(zMinVec, zMaxVec);
-
-    Vector3 a;
-    Vector3 b;
-    if (xSqrdDist > ySqrdDist && xSqrdDist > zSqrdDist)
+    for (int32_t i = 0; i < count; ++i)
     {
-        a = xMinVec;
-        b = xMaxVec;
-    }
-    else if (ySqrdDist > zSqrdDist)
-    {
-        a = yMinVec;
-        b = yMaxVec;
-    }
-    else
-    {
-        a = zMinVec;
-        b = zMaxVec;
+        float sqrdDist = math::SqrdDistance(basePos, pPositions[i]);
+        if (sqrdDist > maxSqrdDist)
+        {
+            maxSqrdDist = sqrdDist;
+            p2 = pPositions[i];
+        }
     }
 
-    // Initial sphere: diameter AB
-    Vector3 center = (a + b) * 0.5f;
-    float radius = math::Sqrt(math::SqrdDistance(a, b)) * 0.5f;
+    Vector3 center = (p1 + p2) * 0.5f;
+    float radius = (p1 - center).Magnitude();
 
-    // Ritter expansion: adjust only when a point lies outside the current sphere
+    // Expand sphere
     for (int32_t i = 0; i < count; i++)
     {
         const Vector3& pos = pPositions[i];
         const float sqrdDist = math::SqrdDistance(pos, center);
 
-        // If the point is outside the sphere (with a small tolerance)
-        if (sqrdDist > radius * radius * (1.0f + math::EPSILON_CMP2))
+        if (sqrdDist > radius * radius)
         {
             const float dist = math::Sqrt(sqrdDist);
             if (dist > 0.0f)
             {
                 const float newRadius = (radius + dist) * 0.5f;
-                // Move center toward pos by (newf - radius) along the direction to pos
                 const Vector3 dir = (pos - center) / dist;
                 center += dir * (newRadius - radius);
                 radius = newRadius;
@@ -173,6 +97,75 @@ Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
     }
 
     return Sphere(center, radius);
+}
+
+math::eSide Sphere::GetSide(const Sphere& sphere) const
+{
+    float dx = sphere.Center.Data[0] - Center.Data[0];
+    float dy = sphere.Center.Data[1] - Center.Data[1];
+    float dz = sphere.Center.Data[2] - Center.Data[2];
+    float sqDist = dx * dx + dy * dy + dz * dz;
+
+    float sumRadius = Radius + sphere.Radius;
+    if (sqDist > sumRadius * sumRadius)
+    {
+        return math::eSide::Outside;
+    }
+
+    if (Radius >= sphere.Radius)
+    {
+        float subRadius = Radius - sphere.Radius;
+        if (sqDist <= subRadius * subRadius)
+        {
+            return math::eSide::Inside;
+        }
+    }
+
+    return math::eSide::Intersect;
+}
+
+math::eSide Sphere::GetSide(const AABB& aabb) const
+{
+    float sqDistClosest = 0.0f;
+    float sqDistFarthest = 0.0f;
+
+    for (int32_t i = 0; i < 3; ++i)
+    {
+        float center = Center.Data[i];
+        float minEdge = aabb.MinEdges.Data[i];
+        float maxEdge = aabb.MaxEdges.Data[i];
+
+        if (center < minEdge)
+        {
+            float diff = minEdge - center;
+            sqDistClosest += diff * diff;
+        }
+        else if (center > maxEdge)
+        {
+            float diff = center - maxEdge;
+            sqDistClosest += diff * diff;
+        }
+
+        float dMin = (center > minEdge) ? (center - minEdge) : (minEdge - center);
+        float dMax = (center > maxEdge) ? (center - maxEdge) : (maxEdge - center);
+        float maxDiff = (dMin > dMax) ? dMin : dMax;
+
+        sqDistFarthest += maxDiff * maxDiff;
+    }
+
+    float sqRadius = Radius * Radius;
+
+    if (sqDistClosest > sqRadius)
+    {
+        return math::eSide::Outside;
+    }
+
+    if (sqDistFarthest <= sqRadius)
+    {
+        return math::eSide::Inside;
+    }
+
+    return math::eSide::Intersect;
 }
 
 Sphere Sphere::Merge(const Sphere& lhs, const Sphere& rhs)

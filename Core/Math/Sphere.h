@@ -7,6 +7,8 @@
 
 namespace ho
 {
+struct AABB;
+
 struct Sphere final
 {
     [[nodiscard]] static Sphere FromPositionsCentroid(const Vector3* pPositions, int32_t count);
@@ -25,6 +27,9 @@ struct Sphere final
 
     [[nodiscard]] constexpr bool IsEqualApprox(const Sphere& rhs) const;
     [[nodiscard]] constexpr bool IsNotEqualApprox(const Sphere& rhs) const;
+
+    [[nodiscard]] math::eSide GetSide(const Sphere& sphere) const;
+    [[nodiscard]] math::eSide GetSide(const AABB& aabb) const;
 
     [[nodiscard]] std::string ToString() const;
 

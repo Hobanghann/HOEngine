@@ -65,6 +65,11 @@ class IPlatformApplication
 
     virtual void* GetNativeHandle() const = 0;
 
+    IPlatformWindow* GetMainWindow()
+    {
+        return spMainWindow.get();
+    }
+
     const IPlatformWindow* GetMainWindow() const
     {
         return spMainWindow.get();

@@ -258,9 +258,9 @@ void Matrix2x2::Orthonormalize()
     Vector2 x = GetCol0();
     Vector2 y = GetCol1();
 
-    x.Normalize();
-    y -= x * (x.Dot(y));
     y.Normalize();
+    x -= y * (y.Dot(x));
+    x.Normalize();
 
     SetCol0(x);
     SetCol1(y);

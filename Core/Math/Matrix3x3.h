@@ -398,11 +398,11 @@ void Matrix3x3::Orthonormalize()
     Vector3 y = GetCol1();
     Vector3 z = GetCol2();
 
-    x.Normalize();
-    y -= x * (x.Dot(y));
-    y.Normalize();
-    z -= (x * (x.Dot(z)) + y * (y.Dot(z)));
     z.Normalize();
+    x -= z * (z.Dot(x));
+    x.Normalize();
+    y -= (z * (z.Dot(y)) + x * (x.Dot(y)));
+    y.Normalize();
 
     SetCol0(x);
     SetCol1(y);

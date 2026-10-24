@@ -109,7 +109,7 @@ bool Win32ApplicationGL::Init(const std::string& iconPathStr)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport / Platform Windows
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport / Platform Windows
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -222,7 +222,7 @@ bool Win32ApplicationGL::CreateMainWindow(const std::string& mainWindowTitleStr,
 
     spMainWindow = std::make_unique<Win32WindowGL>(
         posX, posY, titleBarHeight, mainWindowClientWidth, mainWindowClientHeight, mhMainWnd, shGlContext);
-    spMainWindow->SetTitle(std::string().assign(mMainWndNameStr.begin(), mMainWndNameStr.end()));
+    spMainWindow->SetStaticTitle(std::string().assign(mMainWndNameStr.begin(), mMainWndNameStr.end()));
     spMainWindow->ActivateContext();
 
     // Setup Platform/Renderer backends
@@ -237,7 +237,7 @@ bool Win32ApplicationGL::CreateMainWindow(const std::string& mainWindowTitleStr,
         return false;
     }
 
-    ImGuiIO& io = ImGui::GetIO();
+    const ImGuiIO& io = ImGui::GetIO();
     // Win32+GL needs specific hooks for viewport, as there are specific things needed to tie Win32 and GL api.
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -370,7 +370,7 @@ void Win32ApplicationGL::Renderer_CreateWindow_Hook(ImGuiViewport* viewport)
 
     IPlatformWindow* pNewWindow = spSubWindows.back().get();
 
-    pNewWindow->SetTitle(viewport->GetDebugName());
+    pNewWindow->SetStaticTitle(viewport->GetDebugName());
 
     ::SendMessageW(static_cast<HWND>(viewport->PlatformHandle),
                    WM_SETICON,
@@ -408,30 +408,30 @@ typedef BOOL(WINAPI* PFN_AdjustWindowRectExForDpi)(LPRECT, DWORD, BOOL, DWORD, U
 
 struct ImGui_ImplWin32_Data
 {
-    HWND hWnd;
-    HWND MouseHwnd;
-    int MouseTrackedArea; // 0: not tracked, 1: client area, 2: non-client area
-    int MouseButtonsDown;
-    INT64 Time;
-    INT64 TicksPerSecond;
-    ImGuiMouseCursor LastMouseCursor;
-    UINT32 KeyboardCodePage;
-    bool WantUpdateMonitors;
-    bool IsPerMonitorDpiAwareV2;
-    PFN_AdjustWindowRectExForDpi AdjustWindowRectExForDpi;
+    HWND hWnd{};
+    HWND MouseHwnd{};
+    int MouseTrackedArea{}; // 0: not tracked, 1: client area, 2: non-client area
+    int MouseButtonsDown{};
+    INT64 Time{};
+    INT64 TicksPerSecond{};
+    ImGuiMouseCursor LastMouseCursor{};
+    UINT32 KeyboardCodePage{};
+    bool WantUpdateMonitors{};
+    bool IsPerMonitorDpiAwareV2{};
+    PFN_AdjustWindowRectExForDpi AdjustWindowRectExForDpi{};
 
 #ifndef IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
-    bool HasGamepad;
-    bool WantUpdateHasGamepad;
-    HMODULE XInputDLL;
-    PFN_XInputGetCapabilities XInputGetCapabilities;
-    PFN_XInputGetState XInputGetState;
-    DWORD XInputPacketNumber;
+    bool HasGamepad{};
+    bool WantUpdateHasGamepad{};
+    HMODULE XInputDLL{};
+    PFN_XInputGetCapabilities XInputGetCapabilities{};
+    PFN_XInputGetState XInputGetState{};
+    DWORD XInputPacketNumber{};
 #endif
 
     ImGui_ImplWin32_Data()
     {
-        memset((void*)this, 0, sizeof(*this));
+        memset(static_cast<void*>(this), 0, sizeof(*this));
     }
 };
 
@@ -458,7 +458,8 @@ struct ImGui_ImplWin32_ViewportData
 
 static ImGui_ImplWin32_Data* ImGui_ImplWin32_GetBackendData()
 {
-    return ImGui::GetCurrentContext() ? (ImGui_ImplWin32_Data*)ImGui::GetIO().BackendPlatformUserData : nullptr;
+    return ImGui::GetCurrentContext() ? static_cast<ImGui_ImplWin32_Data*>(ImGui::GetIO().BackendPlatformUserData)
+                                      : nullptr;
 }
 
 // ===================================================================================================================
@@ -468,7 +469,7 @@ static ImGui_ImplWin32_Data* ImGui_ImplWin32_GetBackendData()
 // submitted in the previous frame.
 void Win32ApplicationGL::Platform_DestroyWindow_Hook(ImGuiViewport* pViewport)
 {
-    ImGui_ImplWin32_Data* bd = ImGui_ImplWin32_GetBackendData();
+    const ImGui_ImplWin32_Data* bd = ImGui_ImplWin32_GetBackendData();
     if (ImGui_ImplWin32_ViewportData* vd = reinterpret_cast<ImGui_ImplWin32_ViewportData*>(pViewport->PlatformUserData))
     {
         if (::GetCapture() == vd->Hwnd)

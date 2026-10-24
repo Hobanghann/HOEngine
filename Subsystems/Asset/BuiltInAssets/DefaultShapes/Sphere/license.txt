@@ -1,0 +1,11 @@
+Model Information:
+* title:	Sphère
+* source:	https://sketchfab.com/3d-models/sphere-fc94161d249e4a89a383fff1676ee725
+* author:	fmercier (https://sketchfab.com/fmercier)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Sphère" (https://sketchfab.com/3d-models/sphere-fc94161d249e4a89a383fff1676ee725) by fmercier (https://sketchfab.com/fmercier) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

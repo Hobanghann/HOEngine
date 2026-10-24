@@ -1,0 +1,11 @@
+Model Information:
+* title:	Simple capsule basic
+* source:	https://sketchfab.com/3d-models/simple-capsule-basic-6a39abc3739c4daeadfe8a92550533c8
+* author:	Danilo Recevic (https://sketchfab.com/recevic)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Simple capsule basic" (https://sketchfab.com/3d-models/simple-capsule-basic-6a39abc3739c4daeadfe8a92550533c8) by Danilo Recevic (https://sketchfab.com/recevic) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

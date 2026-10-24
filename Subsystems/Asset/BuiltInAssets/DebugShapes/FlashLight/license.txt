@@ -1,0 +1,11 @@
+Model Information:
+* title:	Simple LowPoly Flashlight
+* source:	https://sketchfab.com/3d-models/simple-lowpoly-flashlight-ef137b1e3e9b43d2a6054c65e6d3f8e5
+* author:	hmtr2005 (https://sketchfab.com/hmtr2005)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Simple LowPoly Flashlight" (https://sketchfab.com/3d-models/simple-lowpoly-flashlight-ef137b1e3e9b43d2a6054c65e6d3f8e5) by hmtr2005 (https://sketchfab.com/hmtr2005) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

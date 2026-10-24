@@ -1,0 +1,11 @@
+Model Information:
+* title:	Cube
+* source:	https://sketchfab.com/3d-models/cube-18c2e3097fdf4a6f99df34319b48964a
+* author:	matejv (https://sketchfab.com/matejv)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Cube" (https://sketchfab.com/3d-models/cube-18c2e3097fdf4a6f99df34319b48964a) by matejv (https://sketchfab.com/matejv) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

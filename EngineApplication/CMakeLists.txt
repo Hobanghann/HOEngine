@@ -26,9 +26,10 @@ target_link_libraries(
     PRIVATE
     COMPILER_FLAGS
     PUBLIC
-    ${SUBSYSTEMS_NAME}
+    ${SCENE_NAME}
+    ${SCENE_DISPATCHER_NAME}
     )
-    
+
 target_include_directories(
     ${ENGINE_APPLICATION_NAME}
     PRIVATE

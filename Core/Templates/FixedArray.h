@@ -8,7 +8,7 @@
 namespace ho
 {
 template <typename T>
-class FixedArray
+class FixedArray final
 {
   public:
     FixedArray() = default;
@@ -70,13 +70,13 @@ class FixedArray
     T& operator[](int32_t index)
     {
         HO_ASSERT(index >= 0 && index < mSize, "Out of bound.");
-        return mpArray[index];
+        return mpArray[static_cast<size_t>(index)];
     }
 
     const T& operator[](int32_t index) const
     {
         HO_ASSERT(index >= 0 && index < mSize, "Out of bound.");
-        return mpArray[index];
+        return mpArray[static_cast<size_t>(index)];
     }
 
     T* Data()
@@ -118,7 +118,7 @@ class FixedArray
         return mSize;
     }
 
-    int64_t GetByteSize() const
+    int32_t GetByteSize() const
     {
         return sizeof(T) * mSize;
     }

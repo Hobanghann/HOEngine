@@ -19,7 +19,7 @@ namespace ho
 #if defined(THREAD_ENABLED)
 
 template <int32_t Tag>
-class BinaryRecursiveMutex
+class BinaryRecursiveMutex final
 {
     friend class ConditionVariable;
 
@@ -80,7 +80,7 @@ template <int32_t Tag>
 thread_local int32_t BinaryRecursiveMutex<Tag>::sTlsLockCount = 0;
 
 template <int32_t Tag>
-class MutexLock<BinaryRecursiveMutex<Tag>>
+class MutexLock<BinaryRecursiveMutex<Tag>> final
 {
     friend class ConditionVariable;
 
@@ -113,7 +113,7 @@ class MutexLock<BinaryRecursiveMutex<Tag>>
 #else
 
 template <int32_t Tag>
-class BinaryRecursiveMutex
+class BinaryRecursiveMutex final
 {
   public:
     FORCE_INLINE void Lock() const {}
@@ -127,7 +127,7 @@ class BinaryRecursiveMutex
 };
 
 template <int32_t Tag>
-class MutexLock<BinaryRecursiveMutex<Tag>>
+class MutexLock<BinaryRecursiveMutex<Tag>> final
 {
   public:
     explicit MutexLock(const BinaryRecursiveMutex<Tag>&) {}

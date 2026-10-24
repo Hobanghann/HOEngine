@@ -7,7 +7,7 @@
 namespace ho
 {
 template <typename T>
-class FixedQueue
+class FixedQueue final
 {
   public:
     FixedQueue() = default;

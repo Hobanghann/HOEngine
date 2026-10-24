@@ -6,7 +6,6 @@
 
 #include "Core/Math/Color128.h"
 #include "Core/Math/Color32.h"
-#include "Core/Templates/GlobalPoolIndex.h"
 #include "Path.h"
 
 namespace ho
@@ -114,6 +113,7 @@ class Image final
     [[nodiscard]] FORCE_INLINE static int32_t GetChannelBytes(eFormat format);
 
     [[nodiscard]] FORCE_INLINE bool IsLinear() const;
+    [[nodiscard]] FORCE_INLINE bool IsInteger() const;
 
   private:
     Path mPath;
@@ -311,6 +311,30 @@ FORCE_INLINE bool Image::IsLinear() const
         case eFormat::R8G8_SRGB:
         case eFormat::R8G8B8_SRGB:
         case eFormat::R8G8B8A8_SRGB:
+            return false;
+        default:
+            HO_ASSERT(false, "Unknown image format.");
+            return false;
+    }
+}
+
+FORCE_INLINE bool Image::IsInteger() const
+{
+    switch (mFormat)
+    {
+        case eFormat::R8_UNORM:
+        case eFormat::R8G8_UNORM:
+        case eFormat::R8G8B8_UNORM:
+        case eFormat::R8G8B8A8_UNORM:
+        case eFormat::R8_SRGB:
+        case eFormat::R8G8_SRGB:
+        case eFormat::R8G8B8_SRGB:
+        case eFormat::R8G8B8A8_SRGB:
+            return true;
+        case eFormat::R32_FLOAT:
+        case eFormat::R32G32_FLOAT:
+        case eFormat::R32G32B32_FLOAT:
+        case eFormat::R32G32B32A32_FLOAT:
             return false;
         default:
             HO_ASSERT(false, "Unknown image format.");

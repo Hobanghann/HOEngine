@@ -12,17 +12,18 @@ namespace ho
 {
 
 template <typename T>
-class UniqueObjectPool
+class UniqueTypedObjectPool final
 {
   public:
-    UniqueObjectPool(int32_t size = 1024)
+    UniqueTypedObjectPool(int32_t size = 1024)
       : mObjectCount(0)
     {
         mPool.emplace_back(std::nullopt);
+        mGen.emplace_back(0);
         mFreeIndices.reserve(size / 2);
     }
 
-    [[nodiscard]] uint32_t Add(const T& v)
+    [[nodiscard]] uint64_t Add(const T& v)
     {
         for (uint32_t i = 0; i < static_cast<uint32_t>(mPool.size()); ++i)
         {
@@ -33,27 +34,32 @@ class UniqueObjectPool
 
             if (mPool[i].value() == v)
             {
-                return i;
+                return (static_cast<uint64_t>(mGen[i]) << 32) | i;
             }
         }
 
+        uint32_t gen = 0;
         uint32_t index = 0;
+
         if (!mFreeIndices.empty())
         {
             index = mFreeIndices.back();
             mFreeIndices.pop_back();
+            gen = mGen[index];
             mPool[index].emplace(v);
         }
         else
         {
             index = static_cast<uint32_t>(mPool.size());
+            gen = 0;
+            mGen.push_back(0);
             mPool.emplace_back(v);
         }
         ++mObjectCount;
-        return index;
+        return (static_cast<uint64_t>(gen) << 32) | index;
     }
 
-    [[nodiscard]] uint32_t Add(T&& v)
+    [[nodiscard]] uint64_t Add(T&& v)
     {
         for (uint32_t i = 0; i < static_cast<uint32_t>(mPool.size()); ++i)
         {
@@ -64,40 +70,49 @@ class UniqueObjectPool
 
             if (mPool[i].value() == v)
             {
-                return i;
+                return (static_cast<uint64_t>(mGen[i]) << 32) | i;
             }
         }
 
+        uint32_t gen = 0;
         uint32_t index = 0;
 
         if (!mFreeIndices.empty())
         {
             index = mFreeIndices.back();
             mFreeIndices.pop_back();
-            mPool[index].emplace(std::forward<T>(v));
+            gen = mGen[index];
+            mPool[index].emplace(std::move(v));
         }
         else
         {
             index = static_cast<uint32_t>(mPool.size());
-            mPool.emplace_back(std::forward<T>(v));
+            gen = 0;
+            mGen.push_back(0);
+            mPool.emplace_back(std::move(v));
         }
         ++mObjectCount;
-        return index;
+        return (static_cast<uint64_t>(gen) << 32) | index;
     }
 
     template <typename... Args>
-    [[nodiscard]] uint32_t Emplace(Args&&... args)
+    [[nodiscard]] uint64_t Emplace(Args&&... args)
     {
+        uint32_t gen = 0;
         uint32_t index = 0;
+
         if (!mFreeIndices.empty())
         {
             index = mFreeIndices.back();
             mFreeIndices.pop_back();
+            gen = mGen[index];
             mPool[index].emplace(std::forward<Args>(args)...);
         }
         else
         {
             index = static_cast<uint32_t>(mPool.size());
+            gen = 0;
+            mGen.push_back(0);
             mPool.emplace_back(std::in_place, std::forward<Args>(args)...);
         }
 
@@ -112,22 +127,27 @@ class UniqueObjectPool
             {
                 mPool[index].reset();
                 mFreeIndices.push_back(index);
-                return i;
+                return (static_cast<uint64_t>(mGen[i]) << 32) | i;
             }
         }
         ++mObjectCount;
-        return index;
+        return (static_cast<uint64_t>(gen) << 32) | index;
     }
 
-    bool Remove(uint32_t poolIndex)
+    bool Remove(uint64_t id)
     {
-        if (poolIndex >= mPool.size() || !mPool[poolIndex].has_value())
+        uint32_t gen = static_cast<uint32_t>(id >> 32);
+        uint32_t index = static_cast<uint32_t>(id);
+
+        if (index >= mPool.size() || !mPool[index].has_value() || mGen[index] != gen)
         {
             return false;
         }
 
-        mPool[poolIndex].reset();
-        mFreeIndices.push_back(poolIndex);
+        mPool[index].reset();
+        ++mGen[index];
+
+        mFreeIndices.push_back(index);
         --mObjectCount;
         return true;
     }
@@ -143,36 +163,43 @@ class UniqueObjectPool
 
             if (mPool[i].value() == v)
             {
-                mPool[i].reset();
-                mFreeIndices.push_back(i);
-                --mObjectCount;
-                return true;
+                uint64_t id = (static_cast<uint64_t>(mGen[i]) << 32) | i;
+                return Remove(id);
             }
         }
         return false;
     }
 
-    [[nodiscard]] T* Get(uint32_t poolIndex)
+    [[nodiscard]] T* Get(uint64_t id)
     {
-        if (poolIndex >= mPool.size() || !mPool[poolIndex].has_value())
+        uint32_t gen = static_cast<uint32_t>(id >> 32);
+        uint32_t index = static_cast<uint32_t>(id);
+
+        if (index >= mPool.size() || !mPool[index].has_value() || mGen[index] != gen)
         {
             return nullptr;
         }
-        return &(mPool[poolIndex].value());
+        return &(mPool[index].value());
     }
 
-    [[nodiscard]] const T* Get(uint32_t poolIndex) const
+    [[nodiscard]] const T* Get(uint64_t id) const
     {
-        if (poolIndex >= mPool.size() || !mPool[poolIndex].has_value())
+        uint32_t gen = static_cast<uint32_t>(id >> 32);
+        uint32_t index = static_cast<uint32_t>(id);
+
+        if (index >= mPool.size() || !mPool[index].has_value() || mGen[index] != gen)
         {
             return nullptr;
         }
-        return &(mPool[poolIndex].value());
+        return &(mPool[index].value());
     }
 
-    [[nodiscard]] bool Has(uint32_t poolIndex) const
+    [[nodiscard]] bool Has(uint64_t id) const
     {
-        return (poolIndex < mPool.size() && mPool[poolIndex].has_value());
+        uint32_t gen = static_cast<uint32_t>(id >> 32);
+        uint32_t index = static_cast<uint32_t>(id);
+
+        return (index < mPool.size() && mPool[index].has_value() && mGen[index] == gen);
     }
 
     [[nodiscard]] bool Has(const T& v) const
@@ -192,7 +219,7 @@ class UniqueObjectPool
         return false;
     }
 
-    [[nodiscard]] uint32_t FindIndex(const T& v) const
+    [[nodiscard]] uint64_t FindID(const T& v) const
     {
         for (uint32_t i = 0; i < static_cast<uint32_t>(mPool.size()); ++i)
         {
@@ -203,7 +230,7 @@ class UniqueObjectPool
 
             if (mPool[i].value() == v)
             {
-                return i;
+                return (static_cast<uint64_t>(mGen[i]) << 32) | i;
             }
         }
         return 0;
@@ -213,6 +240,7 @@ class UniqueObjectPool
     {
         mObjectCount = 0;
         mPool.resize(1);
+        mGen.resize(1);
         mPool[0].reset();
         mFreeIndices.clear();
     }
@@ -225,6 +253,11 @@ class UniqueObjectPool
     int32_t GetFullSize() const
     {
         return static_cast<int32_t>(mPool.size());
+    }
+
+    bool IsEmpty() const
+    {
+        return mObjectCount == 0;
     }
 
     const std::deque<std::optional<T>>& GetRawPool() const
@@ -240,6 +273,7 @@ class UniqueObjectPool
   private:
     int32_t mObjectCount;
     std::deque<std::optional<T>> mPool;
+    std::deque<uint32_t> mGen;
     std::vector<uint32_t> mFreeIndices;
 };
 } // namespace ho

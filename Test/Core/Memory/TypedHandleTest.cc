@@ -1,11 +1,12 @@
-#include "Core/Templates/LocalPoolIndex.h"
+#include "Core/Memory/TypedHandle.h"
 
 #include <gtest/gtest.h>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
-#include "Core/Templates/ObjectPool.h"
-#include "Core/Templates/UniqueObjectPool.h"
+#include "Core/Memory/TypedObjectPool.h"
+#include "Core/Memory/UniqueTypedObjectPool.h"
 
 using namespace ho;
 
@@ -44,23 +45,22 @@ struct TestValue
     }
 };
 
-using ObjPool = ObjectPool<TestValue>;
-using UniquePool = UniqueObjectPool<TestValue>;
+using ObjPool = TypedObjectPool<TestValue>;
+using UniquePool = UniqueTypedObjectPool<TestValue>;
 
-using Index = LocalPoolIndex<TestValue, ObjectPool>;
-using UniqueIndex = LocalPoolIndex<TestValue, UniqueObjectPool>;
+using Index = TypedHandle<TestValue, TypedObjectPool>;
+using UniqueIndex = TypedHandle<TestValue, UniqueTypedObjectPool>;
 
-TEST(LocalPoolIndexTest, Constructor_Default_InitialIndexIsNull)
+TEST(TypedHandleTest, Constructor_Default_InitialIndexIsNull)
 {
     Index nullIdx;
 
     EXPECT_TRUE(nullIdx.IsNULL());
     EXPECT_FALSE(nullIdx.IsValid());
-    EXPECT_EQ(nullIdx.GetIndex(), 0);
     EXPECT_EQ(nullIdx, Index::sNULL);
 }
 
-TEST(LocalPoolIndexTest, Constructor_CopyInitialValue_AddValueInPool)
+TEST(TypedHandleTest, Constructor_CopyInitialValue_AddValueInPool)
 {
     ObjPool pool;
     UniquePool uniquePool;
@@ -109,7 +109,7 @@ TEST(LocalPoolIndexTest, Constructor_CopyInitialValue_AddValueInPool)
     EXPECT_EQ(uniqueIdx2.Get()->bMoved, false);
 }
 
-TEST(LocalPoolIndexTest, Constructor_MoveInitialValue_AddValueInPool)
+TEST(TypedHandleTest, Constructor_MoveInitialValue_AddValueInPool)
 {
     ObjPool pool;
     UniquePool uniquePool;
@@ -161,7 +161,7 @@ TEST(LocalPoolIndexTest, Constructor_MoveInitialValue_AddValueInPool)
     EXPECT_EQ(uniqueIdx2.Get()->bMoved, true);
 }
 
-TEST(LocalPoolIndexTest, Emplace_MultipleValues_AddValueInPool)
+TEST(TypedHandleTest, Emplace_MultipleValues_AddValueInPool)
 {
     ObjPool pool;
 
@@ -186,7 +186,7 @@ TEST(LocalPoolIndexTest, Emplace_MultipleValues_AddValueInPool)
     EXPECT_EQ(idx2.Get()->bMoved, false);
 }
 
-TEST(LocalPoolIndexTest, Release_ValidIndex_InvalidatesIndexAndRemovesFromPool)
+TEST(TypedHandleTest, Release_ValidIndex_InvalidatesIndexAndRemovesFromPool)
 {
     ObjPool pool;
     Index idx = Index::Emplace(&pool, 10, "first");
@@ -199,11 +199,34 @@ TEST(LocalPoolIndexTest, Release_ValidIndex_InvalidatesIndexAndRemovesFromPool)
     EXPECT_TRUE(bReleased);
     EXPECT_FALSE(idx.IsValid());
     EXPECT_TRUE(idx.IsNULL());
-    EXPECT_EQ(idx.GetIndex(), 0);
     EXPECT_EQ(pool.GetSize(), 0);
 }
 
-TEST(LocalPoolIndexTest, ComparisonOperators_BetweenIndices_ReflectsEquality)
+TEST(TypedHandleTest, GenerationSafety_ReusedSlot_OldHandleInvalidated)
+{
+    ObjPool pool;
+
+    Index idx1 = Index::Emplace(&pool, 10, "first");
+    Index idx1OldCopy = idx1;
+
+    EXPECT_TRUE(idx1.IsValid());
+    EXPECT_TRUE(idx1OldCopy.IsValid());
+
+    idx1.Release();
+
+    EXPECT_FALSE(idx1.IsValid());
+    EXPECT_FALSE(idx1OldCopy.IsValid());
+
+    Index idx3 = Index::Emplace(&pool, 30, "third");
+
+    EXPECT_TRUE(idx3.IsValid());
+    EXPECT_FALSE(idx1OldCopy.IsValid());
+    EXPECT_EQ(idx1OldCopy.Get(), nullptr);
+    EXPECT_NE(idx3.Get(), nullptr);
+    EXPECT_EQ(idx3.Get()->a, 30);
+}
+
+TEST(TypedHandleTest, ComparisonOperators_BetweenIndices_ReflectsEquality)
 {
     ObjPool pool;
     Index idx1 = Index::Emplace(&pool, 10, "first");
@@ -215,7 +238,7 @@ TEST(LocalPoolIndexTest, ComparisonOperators_BetweenIndices_ReflectsEquality)
     EXPECT_TRUE(idx1 != idx2);
 }
 
-TEST(LocalPoolIndexTest, Hash_AsKey_WorksWithStlMap)
+TEST(TypedHandleTest, Hash_AsKey_WorksWithStlMap)
 {
     ObjPool pool;
     Index idx1 = Index::Emplace(&pool, 10, "first");

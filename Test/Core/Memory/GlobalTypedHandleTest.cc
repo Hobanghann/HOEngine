@@ -1,11 +1,12 @@
-#include "Core/Templates/GlobalPoolIndex.h"
+#include "Core/Memory/GlobalTypedHandle.h"
 
 #include <gtest/gtest.h>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
-#include "Core/Templates/ObjectPool.h"
-#include "Core/Templates/UniqueObjectPool.h"
+#include "Core/Memory/TypedObjectPool.h"
+#include "Core/Memory/UniqueTypedObjectPool.h"
 
 using namespace ho;
 
@@ -44,20 +45,37 @@ struct TestValue
     }
 };
 
-using GlobalIndex = GlobalPoolIndex<TestValue, ObjectPool>;
-using GlobalUniqueIndex = GlobalPoolIndex<TestValue, UniqueObjectPool>;
-
-class GlobalPoolIndexTest : public ::testing::Test
+namespace std
 {
-  protected:
-    void SetUp() override
+template <>
+struct hash<TestValue>
+{
+    size_t operator()(const TestValue& k) const noexcept
     {
-        GlobalIndex::GetMutablePool().Clear();
-        GlobalUniqueIndex::GetMutablePool().Clear();
+        size_t h1 = std::hash<int32_t>{}(k.a);
+        size_t h2 = std::hash<std::string>{}(k.b);
+        return h1 ^ (h2 << 1);
     }
 };
+} // namespace std
 
-TEST_F(GlobalPoolIndexTest, Constructor_CopyInitialValue_AddValueInPool)
+using GlobalIndex = GlobalTypedHandle<TestValue, TypedObjectPool>;
+using GlobalUniqueIndex = GlobalTypedHandle<TestValue, UniqueTypedObjectPool>;
+
+class GlobalTypedHandleTest : public ::testing::Test
+{
+};
+
+TEST_F(GlobalTypedHandleTest, Constructor_Default_InitialIndexIsNull)
+{
+    GlobalIndex nullIdx;
+
+    EXPECT_TRUE(nullIdx.IsNULL());
+    EXPECT_FALSE(nullIdx.IsValid());
+    EXPECT_EQ(nullIdx, GlobalIndex::sNULL);
+}
+
+TEST_F(GlobalTypedHandleTest, Constructor_CopyInitialValue_AddValueInPool)
 {
     TestValue v1(10, "first");
     TestValue v2(20, "second");
@@ -101,9 +119,14 @@ TEST_F(GlobalPoolIndexTest, Constructor_CopyInitialValue_AddValueInPool)
     EXPECT_EQ(uniqueIdx2.Get()->b, "second");
     EXPECT_EQ(uniqueIdx2.Get()->bCopyed, true);
     EXPECT_EQ(uniqueIdx2.Get()->bMoved, false);
+
+    idx1.Release();
+    idx2.Release();
+    uniqueIdx1.Release();
+    uniqueIdx2.Release();
 }
 
-TEST_F(GlobalPoolIndexTest, Constructor_MoveInitialValue_AddValueInPool)
+TEST_F(GlobalTypedHandleTest, Constructor_MoveInitialValue_AddValueInPool)
 {
     TestValue v1(10, "first");
     TestValue v2(20, "second");
@@ -150,9 +173,14 @@ TEST_F(GlobalPoolIndexTest, Constructor_MoveInitialValue_AddValueInPool)
     EXPECT_EQ(uniqueIdx2.Get()->b, "second");
     EXPECT_EQ(uniqueIdx2.Get()->bCopyed, false);
     EXPECT_EQ(uniqueIdx2.Get()->bMoved, true);
+
+    idx1.Release();
+    idx2.Release();
+    uniqueIdx1.Release();
+    uniqueIdx2.Release();
 }
 
-TEST_F(GlobalPoolIndexTest, Emplace_MultipleValues_AddValueInPool)
+TEST_F(GlobalTypedHandleTest, Emplace_MultipleValues_AddValueInPool)
 {
     GlobalIndex idx1 = GlobalIndex::Emplace(10, "first");
     GlobalIndex idx2 = GlobalIndex::Emplace(20, "second");
@@ -173,9 +201,12 @@ TEST_F(GlobalPoolIndexTest, Emplace_MultipleValues_AddValueInPool)
     EXPECT_EQ(idx2.Get()->b, "second");
     EXPECT_EQ(idx2.Get()->bCopyed, false);
     EXPECT_EQ(idx2.Get()->bMoved, false);
+
+    idx1.Release();
+    idx2.Release();
 }
 
-TEST_F(GlobalPoolIndexTest, Release_ValidIndex_InvalidatesIndexAndRemovesFromPool)
+TEST_F(GlobalTypedHandleTest, Release_ValidIndex_InvalidatesIndexAndRemovesFromPool)
 {
     GlobalIndex idx = GlobalIndex::Emplace(10, "first");
 
@@ -187,13 +218,36 @@ TEST_F(GlobalPoolIndexTest, Release_ValidIndex_InvalidatesIndexAndRemovesFromPoo
     EXPECT_TRUE(bReleased);
     EXPECT_FALSE(idx.IsValid());
     EXPECT_TRUE(idx.IsNULL());
-    EXPECT_EQ(idx.GetIndex(), 0);
     EXPECT_EQ(idx.GetPool().GetSize(), 0);
 
     EXPECT_FALSE(idx.Release());
 }
 
-TEST_F(GlobalPoolIndexTest, ComparisonOperators_BetweenIndices_ReflectsEquality)
+TEST_F(GlobalTypedHandleTest, GenerationSafety_ReusedSlot_OldHandleInvalidated)
+{
+    GlobalIndex idx1 = GlobalIndex::Emplace(10, "first");
+    GlobalIndex idx1OldCopy = idx1;
+
+    EXPECT_TRUE(idx1.IsValid());
+    EXPECT_TRUE(idx1OldCopy.IsValid());
+
+    idx1.Release();
+
+    EXPECT_FALSE(idx1.IsValid());
+    EXPECT_FALSE(idx1OldCopy.IsValid());
+
+    GlobalIndex idx3 = GlobalIndex::Emplace(30, "third");
+
+    EXPECT_TRUE(idx3.IsValid());
+    EXPECT_FALSE(idx1OldCopy.IsValid());
+    EXPECT_EQ(idx1OldCopy.Get(), nullptr);
+    EXPECT_NE(idx3.Get(), nullptr);
+    EXPECT_EQ(idx3.Get()->a, 30);
+
+    idx3.Release();
+}
+
+TEST_F(GlobalTypedHandleTest, ComparisonOperators_BetweenIndices_ReflectsEquality)
 {
     GlobalIndex idx1 = GlobalIndex::Emplace(10, "first");
     GlobalIndex idx2 = GlobalIndex::Emplace(20, "second");
@@ -202,9 +256,12 @@ TEST_F(GlobalPoolIndexTest, ComparisonOperators_BetweenIndices_ReflectsEquality)
     EXPECT_TRUE(idx1 == idx1Copy);
     EXPECT_FALSE(idx1 == idx2);
     EXPECT_TRUE(idx1 != idx2);
+
+    idx1.Release();
+    idx2.Release();
 }
 
-TEST_F(GlobalPoolIndexTest, Hash_AsKey_WorksWithStlMap)
+TEST_F(GlobalTypedHandleTest, Hash_AsKey_WorksWithStlMap)
 {
     GlobalIndex idx1 = GlobalIndex::Emplace(10, "first");
     GlobalIndex idx2 = GlobalIndex::Emplace(20, "second");
@@ -216,4 +273,7 @@ TEST_F(GlobalPoolIndexTest, Hash_AsKey_WorksWithStlMap)
     EXPECT_EQ(indexMap.size(), 2);
     EXPECT_TRUE(indexMap.find(idx1) != indexMap.end());
     EXPECT_TRUE(indexMap.find(GlobalIndex::sNULL) == indexMap.end());
+
+    idx1.Release();
+    idx2.Release();
 }

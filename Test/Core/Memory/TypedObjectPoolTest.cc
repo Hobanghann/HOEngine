@@ -1,4 +1,4 @@
-#include "Core/Templates/ObjectPool.h"
+#include "Core/Memory/TypedObjectPool.h"
 
 #include <gtest/gtest.h>
 #include <string>
@@ -40,9 +40,9 @@ struct TestValue
     }
 };
 
-using TestPool = ObjectPool<TestValue>;
+using TestPool = TypedObjectPool<TestValue>;
 
-TEST(ObjectPoolTest, Constructor_Default_InitialSizeIsZero)
+TEST(TypedObjectPoolTest, Constructor_Default_InitialSizeIsZero)
 {
     TestPool pool;
 
@@ -50,22 +50,22 @@ TEST(ObjectPoolTest, Constructor_Default_InitialSizeIsZero)
     EXPECT_EQ(pool.GetFullSize(), 1);
 }
 
-TEST(ObjectPoolTest, Add_MultipleValuesByCopy_StoresCorrectData)
+TEST(TypedObjectPoolTest, Add_MultipleValuesByCopy_StoresCorrectData)
 {
     TestPool pool;
 
     TestValue v1(10, "first");
     TestValue v2(20, "second");
 
-    uint32_t idx1 = pool.Add(v1);
-    uint32_t idx2 = pool.Add(v2);
+    uint64_t id1 = pool.Add(v1);
+    uint64_t id2 = pool.Add(v2);
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
     EXPECT_EQ(pool.GetSize(), 2);
 
-    TestValue* p1 = pool.Get(idx1);
-    TestValue* p2 = pool.Get(idx2);
+    TestValue* p1 = pool.Get(id1);
+    TestValue* p2 = pool.Get(id2);
 
     ASSERT_NE(p1, nullptr);
     ASSERT_NE(p2, nullptr);
@@ -81,22 +81,23 @@ TEST(ObjectPoolTest, Add_MultipleValuesByCopy_StoresCorrectData)
     EXPECT_EQ(p2->bMoved, false);
 }
 
-TEST(ObjectPoolTest, Add_MultipleSameValuesByCopy_CreatesDistinctEntries)
+TEST(TypedObjectPoolTest, Add_MultipleSameValuesByCopy_CreatesDistinctEntries)
 {
     TestPool pool;
 
     TestValue v1(10, "same");
     TestValue v2(10, "same");
 
-    uint32_t idx1 = pool.Add(v1);
-    uint32_t idx2 = pool.Add(v2);
+    uint64_t id1 = pool.Add(v1);
+    uint64_t id2 = pool.Add(v2);
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
+    EXPECT_NE(id1, id2);
     EXPECT_EQ(pool.GetSize(), 2);
 
-    TestValue* p1 = pool.Get(idx1);
-    TestValue* p2 = pool.Get(idx2);
+    TestValue* p1 = pool.Get(id1);
+    TestValue* p2 = pool.Get(id2);
 
     ASSERT_NE(p1, nullptr);
     ASSERT_NE(p2, nullptr);
@@ -112,22 +113,22 @@ TEST(ObjectPoolTest, Add_MultipleSameValuesByCopy_CreatesDistinctEntries)
     EXPECT_EQ(p2->bMoved, false);
 }
 
-TEST(ObjectPoolTest, Add_MultipleValuesByMove_StoresCorrectData)
+TEST(TypedObjectPoolTest, Add_MultipleValuesByMove_StoresCorrectData)
 {
     TestPool pool;
 
     TestValue v1(10, "first");
     TestValue v2(20, "second");
 
-    uint32_t idx1 = pool.Add(std::move(v1));
-    uint32_t idx2 = pool.Add(std::move(v2));
+    uint64_t id1 = pool.Add(std::move(v1));
+    uint64_t id2 = pool.Add(std::move(v2));
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
     EXPECT_EQ(pool.GetSize(), 2);
 
-    TestValue* p1 = pool.Get(idx1);
-    TestValue* p2 = pool.Get(idx2);
+    TestValue* p1 = pool.Get(id1);
+    TestValue* p2 = pool.Get(id2);
 
     ASSERT_NE(p1, nullptr);
     ASSERT_NE(p2, nullptr);
@@ -143,22 +144,23 @@ TEST(ObjectPoolTest, Add_MultipleValuesByMove_StoresCorrectData)
     EXPECT_EQ(p2->bMoved, true);
 }
 
-TEST(ObjectPoolTest, Add_MultipleSameValuesByMove_CreatesDistinctEntries)
+TEST(TypedObjectPoolTest, Add_MultipleSameValuesByMove_CreatesDistinctEntries)
 {
     TestPool pool;
 
     TestValue v1(10, "same");
     TestValue v2(10, "same");
 
-    uint32_t idx1 = pool.Add(std::move(v1));
-    uint32_t idx2 = pool.Add(std::move(v2));
+    uint64_t id1 = pool.Add(std::move(v1));
+    uint64_t id2 = pool.Add(std::move(v2));
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
+    EXPECT_NE(id1, id2);
     EXPECT_EQ(pool.GetSize(), 2);
 
-    TestValue* p1 = pool.Get(idx1);
-    TestValue* p2 = pool.Get(idx2);
+    TestValue* p1 = pool.Get(id1);
+    TestValue* p2 = pool.Get(id2);
 
     ASSERT_NE(p1, nullptr);
     ASSERT_NE(p2, nullptr);
@@ -174,19 +176,19 @@ TEST(ObjectPoolTest, Add_MultipleSameValuesByMove_CreatesDistinctEntries)
     EXPECT_EQ(p2->bMoved, true);
 }
 
-TEST(ObjectPoolTest, Emplace_MultipleValues_StoresCorrectData)
+TEST(TypedObjectPoolTest, Emplace_MultipleValues_StoresCorrectData)
 {
     TestPool pool;
 
-    uint32_t idx1 = pool.Emplace(10, "first");
-    uint32_t idx2 = pool.Emplace(20, "second");
+    uint64_t id1 = pool.Emplace(10, "first");
+    uint64_t id2 = pool.Emplace(20, "second");
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
     EXPECT_EQ(pool.GetSize(), 2);
 
-    const TestValue* p1 = pool.Get(idx1);
-    const TestValue* p2 = pool.Get(idx2);
+    const TestValue* p1 = pool.Get(id1);
+    const TestValue* p2 = pool.Get(id2);
 
     ASSERT_NE(p1, nullptr);
     ASSERT_NE(p2, nullptr);
@@ -202,19 +204,20 @@ TEST(ObjectPoolTest, Emplace_MultipleValues_StoresCorrectData)
     EXPECT_EQ(p2->bMoved, false);
 }
 
-TEST(ObjectPoolTest, Emplace_MultipleSameValuesByMove_CreatesDistinctEntries)
+TEST(TypedObjectPoolTest, Emplace_MultipleSameValuesByMove_CreatesDistinctEntries)
 {
     TestPool pool;
 
-    uint32_t idx1 = pool.Emplace(10, "same");
-    uint32_t idx2 = pool.Emplace(10, "same");
+    uint64_t id1 = pool.Emplace(10, "same");
+    uint64_t id2 = pool.Emplace(10, "same");
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
+    EXPECT_NE(id1, id2);
     EXPECT_EQ(pool.GetSize(), 2);
 
-    const TestValue* p1 = pool.Get(idx1);
-    const TestValue* p2 = pool.Get(idx2);
+    const TestValue* p1 = pool.Get(id1);
+    const TestValue* p2 = pool.Get(id2);
 
     ASSERT_NE(p1, nullptr);
     ASSERT_NE(p2, nullptr);
@@ -230,14 +233,14 @@ TEST(ObjectPoolTest, Emplace_MultipleSameValuesByMove_CreatesDistinctEntries)
     EXPECT_EQ(p2->bMoved, false);
 }
 
-TEST(ObjectPoolTest, Remove_ExistingEntries_DecrementsSizeAndRemovesEntry)
+TEST(TypedObjectPoolTest, Remove_ExistingEntries_DecrementsSizeAndRemovesEntry)
 {
     TestPool pool;
 
-    uint32_t idx1 = pool.Emplace(10, "A");
+    uint64_t id1 = pool.Emplace(10, "A");
     pool.Emplace(20, "B");
     TestValue valC(30, "C");
-    uint32_t idx3 = pool.Add(valC);
+    uint64_t id3 = pool.Add(valC);
 
     EXPECT_EQ(pool.GetSize(), 3);
 
@@ -245,72 +248,79 @@ TEST(ObjectPoolTest, Remove_ExistingEntries_DecrementsSizeAndRemovesEntry)
 
     EXPECT_TRUE(bDeleted);
     EXPECT_EQ(pool.GetSize(), 2);
-    EXPECT_FALSE(pool.Has(idx3));
-    EXPECT_EQ(pool.Get(idx3), nullptr);
+    EXPECT_FALSE(pool.Has(id3));
+    EXPECT_EQ(pool.Get(id3), nullptr);
 
-    bDeleted = pool.Remove(idx1);
+    bDeleted = pool.Remove(id1);
 
     EXPECT_TRUE(bDeleted);
     EXPECT_EQ(pool.GetSize(), 1);
-    EXPECT_FALSE(pool.Has(idx1));
-    EXPECT_EQ(pool.Get(idx1), nullptr);
+    EXPECT_FALSE(pool.Has(id1));
+    EXPECT_EQ(pool.Get(id1), nullptr);
 }
 
-TEST(ObjectPoolTest, Emplace_WhenThereIsFreeIndex_ReuseFreeIndex)
+TEST(TypedObjectPoolTest, Emplace_WhenThereIsFreeIndex_ReuseFreeIndexWithNewGeneration)
 {
     TestPool pool;
 
-    uint32_t idx1 = pool.Emplace(1, "item1");
+    uint64_t id1 = pool.Emplace(1, "item1");
     pool.Emplace(2, "item2");
 
     EXPECT_EQ(pool.GetSize(), 2);
 
-    pool.Remove(idx1);
+    pool.Remove(id1);
     EXPECT_EQ(pool.GetSize(), 1);
-    EXPECT_FALSE(pool.Has(idx1));
+    EXPECT_FALSE(pool.Has(id1));
 
-    uint32_t idx3 = pool.Emplace(3, "item3");
+    uint64_t id3 = pool.Emplace(3, "item3");
 
-    EXPECT_EQ(idx3, idx1);
+    uint32_t index1 = static_cast<uint32_t>(id1 & 0xFFFFFFFF);
+    uint32_t index3 = static_cast<uint32_t>(id3 & 0xFFFFFFFF);
+
+    EXPECT_EQ(index3, index1);
+    EXPECT_NE(id3, id1);
+
+    EXPECT_FALSE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id3));
     EXPECT_EQ(pool.GetSize(), 2);
-    EXPECT_EQ(pool.Get(idx3)->a, 3);
+    EXPECT_EQ(pool.Get(id3)->a, 3);
 }
 
-TEST(ObjectPoolTest, Has_AfterEmplace_ReturnsTrueForExistingIDs)
+TEST(TypedObjectPoolTest, Has_AfterEmplace_ReturnsTrueForExistingIDs)
 {
     TestPool pool;
     EXPECT_FALSE(pool.Has(0));
 
-    uint32_t idx1 = pool.Emplace(10, "first");
-    uint32_t idx2 = pool.Emplace(20, "second");
-    uint32_t idx3 = pool.Emplace(30, "third");
+    uint64_t id1 = pool.Emplace(10, "first");
+    uint64_t id2 = pool.Emplace(20, "second");
+    uint64_t id3 = pool.Emplace(30, "third");
 
-    EXPECT_TRUE(pool.Has(idx1));
-    EXPECT_TRUE(pool.Has(idx2));
-    EXPECT_TRUE(pool.Has(idx3));
+    EXPECT_TRUE(pool.Has(id1));
+    EXPECT_TRUE(pool.Has(id2));
+    EXPECT_TRUE(pool.Has(id3));
 }
 
-TEST(ObjectPoolTest, Find_AfterEmplace_ReturnsPointerForExistingIDs)
+TEST(TypedObjectPoolTest, Find_AfterEmplace_ReturnsPointerForExistingIDs)
 {
     TestPool pool;
     EXPECT_EQ(pool.Get(0), nullptr);
 
-    uint32_t idx1 = pool.Emplace(10, "first");
-    uint32_t idx2 = pool.Emplace(20, "second");
-    uint32_t idx3 = pool.Emplace(30, "third");
+    uint64_t id1 = pool.Emplace(10, "first");
+    uint64_t id2 = pool.Emplace(20, "second");
+    uint64_t id3 = pool.Emplace(30, "third");
 
-    EXPECT_NE(pool.Get(idx1), nullptr);
-    EXPECT_NE(pool.Get(idx2), nullptr);
-    EXPECT_NE(pool.Get(idx3), nullptr);
+    EXPECT_NE(pool.Get(id1), nullptr);
+    EXPECT_NE(pool.Get(id2), nullptr);
+    EXPECT_NE(pool.Get(id3), nullptr);
 }
 
-TEST(ObjectPoolTest, Clear_ExistingEntries_InvalidatesAllIDsAndResetsSize)
+TEST(TypedObjectPoolTest, Clear_ExistingEntries_InvalidatesAllIDsAndResetsSize)
 {
     TestPool pool;
 
-    uint32_t idx1 = pool.Emplace(1, "1");
-    uint32_t idx2 = pool.Emplace(2, "2");
-    uint32_t idx3 = pool.Emplace(3, "3");
+    uint64_t id1 = pool.Emplace(1, "1");
+    uint64_t id2 = pool.Emplace(2, "2");
+    uint64_t id3 = pool.Emplace(3, "3");
 
     EXPECT_EQ(pool.GetSize(), 3);
 
@@ -318,7 +328,7 @@ TEST(ObjectPoolTest, Clear_ExistingEntries_InvalidatesAllIDsAndResetsSize)
     EXPECT_EQ(pool.GetSize(), 0);
 
     EXPECT_EQ(pool.GetFullSize(), 1);
-    EXPECT_FALSE(pool.Has(idx1));
-    EXPECT_FALSE(pool.Has(idx2));
-    EXPECT_FALSE(pool.Has(idx3));
+    EXPECT_FALSE(pool.Has(id1));
+    EXPECT_FALSE(pool.Has(id2));
+    EXPECT_FALSE(pool.Has(id3));
 }

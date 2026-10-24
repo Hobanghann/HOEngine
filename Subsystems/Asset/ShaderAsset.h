@@ -4,35 +4,35 @@
 
 #include "AssetDefs.h"
 #include "Core/Templates/FixedArray.h"
-#include "Core/Templates/GlobalPoolIndex.h"
-#include "Core/Templates/WeakLocalPoolIndex.h"
+#include "IAsset.h"
 
 namespace ho
 {
 struct GpuShader;
-using GpuShaderHandle = WeakLocalPoolIndex<GpuShader, ObjectPool>;
+using GpuShaderHandle = WeakTypedHandle<GpuShader, TypedObjectPool>;
 
-struct ShaderAsset
+struct RShaderAsset final : public RIAsset
 {
-    ShaderAsset() = default;
-    ShaderAsset(const ShaderAsset&) = delete;
-    ShaderAsset& operator=(const ShaderAsset&) = delete;
-    ~ShaderAsset() = default;
+    HO_INJECT_REFLECTION_CODE(RShaderAsset)
 
-    ShaderAsset(ShaderAsset&&) noexcept = default;
-    ShaderAsset& operator=(ShaderAsset&&) noexcept = default;
+    RShaderAsset() = default;
+    RShaderAsset(const RShaderAsset&) = delete;
+    RShaderAsset& operator=(const RShaderAsset&) = delete;
+    ~RShaderAsset() override = default;
 
-    StringHandle hName = StringHandle::sNULL;
+    RShaderAsset(RShaderAsset&&) noexcept = default;
+    RShaderAsset& operator=(RShaderAsset&&) noexcept = default;
+
+    int32_t GetByteSize() const override;
 
     std::string SourceStr;
 
     FixedArray<uint32_t> Binary{};
 
     eShaderStage Stage = eShaderStage::None;
-    uint8_t CompatibleMaterialTypes = 0;
+    eMaterialAssetType CompatibleMaterialType = eMaterialAssetType::None;
 
     GpuShaderHandle hRenderProxy = GpuShaderHandle::sNULL;
 };
 
-using ShaderHandle = WeakLocalPoolIndex<ShaderAsset, ObjectPool>;
 } // namespace ho

@@ -173,6 +173,11 @@ jobs:
         run: |
           ctest -R Core.Templates --output-on-failure
 
+      - name: Test Core.Memory
+        working-directory: build
+        run: |
+          ctest -R Core.Memory --output-on-failure
+
       - name: Test Core.Time
         working-directory: build
         run: |

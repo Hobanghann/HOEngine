@@ -1,0 +1,11 @@
+Model Information:
+* title:	Octahedron
+* source:	https://sketchfab.com/3d-models/octahedron-4fcfa8c0265746448e92e314dccd364c
+* author:	chandlerklebs (https://sketchfab.com/chandlerklebs)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Octahedron" (https://sketchfab.com/3d-models/octahedron-4fcfa8c0265746448e92e314dccd364c) by chandlerklebs (https://sketchfab.com/chandlerklebs) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

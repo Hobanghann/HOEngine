@@ -1,0 +1,350 @@
+#version 460 core
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+const int MAX_DIR_LIGHT_COUNT = 4;
+const int MAX_POINT_LIGHT_COUNT = 32;
+const int MAX_SPOT_LIGHT_COUNT = 16;
+
+const int MAX_DIR_LIGHT_SHADOW_DATA_COUNT = 1;
+const int MAX_POINT_LIGHT_SHADOW_DATA_COUNT = 4;
+const int MAX_SPOT_LIGHT_SHADOW_DATA_COUNT = 8;
+
+const int MAX_SUB_MESH_MORPH_TARGET_COUNT = 8;
+
+const int BUFFER_MATRICES_BINDING = 0;
+const int BUFFER_MATERIAL_BINDING = 1;
+const int BUFFER_DIRECT_LIGHTS_BINDING = 2;
+const int BUFFER_DIRECT_LIGHT_SHADOW_DATA_BINDING = 3;
+const int BUFFER_INDIRECT_LIGHTS_BINDING = 4;
+const int BUFFER_GENERAL_PURPOSE_BINDING = 5;
+const int BUFFER_SHADOW_MAP_RENDER_DATA_BINDING = 6;
+const int BUFFER_ENVIRONMENT_BAKE_DATA_BINDING = 7;
+const int BUFFER_WORLD_GIZMO_DATA_BINDING = 8;
+
+const int BUFFER_INSTANCE_DATA_BINDING = 9;
+const int BUFFER_MORPH_CONTROL_DATA_BINDING = 10;
+
+const int BUFFER_MORPH_TARGETS_BINDING = 11;
+const int BUFFER_MORPH_TARGET_POSITION_BINDING = 12;
+const int BUFFER_MORPH_TARGET_NORMAL_BINDING = 13;
+const int BUFFER_MORPH_TARGET_TANGENT_BINDING = 14;
+
+const int TEX_DIFFUSE_BINDING = 1;
+const int TEX_SPECULAR_BINDING = 2;
+const int TEX_OPACITY_BINDING = 3;
+const int TEX_NORMAL_BINDING = 4;
+const int TEX_ALBEDO_BINDING = 5;
+const int TEX_METALLIC_ROUGHNESS_BINDING = 6;
+const int TEX_EMISSIVE_BINDING = 7;
+const int TEX_AMBIENT_OCCLUSION_BINDING = 8;
+
+const int TEX_RAD_MAP_BINDING = 9;
+const int TEX_IRRADIANCE_MAP_BINDING = 10;
+const int TEX_PREFILTERED_ENVIRONMENT_MAP_BINDING = 11;
+const int TEX_BRDF_INTEGRATION_MAP_BINDING = 12;
+
+const int TEX_ACCUMULATION_BINDING = 13;
+const int TEX_DEFERED_ALBEDO_AO_BINDING = 14;
+const int TEX_DEFERED_NORMAL_ROUGHNESS_BINDING = 15;
+const int TEX_DEFERED_MATERIAL_BINDING = 16;
+const int TEX_LUMINANCE_BINDING = 17;
+
+const int TEX_DIR_LIGHT_DYNAMIC_SHADOW_MAP_BINDING = 18;
+const int TEX_POINT_LIGHT_DYNAMIC_SHADOW_MAP_BINDING = 19;
+const int TEX_SPOT_LIGHT_DYNAMIC_SHADOW_MAP_BINDING = 20;
+
+const int TEX_DIR_LIGHT_STATIC_SHADOW_MAPS_BINDING = 21;
+const int TEX_POINT_LIGHT_STATIC_SHADOW_MAPS_BINDING = TEX_DIR_LIGHT_STATIC_SHADOW_MAPS_BINDING + MAX_DIR_LIGHT_SHADOW_DATA_COUNT;
+const int TEX_SPOT_LIGHT_STATIC_SHADOW_MAPS_BINDING = TEX_POINT_LIGHT_STATIC_SHADOW_MAPS_BINDING + MAX_POINT_LIGHT_SHADOW_DATA_COUNT;
+
+const int TEX_STORAGE_IRRADIANCE_BINDING = 0;
+const int TEX_STORAGE_PREFILTERED_ENVIRONMENT_BINDING = 1;
+const int TEX_STORAGE_BRDF_INTEGRATION_BINDING = 2;
+
+layout (std140, row_major, binding = BUFFER_MATRICES_BINDING) uniform Matrices
+{
+    mat4 View;
+    mat4 Proj;
+} u_Matrices;
+
+layout (std140, row_major, binding = BUFFER_MATERIAL_BINDING) uniform Material
+{
+    vec4 Ambient;
+    vec4 Diffuse;
+    vec4 Specular;
+    vec4 Albedo;
+    vec4 Emissive;
+
+    float Shininess;
+    float Metallic;
+    float Roughness;
+    float IndexOfRefraction;
+
+    float Opacity;
+    float AlphaThreshold;
+    float EmissiveIntensity;
+    float NormalScale;
+    float OcclusionStrength;
+
+    int UVChannels[9];
+    mat4 UVMatrices[9];
+    int HasTextures[9];
+} u_MatAttr;
+
+struct DirLight {
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+    int ShadowDataIndex;
+};
+
+struct PointLight {
+    vec3 Position;
+    vec3 Color;
+    float Intensity;
+    float Constant;
+    float Linear;
+    float Quadratic;
+    float FarDist;
+    int ShadowDataIndex;
+};
+
+struct SpotLight {
+    vec3 Position;
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+    float InnerCutOff;
+    float OuterCutOff;
+    float Constant;
+    float Linear;
+    float Quadratic;
+    float FarDist;
+    int ShadowDataIndex;
+};
+
+layout (std140, row_major, binding = BUFFER_DIRECT_LIGHTS_BINDING) uniform DirectLights
+{
+    int DirLightCount;
+    DirLight DirLights[MAX_DIR_LIGHT_COUNT];
+    int PointLightCount;
+    PointLight PointLights[MAX_POINT_LIGHT_COUNT];
+    int SpotLightCount;
+    SpotLight SpotLights[MAX_SPOT_LIGHT_COUNT];
+} u_DirectLights;
+
+struct DirLightShadowData {
+    int CascadeCount;
+    float CascadeNormalOffsetScales[6];
+    float CascadeDepthOffsetScales[6];
+    float CascadeFarDist[6];
+    mat4 ProjView[6];
+};
+
+struct PointLightShadowData {
+    vec3 LightWorldPos;
+    float NormalOffsetScale;
+    float DepthOffsetScale;
+    float FarDist;
+    mat4 ProjView[6];
+};
+
+struct SpotLightShadowData {
+    vec3 LightWorldPos;
+    float NormalOffsetScale;
+    float DepthOffsetScale;
+    float FarDist;
+    mat4 ProjView;
+};
+
+layout (std140, row_major, binding = BUFFER_DIRECT_LIGHT_SHADOW_DATA_BINDING) uniform DirectLightShadowData
+{
+    int DirLightShadowDataCount;
+    DirLightShadowData DirLightsShadowData[MAX_DIR_LIGHT_SHADOW_DATA_COUNT];
+    int PointLightShadowDataCount;
+    PointLightShadowData PointLightsShadowData[MAX_POINT_LIGHT_SHADOW_DATA_COUNT];
+    int SpotLightShadowDataCount;
+    SpotLightShadowData SpotLightsShadowData[MAX_SPOT_LIGHT_SHADOW_DATA_COUNT];
+} u_DirectLightShadowData;
+
+layout (std140, row_major, binding = BUFFER_INDIRECT_LIGHTS_BINDING) uniform IndirectLights
+{
+    float Intensity;
+} u_IndirectLights;
+
+layout (std140, row_major, binding = BUFFER_GENERAL_PURPOSE_BINDING) uniform General
+{
+    vec3 WorldCameraPos;
+    vec3 CameraForward;
+} u_General;
+
+layout (std140, row_major, binding = BUFFER_ENVIRONMENT_BAKE_DATA_BINDING) uniform EnvBakeData
+{
+    float SampleDelta;
+    int SampleCount;
+    float Roughness;
+} u_EnvBakeData;
+
+struct InstanceData
+{
+    mat4 WorldMat;
+};
+
+layout(std430, row_major, binding = BUFFER_INSTANCE_DATA_BINDING) readonly buffer InstanceBuffer
+{
+    InstanceData Instances[];
+} s_InstanceBuffer;
+
+layout (std430, row_major, binding = BUFFER_MORPH_CONTROL_DATA_BINDING) readonly buffer MorphControlData
+{
+    int TargetOffset;
+    int TargetCount;
+
+    int TargetIndices[MAX_SUB_MESH_MORPH_TARGET_COUNT];
+    float Weights[MAX_SUB_MESH_MORPH_TARGET_COUNT];
+} s_MorphControlData;
+
+struct MorphTarget {
+    int PositionOffset;
+    int NormalOffset;
+    int TangentOffset;
+};
+
+layout (std430, row_major, binding = BUFFER_MORPH_TARGETS_BINDING) readonly buffer MorphTargets
+{
+    MorphTarget Targets[];
+} s_MorphTargets;
+
+layout (std430, row_major, binding = BUFFER_MORPH_TARGET_POSITION_BINDING) readonly buffer MorphPositionBuffer
+{
+    vec3 Positions[];
+} s_MorphPositions;
+
+layout (std430, row_major, binding = BUFFER_MORPH_TARGET_NORMAL_BINDING) readonly buffer MorphNormalBuffer
+{
+    vec3 Normals[];
+} s_MorphNormals;
+
+layout (std430, row_major, binding = BUFFER_MORPH_TARGET_TANGENT_BINDING) readonly buffer MorphTangentBuffer
+{
+    vec3 Tangents[];
+} s_MorphTangents;
+
+layout(binding = TEX_DIFFUSE_BINDING) uniform sampler2D t_Diffuse;
+layout(binding = TEX_SPECULAR_BINDING) uniform sampler2D t_Specular;
+layout(binding = TEX_OPACITY_BINDING) uniform sampler2D t_Opacity;
+layout(binding = TEX_NORMAL_BINDING) uniform sampler2D t_Normal;
+layout(binding = TEX_ALBEDO_BINDING) uniform sampler2D t_Albedo;
+layout(binding = TEX_METALLIC_ROUGHNESS_BINDING) uniform sampler2D t_MetallicRoughness;
+layout(binding = TEX_EMISSIVE_BINDING) uniform sampler2D t_Emissive;
+layout(binding = TEX_AMBIENT_OCCLUSION_BINDING) uniform sampler2D t_AmbientOcclusion;
+
+layout(binding = TEX_RAD_MAP_BINDING) uniform samplerCube t_RadianceMap;
+layout(binding = TEX_IRRADIANCE_MAP_BINDING) uniform samplerCube t_IrradianceMap;
+layout(binding = TEX_PREFILTERED_ENVIRONMENT_MAP_BINDING) uniform samplerCube t_PrefilteredEnvMap;
+layout(binding = TEX_BRDF_INTEGRATION_MAP_BINDING) uniform sampler2D t_BRDFIntegrationMap;
+
+layout(binding = TEX_ACCUMULATION_BINDING) uniform sampler2D t_Accumulation;
+layout(binding = TEX_DEFERED_ALBEDO_AO_BINDING) uniform sampler2D t_DeferedAlbedoAO;
+layout(binding = TEX_DEFERED_NORMAL_ROUGHNESS_BINDING) uniform sampler2D t_DeferedNormalRoughness;
+layout(binding = TEX_DEFERED_MATERIAL_BINDING) uniform sampler2D t_DeferedMaterial;
+layout(binding = TEX_LUMINANCE_BINDING) uniform sampler2D t_Luminance;
+
+layout(binding = TEX_DIR_LIGHT_DYNAMIC_SHADOW_MAP_BINDING) uniform sampler2DArrayShadow t_DirLightDynamicShadowMap;
+layout(binding = TEX_POINT_LIGHT_DYNAMIC_SHADOW_MAP_BINDING) uniform samplerCubeArray t_PointLightDynamicShadowMap;
+layout(binding = TEX_SPOT_LIGHT_DYNAMIC_SHADOW_MAP_BINDING) uniform sampler2DArray t_SpotLightDynamicShadowMap;
+
+layout(binding = TEX_DIR_LIGHT_STATIC_SHADOW_MAPS_BINDING) uniform sampler2DArrayShadow t_DirLightStaticShadowMaps[MAX_DIR_LIGHT_SHADOW_DATA_COUNT];
+layout(binding = TEX_POINT_LIGHT_STATIC_SHADOW_MAPS_BINDING) uniform samplerCube t_PointLightStaticShadowMaps[MAX_POINT_LIGHT_SHADOW_DATA_COUNT];
+layout(binding = TEX_SPOT_LIGHT_STATIC_SHADOW_MAPS_BINDING) uniform sampler2D t_SpotLightStaticShadowMaps[MAX_SPOT_LIGHT_SHADOW_DATA_COUNT];
+
+const float PI = 3.14159265359;
+
+layout(rgba16f, binding = TEX_STORAGE_PREFILTERED_ENVIRONMENT_BINDING) uniform imageCube out_Image;
+
+float RadicalInverse_VdC(uint bits)
+{
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10;
+}
+
+vec2 Hammersley(uint i, uint N)
+{
+    return vec2(float(i)/float(N), RadicalInverse_VdC(i));
+}
+
+vec3 getTangentImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
+{
+    float a = roughness * roughness;
+
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+
+    return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+}
+
+vec3 getToTexelVector(ivec3 globalID, vec2 imageSize) {
+    vec2 uv = ((vec2(globalID.xy) + 0.5) / imageSize) * 2.0 - 1.0;
+
+    vec3 dir;
+    int face = globalID.z;
+
+    switch(face) {
+        case 0: dir = vec3( 1.0,  -uv.y, -uv.x); break; // +X
+        case 1: dir = vec3(-1.0,  -uv.y,  uv.x); break; // -X
+        case 2: dir = vec3( uv.x,   1.0,  uv.y); break; // +Y
+        case 3: dir = vec3( uv.x, -1.0, -uv.y); break; // -Y
+        case 4: dir = vec3( uv.x, -uv.y,   1.0); break; // +Z
+        case 5: dir = vec3(-uv.x, -uv.y,  -1.0); break; // -Z
+    }
+    return normalize(dir);
+}
+
+void main() {
+    ivec3 texelCoord = ivec3(gl_GlobalInvocationID.xyz);
+    vec2 imgSize = vec2(imageSize(out_Image));
+
+    if (texelCoord.x >= imgSize.x || texelCoord.y >= imgSize.y) {
+        return;
+    }
+
+    vec3 N = getToTexelVector(texelCoord, imgSize);
+    vec3 R = N;
+    vec3 V = R;
+
+    vec3 worldTanUp = vec3(0.0f, 1.0f, 0.0f);
+    vec3 worldTanRight = vec3(0.0f);
+    vec3 worldTanForward = N;
+
+    if(abs(dot(worldTanUp, worldTanForward)) > 0.999f) {
+        worldTanUp = vec3(0.0f, 0.0f, 1.0f);
+    }
+    worldTanRight = normalize(cross(worldTanUp, worldTanForward));
+    worldTanUp = normalize(cross(worldTanForward, worldTanRight));
+
+    vec3 prefilteredColor = vec3(0.0f);
+    float totalWeight = 0.0;
+    for(uint i = 0u; i < u_EnvBakeData.SampleCount; ++i)
+    {
+        vec2 Xi = Hammersley(i, u_EnvBakeData.SampleCount);
+        vec3 tangentSample  = getTangentImportanceSampleGGX(Xi, N, u_EnvBakeData.Roughness);
+        vec3 worldSample = tangentSample.x * worldTanRight + tangentSample.y * worldTanUp + tangentSample.z * worldTanForward;
+        vec3 L  = normalize(2.0 * dot(V, worldSample) * worldSample - V);
+
+        float NdotL = max(dot(N, L), 0.0);
+        if(NdotL > 0.0)
+        {
+            prefilteredColor += textureLod(t_RadianceMap, L, 0.0).rgb * NdotL;
+            totalWeight      += NdotL;
+        }
+    }
+    prefilteredColor = prefilteredColor / totalWeight;
+
+    imageStore(out_Image, texelCoord, vec4(prefilteredColor, 1.0f));
+}

@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "Core/Templates/GlobalPoolIndex.h"
-
 namespace ho
 {
 class UISystem;

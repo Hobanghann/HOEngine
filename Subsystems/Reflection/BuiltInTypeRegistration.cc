@@ -1,0 +1,26 @@
+#include <cstdint>
+
+#include "BuiltInTypeRegister.h"
+
+namespace ho
+{
+HO_REGISTER_VOID()
+
+HO_REGISTER_BUILTIN_TYPE(bool)
+
+HO_REGISTER_BUILTIN_TYPE(char)
+HO_REGISTER_BUILTIN_TYPE(signed char)
+HO_REGISTER_BUILTIN_TYPE(short)
+HO_REGISTER_BUILTIN_TYPE(int)
+HO_REGISTER_BUILTIN_TYPE(long)
+HO_REGISTER_BUILTIN_TYPE(long long)
+
+HO_REGISTER_BUILTIN_TYPE(unsigned char)
+HO_REGISTER_BUILTIN_TYPE(unsigned short)
+HO_REGISTER_BUILTIN_TYPE(unsigned int)
+HO_REGISTER_BUILTIN_TYPE(unsigned long)
+HO_REGISTER_BUILTIN_TYPE(unsigned long long)
+
+HO_REGISTER_BUILTIN_TYPE(float)
+HO_REGISTER_BUILTIN_TYPE(double)
+} // namespace ho

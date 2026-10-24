@@ -52,7 +52,7 @@ Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
 
     for (int32_t i = 0; i < count; ++i)
     {
-        float sqrdDist = math::SqrdDistance(basePos, pPositions[i]);
+        const float sqrdDist = math::SqrdDistance(basePos, pPositions[i]);
         if (sqrdDist > maxSqrdDist)
         {
             maxSqrdDist = sqrdDist;
@@ -66,7 +66,7 @@ Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
 
     for (int32_t i = 0; i < count; ++i)
     {
-        float sqrdDist = math::SqrdDistance(basePos, pPositions[i]);
+        const float sqrdDist = math::SqrdDistance(basePos, pPositions[i]);
         if (sqrdDist > maxSqrdDist)
         {
             maxSqrdDist = sqrdDist;
@@ -101,12 +101,12 @@ Sphere Sphere::FromPositionsRitter(const Vector3* pPositions, int32_t count)
 
 math::eSide Sphere::GetSide(const Sphere& sphere) const
 {
-    float dx = sphere.Center.Data[0] - Center.Data[0];
-    float dy = sphere.Center.Data[1] - Center.Data[1];
-    float dz = sphere.Center.Data[2] - Center.Data[2];
-    float sqDist = dx * dx + dy * dy + dz * dz;
+    const float dx = sphere.Center.Data[0] - Center.Data[0];
+    const float dy = sphere.Center.Data[1] - Center.Data[1];
+    const float dz = sphere.Center.Data[2] - Center.Data[2];
+    const float sqDist = dx * dx + dy * dy + dz * dz;
 
-    float sumRadius = Radius + sphere.Radius;
+    const float sumRadius = Radius + sphere.Radius;
     if (sqDist > sumRadius * sumRadius)
     {
         return math::eSide::Outside;
@@ -114,7 +114,7 @@ math::eSide Sphere::GetSide(const Sphere& sphere) const
 
     if (Radius >= sphere.Radius)
     {
-        float subRadius = Radius - sphere.Radius;
+        const float subRadius = Radius - sphere.Radius;
         if (sqDist <= subRadius * subRadius)
         {
             return math::eSide::Inside;
@@ -131,29 +131,29 @@ math::eSide Sphere::GetSide(const AABB& aabb) const
 
     for (int32_t i = 0; i < 3; ++i)
     {
-        float center = Center.Data[i];
-        float minEdge = aabb.MinEdges.Data[i];
-        float maxEdge = aabb.MaxEdges.Data[i];
+        const float center = Center.Data[i];
+        const float minEdge = aabb.MinEdges.Data[i];
+        const float maxEdge = aabb.MaxEdges.Data[i];
 
         if (center < minEdge)
         {
-            float diff = minEdge - center;
+            const float diff = minEdge - center;
             sqDistClosest += diff * diff;
         }
         else if (center > maxEdge)
         {
-            float diff = center - maxEdge;
+            const float diff = center - maxEdge;
             sqDistClosest += diff * diff;
         }
 
-        float dMin = (center > minEdge) ? (center - minEdge) : (minEdge - center);
-        float dMax = (center > maxEdge) ? (center - maxEdge) : (maxEdge - center);
-        float maxDiff = (dMin > dMax) ? dMin : dMax;
+        const float dMin = (center > minEdge) ? (center - minEdge) : (minEdge - center);
+        const float dMax = (center > maxEdge) ? (center - maxEdge) : (maxEdge - center);
+        const float maxDiff = (dMin > dMax) ? dMin : dMax;
 
         sqDistFarthest += maxDiff * maxDiff;
     }
 
-    float sqRadius = Radius * Radius;
+    const float sqRadius = Radius * Radius;
 
     if (sqDistClosest > sqRadius)
     {

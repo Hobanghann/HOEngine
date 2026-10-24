@@ -74,18 +74,18 @@ math::eSide AABB::GetSide(const Sphere& sphere) const
 
     for (int32_t i = 0; i < 3; ++i)
     {
-        float center = sphere.Center.Data[i];
-        float minEdge = MinEdges.Data[i];
-        float maxEdge = MaxEdges.Data[i];
+        const float center = sphere.Center.Data[i];
+        const float minEdge = MinEdges.Data[i];
+        const float maxEdge = MaxEdges.Data[i];
 
         if (center < minEdge)
         {
-            float diff = minEdge - center;
+            const float diff = minEdge - center;
             sqDist += diff * diff;
         }
         else if (center > maxEdge)
         {
-            float diff = center - maxEdge;
+            const float diff = center - maxEdge;
             sqDist += diff * diff;
         }
 

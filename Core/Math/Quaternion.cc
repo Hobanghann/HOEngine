@@ -91,6 +91,134 @@ Quaternion Quaternion::FromMatrix(const Matrix3x3& m)
     return Quaternion(temp[0], temp[1], temp[2], temp[3]);
 }
 
+// This function returns Euler angles based on the Tait-Bryan convention.
+// Under this convention, the middle angle's range is limited to [-90, 90] degrees.
+// Reaching or exceeding this range indicates that gimbal lock has occurred.
+Vector3 Quaternion::ToEuler(math::eEulerOrder order) const
+{
+    const Matrix3x3 m = Matrix3x3::FromQuaternion(*this);
+    Vector3 angles;
+
+    const float threshold = 1.0f - math::EPSILON_ORTHO;
+
+    switch (order)
+    {
+        case math::eEulerOrder::XYZ:
+        {
+            const float sy = math::Clamp(m.Data[0][2], -1.0f, 1.0f);
+            if (sy < threshold && sy > -threshold)
+            {
+                angles.X = math::Atan2(-m.Data[1][2], m.Data[2][2]);
+                angles.Y = math::Asin(sy);
+                angles.Z = math::Atan2(-m.Data[0][1], m.Data[0][0]);
+            }
+            else
+            {
+                angles.X = math::Atan2(m.Data[2][1], m.Data[1][1]);
+                angles.Y = (sy >= threshold) ? math::PI2 : -math::PI2;
+                angles.Z = 0.0f;
+            }
+        }
+        break;
+
+        case math::eEulerOrder::XZY:
+        {
+            const float sz = math::Clamp(-m.Data[0][1], -1.0f, 1.0f);
+            if (sz < threshold && sz > -threshold)
+            {
+                angles.X = math::Atan2(m.Data[2][1], m.Data[1][1]);
+                angles.Y = math::Atan2(m.Data[0][2], m.Data[0][0]);
+                angles.Z = math::Asin(sz);
+            }
+            else
+            {
+                angles.X = math::Atan2(-m.Data[1][2], m.Data[2][2]);
+                angles.Y = 0.0f;
+                angles.Z = (sz >= threshold) ? math::PI2 : -math::PI2;
+            }
+        }
+        break;
+
+        case math::eEulerOrder::YXZ:
+        {
+            const float sx = math::Clamp(m.Data[1][2], -1.0f, 1.0f);
+            if (sx < threshold && sx > -threshold)
+            {
+                angles.X = math::Asin(sx);
+                angles.Y = math::Atan2(-m.Data[0][2], m.Data[2][2]);
+                angles.Z = math::Atan2(-m.Data[1][0], m.Data[1][1]);
+            }
+            else
+            {
+                angles.X = (sx >= threshold) ? math::PI2 : -math::PI2;
+                angles.Y = math::Atan2(m.Data[2][0], m.Data[0][0]);
+                angles.Z = 0.0f;
+            }
+        }
+        break;
+
+        case math::eEulerOrder::YZX:
+        {
+            const float sz = math::Clamp(m.Data[1][0], -1.0f, 1.0f);
+            if (sz < threshold && sz > -threshold)
+            {
+                angles.X = math::Atan2(-m.Data[1][2], m.Data[1][1]);
+                angles.Y = math::Atan2(-m.Data[2][0], m.Data[0][0]);
+                angles.Z = math::Asin(sz);
+            }
+            else
+            {
+                angles.X = 0.0f;
+                angles.Y = math::Atan2(m.Data[0][2], m.Data[2][2]);
+                angles.Z = (sz >= threshold) ? math::PI2 : -math::PI2;
+            }
+        }
+        break;
+
+        case math::eEulerOrder::ZXY:
+        {
+            const float sx = math::Clamp(-m.Data[2][1], -1.0f, 1.0f);
+            if (sx < threshold && sx > -threshold)
+            {
+                angles.X = math::Asin(sx);
+                angles.Y = math::Atan2(m.Data[2][0], m.Data[2][2]);
+                angles.Z = math::Atan2(m.Data[0][1], m.Data[1][1]);
+            }
+            else
+            {
+                angles.X = (sx >= threshold) ? math::PI2 : -math::PI2;
+                angles.Y = 0.0f;
+                angles.Z = math::Atan2(-m.Data[1][0], m.Data[0][0]);
+            }
+        }
+        break;
+
+        case math::eEulerOrder::ZYX:
+        {
+            const float sy = math::Clamp(-m.Data[2][0], -1.0f, 1.0f);
+            if (sy < threshold && sy > -threshold)
+            {
+                angles.X = math::Atan2(m.Data[2][1], m.Data[2][2]);
+                angles.Y = math::Asin(sy);
+                angles.Z = math::Atan2(m.Data[1][0], m.Data[0][0]);
+            }
+            else
+            {
+                angles.X = 0.0f;
+                angles.Y = (sy >= threshold) ? math::PI2 : -math::PI2;
+                angles.Z = math::Atan2(-m.Data[0][1], m.Data[1][1]);
+            }
+        }
+        break;
+
+        default:
+            HO_ASSERT(false, "Invalid euler order.");
+            break;
+    }
+
+    return angles;
+}
+
 std::string Quaternion::ToString() const
 {
     char buf[100];

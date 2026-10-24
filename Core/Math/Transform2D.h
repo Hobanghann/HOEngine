@@ -9,6 +9,7 @@ namespace ho
 {
 struct Transform2D final
 {
+    static constexpr Transform2D FromPosition(const Vector2& position);
     static constexpr Transform2D FromScalePosition(const Vector2& scale, const Vector2& position);
     static constexpr Transform2D FromAnglePosition(float angleRad, const Vector2& position);
     static constexpr Transform2D FromScaleAnglePosition(const Vector2& scale, float angleRad, const Vector2& position);
@@ -28,6 +29,8 @@ struct Transform2D final
     [[nodiscard]] FORCE_INLINE Vector2 GetUp() const;
     [[nodiscard]] FORCE_INLINE Vector2 GetScaledRight() const;
     [[nodiscard]] FORCE_INLINE Vector2 GetScaledUp() const;
+    [[nodiscard]] FORCE_INLINE float GetRotateAngleRad() const;
+
     [[nodiscard]] FORCE_INLINE Vector2 GetPosition() const;
     constexpr void SetPosition(const Vector2& position);
 
@@ -88,6 +91,11 @@ struct Transform2D final
 
     Matrix3x3 Matrix;
 };
+
+constexpr Transform2D Transform2D::FromPosition(const Vector2& position)
+{
+    return Transform2D(Matrix3x3(Vector3::sUnitX, Vector3::sUnitY, Vector3(position, 1.f)));
+}
 
 constexpr Transform2D Transform2D::FromScalePosition(const Vector2& scale, const Vector2& position)
 {
@@ -170,6 +178,12 @@ Vector2 Transform2D::GetScaledRight() const
 Vector2 Transform2D::GetScaledUp() const
 {
     return Vector2(Matrix.GetCol1());
+}
+
+float Transform2D::GetRotateAngleRad() const
+{
+    const Vector2 right = GetRight();
+    return math::Atan2(right.Y, right.X);
 }
 
 Vector2 Transform2D::GetPosition() const

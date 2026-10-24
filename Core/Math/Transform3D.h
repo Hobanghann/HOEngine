@@ -12,25 +12,30 @@ struct Sphere;
 
 struct Transform3D final
 {
+    static constexpr Transform3D FromPosition(const Vector3& position);
     static constexpr Transform3D FromScalePosition(const Vector3& scale, const Vector3& position);
     static constexpr Transform3D FromEulerPosition(float angleXRad,
                                                    float angleYRad,
                                                    float angleZRad,
-                                                   const Vector3& origin,
+                                                   const Vector3& position,
                                                    math::eEulerOrder order = math::eEulerOrder::YXZ);
-    static FORCE_INLINE Transform3D FromAxisAnglePosition(const Vector3& axis, float angleRad, const Vector3& origin);
+    static FORCE_INLINE Transform3D FromAxisAnglePosition(const Vector3& axis, float angleRad, const Vector3& position);
+    static FORCE_INLINE Transform3D FromQuatertionPosition(const Quaternion& quat, const Vector3& position);
     static constexpr Transform3D FromScaleEulerPosition(const Vector3& scale,
                                                         float angleXRad,
                                                         float angleYRad,
                                                         float angleZRad,
-                                                        const Vector3& origin,
+                                                        const Vector3& position,
                                                         math::eEulerOrder order = math::eEulerOrder::YXZ);
     static FORCE_INLINE Transform3D FromScaleAxisAnglePosition(const Vector3& scale,
                                                                const Vector3& axis,
                                                                float angleRad,
-                                                               const Vector3& origin);
+                                                               const Vector3& position);
+    static FORCE_INLINE Transform3D FromScaleQuatertionPosition(const Vector3& scale,
+                                                                const Quaternion& quat,
+                                                                const Vector3& position);
     static constexpr Transform3D FromBasis(const Basis3D& basis);
-    static constexpr Transform3D FromBasisPosition(const Basis3D& basis, const Vector3& origin);
+    static constexpr Transform3D FromBasisPosition(const Basis3D& basis, const Vector3& position);
 
     constexpr Transform3D();
     constexpr Transform3D(const Transform3D&) = default;
@@ -47,8 +52,11 @@ struct Transform3D final
     [[nodiscard]] FORCE_INLINE Vector3 GetScaledRight() const;
     [[nodiscard]] FORCE_INLINE Vector3 GetScaledUp() const;
     [[nodiscard]] FORCE_INLINE Vector3 GetScaledForward() const;
+    [[nodiscard]] FORCE_INLINE Vector3 GetEulerAngleRad() const;
+    [[nodiscard]] FORCE_INLINE Quaternion GetQuaternion() const;
+
     [[nodiscard]] FORCE_INLINE Vector3 GetPosition() const;
-    constexpr void SetPosition(const Vector3& origin);
+    constexpr void SetPosition(const Vector3& position);
 
     [[nodiscard]] constexpr Basis3D GetBasis() const;
     constexpr void SetBasis(const Basis3D& basis);
@@ -130,6 +138,11 @@ struct Transform3D final
     Matrix4x4 Matrix;
 };
 
+constexpr Transform3D Transform3D::FromPosition(const Vector3& position)
+{
+    return Transform3D(Matrix4x4(Vector4::sUnitX, Vector4::sUnitY, Vector4::sUnitZ, Vector4(position, 1.0f)));
+}
+
 constexpr Transform3D Transform3D::FromScalePosition(const Vector3& scale, const Vector3& position)
 {
     return Transform3D(Matrix4x4(
@@ -140,14 +153,21 @@ constexpr Transform3D Transform3D::FromEulerPosition(
     float angleXRad, float angleYRad, float angleZRad, const Vector3& position, math::eEulerOrder order)
 
 {
-    Matrix3x3 rotMat = Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order);
+    const Matrix3x3 rotMat = Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order);
     return Transform3D(Matrix4x4(
         Vector4(rotMat.GetCol0()), Vector4(rotMat.GetCol1()), Vector4(rotMat.GetCol2()), Vector4(position, 1.0f)));
 }
 
 Transform3D Transform3D::FromAxisAnglePosition(const Vector3& axis, float angleRad, const Vector3& position)
 {
-    Matrix3x3 rotMat = Matrix3x3::FromAxisAngle(axis, angleRad);
+    const Matrix3x3 rotMat = Matrix3x3::FromAxisAngle(axis, angleRad);
+    return Transform3D(Matrix4x4(
+        Vector4(rotMat.GetCol0()), Vector4(rotMat.GetCol1()), Vector4(rotMat.GetCol2()), Vector4(position, 1.0f)));
+}
+
+Transform3D Transform3D::FromQuatertionPosition(const Quaternion& quat, const Vector3& position)
+{
+    const Matrix3x3 rotMat = Matrix3x3::FromQuaternion(quat);
     return Transform3D(Matrix4x4(
         Vector4(rotMat.GetCol0()), Vector4(rotMat.GetCol1()), Vector4(rotMat.GetCol2()), Vector4(position, 1.0f)));
 }
@@ -158,9 +178,8 @@ constexpr Transform3D Transform3D::FromScaleEulerPosition(const Vector3& scale,
                                                           float angleZRad,
                                                           const Vector3& position,
                                                           math::eEulerOrder order)
-
 {
-    Matrix3x3 rotMat = Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order);
+    const Matrix3x3 rotMat = Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order);
     return Transform3D(Matrix4x4(scale.X * Vector4(rotMat.GetCol0()),
                                  scale.Y * Vector4(rotMat.GetCol1()),
                                  scale.Z * Vector4(rotMat.GetCol2()),
@@ -172,7 +191,18 @@ Transform3D Transform3D::FromScaleAxisAnglePosition(const Vector3& scale,
                                                     float angleRad,
                                                     const Vector3& position)
 {
-    Matrix3x3 rotMat = Matrix3x3::FromAxisAngle(axis, angleRad);
+    const Matrix3x3 rotMat = Matrix3x3::FromAxisAngle(axis, angleRad);
+    return Transform3D(Matrix4x4(scale.X * Vector4(rotMat.GetCol0()),
+                                 scale.Y * Vector4(rotMat.GetCol1()),
+                                 scale.Z * Vector4(rotMat.GetCol2()),
+                                 Vector4(position, 1.0f)));
+}
+
+Transform3D Transform3D::FromScaleQuatertionPosition(const Vector3& scale,
+                                                     const Quaternion& quat,
+                                                     const Vector3& position)
+{
+    const Matrix3x3 rotMat = Matrix3x3::FromQuaternion(quat);
     return Transform3D(Matrix4x4(scale.X * Vector4(rotMat.GetCol0()),
                                  scale.Y * Vector4(rotMat.GetCol1()),
                                  scale.Z * Vector4(rotMat.GetCol2()),
@@ -260,14 +290,24 @@ Vector3 Transform3D::GetScaledForward() const
     return Vector3(Matrix.GetCol2());
 }
 
+Vector3 Transform3D::GetEulerAngleRad() const
+{
+    return GetBasis().GetEulerAngleRad();
+}
+
+Quaternion Transform3D::GetQuaternion() const
+{
+    return GetBasis().GetQuaternion();
+}
+
 Vector3 Transform3D::GetPosition() const
 {
     return Vector3(Matrix.GetCol3());
 }
 
-constexpr void Transform3D::SetPosition(const Vector3& origin)
+constexpr void Transform3D::SetPosition(const Vector3& position)
 {
-    Matrix.SetCol3(Vector4(origin, 1.0f));
+    Matrix.SetCol3(Vector4(position, 1.0f));
 }
 
 constexpr Basis3D Transform3D::GetBasis() const

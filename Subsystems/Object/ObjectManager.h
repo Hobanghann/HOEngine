@@ -65,7 +65,7 @@ ObjectHandle<T> ObjectManager::NewObject()
     }
 
     uint64_t newObjID = mpObjectPools[static_cast<int32_t>(objType.GetTypeID())]->New();
-    return ObjectHandle<T>(&objType, newObjID, mpObjectPools[static_cast<int32_t>(objType.GetTypeID())]);
+    return ObjectHandle<T>(newObjID, mpObjectPools[static_cast<int32_t>(objType.GetTypeID())]);
 }
 
 template <typename T>

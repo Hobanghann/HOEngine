@@ -42,7 +42,7 @@ uint64_t ObjectPool::New()
 
     const uint64_t newObjID = (static_cast<uint64_t>(gen) << 32) | poolIndex;
 
-    const ObjectHandle<RObject> hNewObj(mpObjectType, newObjID, this);
+    const ObjectHandle<RObject> hNewObj(newObjID, this);
     ObjectSystem::GetInstance().registerObject(hNewObj);
 
     return newObjID;

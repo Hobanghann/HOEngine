@@ -22,10 +22,10 @@ class ObjectIterator final
             if (pPool)
             {
                 uint64_t id = makeID(pPool, mCurrPoolIndex);
-                return ObjectHandle<T>(mpCurrType, id, pPool);
+                return ObjectHandle<T>(id, pPool);
             }
         }
-        return ObjectHandle<T>::GetNULL();
+        return ObjectHandle<T>::sNULL;
     }
 
     ObjectIterator& operator++()

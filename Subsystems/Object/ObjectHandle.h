@@ -25,71 +25,68 @@ class ObjectHandle final
 
   public:
     ObjectHandle()
-      : mpObjectType(nullptr)
-      , mID(0)
+      : mID(0)
       , mpObjectPool(nullptr)
     {
-        *this = GetNULL();
+        static_assert(std::is_base_of_v<RObject, std::remove_const_t<T>>, "T is must be Object derived class.");
         setDebugValue();
     }
 
-    template <typename TConvertible, typename = std::enable_if_t<std::is_convertible_v<TConvertible*, T*>>>
+    template <typename TConvertible>
     ObjectHandle(const ObjectHandle<TConvertible>& other)
-      : mpObjectType(other.mpObjectType)
-      , mID(other.mID)
+      : mID(other.mID)
       , mpObjectPool(other.mpObjectPool)
     {
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<TConvertible>>,
-                      "TConvertible is not Object derived class.");
-        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<TConvertible>().IsBaseOfRecursive(*mpObjectType),
-                  "U must be ancestor class of actual object type.");
+                      "TConvertible must be an Object-derived class.");
+
+        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<T>().IsBaseOfRecursive(other.GetActualObjectType()),
+                  "T must be an ancestor of the actual object type.");
+
         setDebugValue();
     }
 
-    template <typename TConvertible, typename = std::enable_if_t<std::is_convertible_v<TConvertible*, T*>>>
+    template <typename TConvertible>
     ObjectHandle& operator=(const ObjectHandle<TConvertible>& rhs)
     {
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<TConvertible>>,
-                      "TConvertible is not Object derived class.");
-        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<TConvertible>().IsBaseOfRecursive(*rhs.mpObjectType),
-                  "U must be ancestor class of actual object type.");
+                      "TConvertible must be an Object-derived class.");
 
-        mpObjectType = rhs.mpObjectType;
+        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<T>().IsBaseOfRecursive(rhs.GetActualObjectType()),
+                  "T must be an ancestor of the actual object type.");
+
         mID = rhs.mID;
         mpObjectPool = rhs.mpObjectPool;
         setDebugValue();
         return *this;
     }
 
-    template <typename U>
-    [[nodiscard]] bool IsAssignableFrom(const ObjectHandle<U>& rhs) const
+    template <typename TAssignable>
+    [[nodiscard]] bool IsAssignableFrom(const ObjectHandle<TAssignable>& rhs) const
     {
-        static_assert(std::is_base_of_v<RObject, std::remove_const_t<U>>, "U is not Object derived class.");
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
+        static_assert(std::is_base_of_v<RObject, std::remove_const_t<TAssignable>>,
+                      "TAssignable is not Object derived class.");
         setDebugValue();
-        return mpObjectType->IsBaseOfRecursive(*rhs.mpObjectType);
+        return GetActualObjectType() == rhs.GetActualObjectType();
     }
 
     template <typename U>
     [[nodiscard]] ObjectHandle<U> Cast() const
     {
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<U>>, "U is not Object derived class.");
-        HO_ASSERT(IsValid(), "Attempted to cast an invalid/destroyed object handle.");
-        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<U>().IsBaseOfRecursive(*mpObjectType),
+        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<U>().IsBaseOfRecursive(GetActualObjectType()),
                   "U must be ancestor class of actual object type.");
         setDebugValue();
-        return ObjectHandle<U>(mpObjectType, mID, mpObjectPool);
+        return ObjectHandle<U>(mID, mpObjectPool);
     }
 
     [[nodiscard]] T* operator->() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         return Get();
     }
 
     [[nodiscard]] T& operator*() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         return *Get();
     }
 
@@ -97,7 +94,6 @@ class ObjectHandle final
     [[nodiscard]] bool operator==(const ObjectHandle<U>& rhs) const
     {
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<U>>, "U is not Object derived class.");
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         setDebugValue();
         return mID == rhs.mID && mpObjectPool == rhs.mpObjectPool;
     }
@@ -106,28 +102,24 @@ class ObjectHandle final
     [[nodiscard]] bool operator!=(const ObjectHandle<U>& rhs) const
     {
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<U>>, "U is not Object derived class.");
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         setDebugValue();
         return !(*this == rhs);
     }
 
     [[nodiscard]] bool IsNULL() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         setDebugValue();
-        return mpObjectPool == nullptr ? true : !mpObjectPool->Has(mID);
+        return mpObjectPool ? !mpObjectPool->Has(mID) : true;
     }
 
     [[nodiscard]] bool IsValid() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         setDebugValue();
         return !IsNULL();
     }
 
     [[nodiscard]] T* Get() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         HO_ASSERT(IsValid(), "Attempted to access an invalid/destroyed object handle.");
         setDebugValue();
         return static_cast<T*>(mpObjectPool->Get(mID));
@@ -136,23 +128,19 @@ class ObjectHandle final
     template <typename U>
     [[nodiscard]] U* GetAs() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         HO_ASSERT(IsValid(), "Attempted to access an invalid/destroyed object handle.");
-
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<U>>, "U is not Object derived class.");
 
-        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<U>().IsBaseOfRecursive(*mpObjectType),
-
+        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<U>().IsBaseOfRecursive(GetActualObjectType()),
                   "U must be ancestor class of actual object type.");
         setDebugValue();
         return static_cast<U*>(Get());
     }
 
-    [[nodiscard]] const Class& GetObjectType() const
+    [[nodiscard]] const Class& GetActualObjectType() const
     {
-        HO_ASSERT(mpObjectType, "Handle was construct incorrectly.");
         setDebugValue();
-        return *mpObjectType;
+        return mpObjectPool ? mpObjectPool->GetObjectType() : ReflectionSystem::GetInstance().GetClassByType<T>();
     }
 
     [[nodiscard]] constexpr uint64_t GetID() const
@@ -168,19 +156,15 @@ class ObjectHandle final
         return *mpObjectPool;
     }
 
-    static ObjectHandle<T> GetNULL()
-    {
-        return ObjectHandle<T>(&ReflectionSystem::GetInstance().GetClassByType<T>(), 0, nullptr);
-    }
+    static const ObjectHandle<T> sNULL;
 
   private:
-    ObjectHandle(const Class* pObjectType, uint64_t id, ObjectPool* pObjectPool)
-      : mpObjectType(pObjectType)
-      , mID(id)
+    ObjectHandle(uint64_t id, ObjectPool* pObjectPool)
+      : mID(id)
       , mpObjectPool(pObjectPool)
     {
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<T>>, "T is not Object derived class.");
-        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<T>().IsBaseOfRecursive(*mpObjectType),
+        HO_ASSERT(ReflectionSystem::GetInstance().GetClassByType<T>().IsBaseOfRecursive(GetActualObjectType()),
                   "T must be ancestor class of actual object type.");
         setDebugValue();
     }
@@ -196,10 +180,12 @@ class ObjectHandle final
     mutable T* mpDebugValue = nullptr;
 #endif
 
-    const Class* mpObjectType;
     uint64_t mID = 0;
     ObjectPool* mpObjectPool = nullptr;
 };
+
+template <typename T>
+INLINE const ObjectHandle<T> ObjectHandle<T>::sNULL = ObjectHandle<T>();
 } // namespace ho
 
 namespace std

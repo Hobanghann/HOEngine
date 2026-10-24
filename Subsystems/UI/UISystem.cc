@@ -10,8 +10,9 @@
 // clang-format on
 
 #include "Core/IO/Path.h"
+#include "IUIDrawable.h"
 #include "Platforms/IPlatformApplication.h"
-#include "Subsystems/Rendering/IRenderingSystem.h"
+#include "Subsystems/Rendering/RenderingSystem.h"
 
 namespace ho
 {
@@ -264,10 +265,7 @@ bool UISystem::init()
     style.Colors[ImGuiCol_TreeLines] = {
         mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
 
-    style.Colors[ImGuiCol_DragDropTarget] = {mTitleBarTheme.ButtonActiveColor.R,
-                                             mTitleBarTheme.ButtonActiveColor.G,
-                                             mTitleBarTheme.ButtonActiveColor.B,
-                                             1.0f};
+    style.Colors[ImGuiCol_DragDropTarget] = {1.0f, 1.0f, 1.0f, 1.0f};
     style.Colors[ImGuiCol_DragDropTargetBg] = {mTitleBarTheme.ButtonHoveredColor.R,
                                                mTitleBarTheme.ButtonHoveredColor.G,
                                                mTitleBarTheme.ButtonHoveredColor.B,
@@ -277,10 +275,7 @@ bool UISystem::init()
                                             mTitleBarTheme.CloseButtonHoveredColor.B,
                                             1.0f};
 
-    style.Colors[ImGuiCol_NavCursor] = {mTitleBarTheme.ButtonActiveColor.R,
-                                        mTitleBarTheme.ButtonActiveColor.G,
-                                        mTitleBarTheme.ButtonActiveColor.B,
-                                        1.0f};
+    style.Colors[ImGuiCol_NavCursor] = {1.0f, 1.0f, 1.0f, 1.0f};
     style.Colors[ImGuiCol_NavWindowingHighlight] = {1.0f, 1.0f, 1.0f, 0.7f};
     style.Colors[ImGuiCol_NavWindowingDimBg] = {0.0f, 0.0f, 0.0f, 0.4f};
     style.Colors[ImGuiCol_ModalWindowDimBg] = {0.0f, 0.0f, 0.0f, 0.7f};
@@ -331,20 +326,23 @@ bool UISystem::init()
     return true;
 }
 
-void UISystem::submitDrawCommandForUI()
+void UISystem::draw()
 {
     while (!mUIDrawableQueue.IsEmpty())
     {
         mUIDrawableQueue.Front()->DrawUI();
         mUIDrawableQueue.Pop();
     }
+}
 
+void UISystem::submitDrawCommandForUI()
+{
     ImGui::Render();
 
     const ImDrawData* pMainDrawData = ImGui::GetDrawData();
 
-    IRenderingSystem::GetInstance().SubmitUIViewportData(IPlatformApplication::GetInstance().GetMainWindow(),
-                                                         *pMainDrawData);
+    RenderingSystem::GetInstance().SubmitUIViewportData(IPlatformApplication::GetInstance().GetMainWindow(),
+                                                        *pMainDrawData);
 
     const ImGuiIO& io = ImGui::GetIO();
     // Update and Render additional Platform Windows
@@ -362,7 +360,7 @@ void UISystem::submitDrawCommandForUI()
 
             const ImGuiViewportP* viewportP = static_cast<const ImGuiViewportP*>(viewport);
 
-            ImGuiContext& g = *GImGui;
+            const ImGuiContext& g = *GImGui;
 
             bool bDestroyPlatformWindow = false;
             bDestroyPlatformWindow |= (viewportP->LastFrameActive < g.FrameCount - 1);
@@ -383,7 +381,7 @@ void UISystem::submitDrawCommandForUI()
 
             if (viewport->DrawData && pTargetWindow)
             {
-                IRenderingSystem::GetInstance().SubmitUIViewportData(pTargetWindow, *viewport->DrawData);
+                RenderingSystem::GetInstance().SubmitUIViewportData(pTargetWindow, *viewport->DrawData);
             }
         }
     }

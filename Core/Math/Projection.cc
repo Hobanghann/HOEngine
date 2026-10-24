@@ -2,9 +2,9 @@
 
 namespace ho
 {
-Vector4 Projection::Project(const Vector4& v, float ndcNear, float ndcFar) const
+Vector4 Projection::Project(const Vector4& v) const
 {
-    return GetMatrix(ndcNear, ndcFar) * v;
+    return GetMatrix() * v;
 }
 
 std::string Projection::ToString() const

@@ -19,13 +19,9 @@ class ProjectionTest : public ::testing::Test
         aspect = width / height;
         nearZ = 0.1f;
         farZ = 100.0f;
-
-        testNdcNear = 0.0f;
-        testNdcFar = 1.0f;
     }
 
     float fov, width, height, aspect, nearZ, farZ;
-    float testNdcNear, testNdcFar;
 };
 
 TEST_F(ProjectionTest, CreateOrthographic_StandardDimensions_CalculatesCorrectMatrix)
@@ -37,16 +33,16 @@ TEST_F(ProjectionTest, CreateOrthographic_StandardDimensions_CalculatesCorrectMa
 
     Matrix4x4 expectedMatrix({2.0f / viewWidth, 0.0f, 0.0f, 0.0f},
                              {0.0f, 2.0f / height, 0.0f, 0.0f},
-                             {0.0f, 0.0f, (testNdcFar - testNdcNear) / range, 0.0f},
-                             {0.0f, 0.0f, (testNdcNear * farZ - testNdcFar * nearZ) / range, 1.0f});
+                             {0.0f, 0.0f, (1.0f - 0.0f) / range, 0.0f},
+                             {0.0f, 0.0f, (0.0f * farZ - 1.0f * nearZ) / range, 1.0f});
 
-    EXPECT_TRUE(proj.GetMatrix(testNdcNear, testNdcFar).IsEqualApprox(expectedMatrix));
+    EXPECT_TRUE(proj.GetMatrix().IsEqualApprox(expectedMatrix));
     EXPECT_NEAR(proj.GetHeight(), height, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetAspectRatio(), aspect, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetNearDistance(), nearZ, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), farZ, math::EPSILON_CMP);
 
-    Projection projFromMat = Projection::CreateOrthographicFromMatrix(expectedMatrix, testNdcNear, testNdcFar);
+    Projection projFromMat = Projection::CreateOrthographicFromMatrix(expectedMatrix);
     EXPECT_TRUE(proj.IsEqualApprox(projFromMat));
 }
 
@@ -59,16 +55,16 @@ TEST_F(ProjectionTest, CreatePerspective_StandardFovAndDimensions_CalculatesCorr
 
     Matrix4x4 expectedMatrix({fovFactor / aspect, 0.0f, 0.0f, 0.0f},
                              {0.0f, fovFactor, 0.0f, 0.0f},
-                             {0.0f, 0.0f, (testNdcFar * farZ - testNdcNear * nearZ) / range, 1.0f},
-                             {0.0f, 0.0f, ((testNdcNear - testNdcFar) * farZ * nearZ) / range, 0.0f});
+                             {0.0f, 0.0f, (1.0f * farZ - 0.0f * nearZ) / range, 1.0f},
+                             {0.0f, 0.0f, ((0.0f - 1.0f) * farZ * nearZ) / range, 0.0f});
 
-    EXPECT_TRUE(proj.GetMatrix(testNdcNear, testNdcFar).IsEqualApprox(expectedMatrix));
+    EXPECT_TRUE(proj.GetMatrix().IsEqualApprox(expectedMatrix));
     EXPECT_NEAR(proj.GetFOV(), fov, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetAspectRatio(), aspect, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetNearDistance(), nearZ, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), farZ, math::EPSILON_CMP);
 
-    Projection projFromMat = Projection::CreatePerspectiveFromMatrix(expectedMatrix, testNdcNear, testNdcFar);
+    Projection projFromMat = Projection::CreatePerspectiveFromMatrix(expectedMatrix);
     EXPECT_TRUE(proj.IsEqualApprox(projFromMat));
 }
 
@@ -106,14 +102,14 @@ TEST_F(ProjectionTest, Setters_OrthographicProjection_UpdatesSpecificMatrixEleme
     EXPECT_NEAR(proj.GetNearDistance(), nearZ, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), farZ, math::EPSILON_CMP);
 
-    float originalProjM11 = proj.GetMatrix(testNdcNear, testNdcFar).Data[1][1];
+    float originalProjM11 = proj.GetMatrix().Data[1][1];
 
     proj.SetAspectRatio(2.0f);
 
     EXPECT_NEAR(proj.GetAspectRatio(), 2.0f, math::EPSILON_CMP);
-    EXPECT_EQ(proj.GetMatrix(testNdcNear, testNdcFar).Data[1][1], originalProjM11);
+    EXPECT_EQ(proj.GetMatrix().Data[1][1], originalProjM11);
 
-    EXPECT_NEAR(proj.GetMatrix(testNdcNear, testNdcFar).Data[0][0], 2.0f / (2.0f * height), math::EPSILON_CMP);
+    EXPECT_NEAR(proj.GetMatrix().Data[0][0], 2.0f / (2.0f * height), math::EPSILON_CMP);
 
     float newNear = 10.0f;
     float newFar = 50.0f;
@@ -123,8 +119,8 @@ TEST_F(ProjectionTest, Setters_OrthographicProjection_UpdatesSpecificMatrixEleme
     EXPECT_NEAR(proj.GetNearDistance(), newNear, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), newFar, math::EPSILON_CMP);
 
-    float expectedM22 = (testNdcFar - testNdcNear) / (newFar - newNear);
-    EXPECT_NEAR(proj.GetMatrix(testNdcNear, testNdcFar).Data[2][2], expectedM22, math::EPSILON_CMP);
+    float expectedM22 = (1.0f - 0.0f) / (newFar - newNear);
+    EXPECT_NEAR(proj.GetMatrix().Data[2][2], expectedM22, math::EPSILON_CMP);
 }
 
 TEST_F(ProjectionTest, Setters_PerspectiveProjection_UpdatesSpecificMatrixElements)
@@ -141,16 +137,16 @@ TEST_F(ProjectionTest, Setters_PerspectiveProjection_UpdatesSpecificMatrixElemen
 
     float expectedFovFactor = 1.0f / math::Tan(newFOV * 0.5f);
     EXPECT_NEAR(proj.GetFOV(), newFOV, math::EPSILON_CMP);
-    EXPECT_NEAR(proj.GetMatrix(testNdcNear, testNdcFar).Data[1][1], expectedFovFactor, math::EPSILON_CMP);
+    EXPECT_NEAR(proj.GetMatrix().Data[1][1], expectedFovFactor, math::EPSILON_CMP);
 
-    float fixedM11 = proj.GetMatrix(testNdcNear, testNdcFar).Data[1][1];
+    float fixedM11 = proj.GetMatrix().Data[1][1];
 
     float newAspect = 800.0f / 600.0f;
     proj.SetAspectRatio(newAspect);
 
     EXPECT_NEAR(proj.GetAspectRatio(), newAspect, math::EPSILON_CMP);
-    EXPECT_EQ(proj.GetMatrix(testNdcNear, testNdcFar).Data[1][1], fixedM11);
-    EXPECT_NEAR(proj.GetMatrix(testNdcNear, testNdcFar).Data[0][0], fixedM11 / newAspect, math::EPSILON_CMP);
+    EXPECT_EQ(proj.GetMatrix().Data[1][1], fixedM11);
+    EXPECT_NEAR(proj.GetMatrix().Data[0][0], fixedM11 / newAspect, math::EPSILON_CMP);
 
     float newNear = 1.0f;
     float newFar = 500.0f;
@@ -160,8 +156,8 @@ TEST_F(ProjectionTest, Setters_PerspectiveProjection_UpdatesSpecificMatrixElemen
     EXPECT_NEAR(proj.GetNearDistance(), newNear, math::EPSILON_CMP);
     EXPECT_NEAR(proj.GetFarDistance(), newFar, math::EPSILON_CMP);
 
-    float expectedM22 = (testNdcFar * newFar - testNdcNear * newNear) / (newFar - newNear);
-    EXPECT_NEAR(proj.GetMatrix(testNdcNear, testNdcFar).Data[2][2], expectedM22, math::EPSILON_CMP);
+    float expectedM22 = (1.0f * newFar - 0.0f * newNear) / (newFar - newNear);
+    EXPECT_NEAR(proj.GetMatrix().Data[2][2], expectedM22, math::EPSILON_CMP);
 }
 
 TEST_F(ProjectionTest, OperatorComparison_DifferentOrthographicProjections_ReturnsCorrectBoolean)

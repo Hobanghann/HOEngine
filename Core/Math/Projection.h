@@ -20,16 +20,12 @@ class Projection final
                                                                               float aspectRatio,
                                                                               float near,
                                                                               float far);
-    [[nodiscard]] FORCE_INLINE static constexpr Projection CreateOrthographicFromMatrix(const Matrix4x4& m,
-                                                                                        float ndcNear,
-                                                                                        float ndcFar);
+    [[nodiscard]] FORCE_INLINE static constexpr Projection CreateOrthographicFromMatrix(const Matrix4x4& m);
     [[nodiscard]] FORCE_INLINE static constexpr Projection CreatePerspective(float fov,
                                                                              float aspectRatio,
                                                                              float near,
                                                                              float far);
-    [[nodiscard]] FORCE_INLINE static constexpr Projection CreatePerspectiveFromMatrix(const Matrix4x4& m,
-                                                                                       float ndcNear,
-                                                                                       float ndcFar);
+    [[nodiscard]] FORCE_INLINE static constexpr Projection CreatePerspectiveFromMatrix(const Matrix4x4& m);
 
     FORCE_INLINE constexpr Projection(const Projection&) = default;
     FORCE_INLINE constexpr Projection& operator=(const Projection& rhs);
@@ -41,7 +37,7 @@ class Projection final
     [[nodiscard]] FORCE_INLINE constexpr float GetAspectRatio() const;
     [[nodiscard]] FORCE_INLINE constexpr float GetNearDistance() const;
     [[nodiscard]] FORCE_INLINE constexpr float GetFarDistance() const;
-    [[nodiscard]] FORCE_INLINE constexpr Matrix4x4 GetMatrix(float ndcNear, float ndcFar) const;
+    [[nodiscard]] FORCE_INLINE constexpr Matrix4x4 GetMatrix() const;
 
     FORCE_INLINE constexpr void SetFOV(float fov);
     FORCE_INLINE constexpr void SetHeight(float height);
@@ -55,7 +51,7 @@ class Projection final
     [[nodiscard]] constexpr bool IsEqualApprox(const Projection& rhs) const;
     [[nodiscard]] constexpr bool IsNotEqualApprox(const Projection& rhs) const;
 
-    [[nodiscard]] Vector4 Project(const Vector4& v, float ndcNear, float ndcFar) const;
+    [[nodiscard]] Vector4 Project(const Vector4& v) const;
 
     [[nodiscard]] std::string ToString() const;
 
@@ -88,7 +84,7 @@ constexpr Projection Projection::CreateOrthographic(float viewHeight, float aspe
     return proj;
 }
 
-constexpr Projection Projection::CreateOrthographicFromMatrix(const Matrix4x4& m, float ndcNear, float ndcFar)
+constexpr Projection Projection::CreateOrthographicFromMatrix(const Matrix4x4& m)
 {
     Projection proj;
     proj.mType = eProjectionType::Orthographic;
@@ -123,8 +119,8 @@ constexpr Projection Projection::CreateOrthographicFromMatrix(const Matrix4x4& m
     }
     else
     {
-        proj.mNear = static_cast<float>((static_cast<double>(ndcNear) - m23) / m22);
-        proj.mFar = static_cast<float>((static_cast<double>(ndcFar) - m23) / m22);
+        proj.mNear = static_cast<float>((0.0 - m23) / m22);
+        proj.mFar = static_cast<float>((1.0 - m23) / m22);
     }
 
     return proj;
@@ -143,7 +139,7 @@ constexpr Projection Projection::CreatePerspective(float fov, float aspectRatio,
     return proj;
 }
 
-constexpr Projection Projection::CreatePerspectiveFromMatrix(const Matrix4x4& m, float ndcNear, float ndcFar)
+constexpr Projection Projection::CreatePerspectiveFromMatrix(const Matrix4x4& m)
 {
     Projection proj;
     proj.mType = eProjectionType::Perspective;
@@ -175,8 +171,8 @@ constexpr Projection Projection::CreatePerspectiveFromMatrix(const Matrix4x4& m,
     }
     else
     {
-        proj.mNear = static_cast<float>(m23 / (static_cast<double>(ndcNear) - m22));
-        proj.mFar = static_cast<float>(m23 / (static_cast<double>(ndcFar) - m22));
+        proj.mNear = static_cast<float>(m23 / (0.0 - m22));
+        proj.mFar = static_cast<float>(m23 / (1.0 - m22));
     }
 
     return proj;
@@ -237,7 +233,7 @@ constexpr float Projection::GetNearDistance() const
     return mNear;
 }
 
-constexpr Matrix4x4 Projection::GetMatrix(float ndcNear, float ndcFar) const
+constexpr Matrix4x4 Projection::GetMatrix() const
 {
     switch (mType)
     {
@@ -246,16 +242,16 @@ constexpr Matrix4x4 Projection::GetMatrix(float ndcNear, float ndcFar) const
             const float viewWidth = mAspectRatio * mViewHeight;
             return Matrix4x4(Vector4(2.0f / viewWidth, 0.0f, 0.0f, 0.0f),
                              Vector4(0.0f, 2.0f / mViewHeight, 0.0f, 0.0f),
-                             Vector4(0.0f, 0.0f, (ndcFar - ndcNear) / (mFar - mNear), 0.0f),
-                             Vector4(0.0f, 0.0f, (ndcNear * mFar - ndcFar * mNear) / (mFar - mNear), 1.0f));
+                             Vector4(0.0f, 0.0f, 1.0f / (mFar - mNear), 0.0f),
+                             Vector4(0.0f, 0.0f, -mNear / (mFar - mNear), 1.0f));
         }
         case eProjectionType::Perspective:
         {
             const float fovFactor = 1.0f / math::Tan(mFov * 0.5f);
             return Matrix4x4(Vector4(fovFactor / mAspectRatio, 0.0f, 0.0f, 0.0f),
                              Vector4(0.0f, fovFactor, 0.0f, 0.0f),
-                             Vector4(0.0f, 0.0f, (ndcFar * mFar - ndcNear * mNear) / (mFar - mNear), 1.0f),
-                             Vector4(0.0f, 0.0f, ((ndcNear - ndcFar) * mFar * mNear) / (mFar - mNear), 0.0f));
+                             Vector4(0.0f, 0.0f, (1.0f * mFar - 0.0f * mNear) / (mFar - mNear), 1.0f),
+                             Vector4(0.0f, 0.0f, ((0.0f - 1.0f) * mFar * mNear) / (mFar - mNear), 0.0f));
         }
         default:
             HO_ASSERT(false, "Invalid projection type.");

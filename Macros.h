@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cassert>
+#include <cstdint>
+
 #ifndef FORCE_INLINE
 #if defined(_MSC_VER)
 #define FORCE_INLINE __forceinline
@@ -41,6 +44,21 @@
 #define HO_ASSERT(cond, msg) ((void)((!!(cond)) || (HO_DEBUG_BREAK(), 0)))
 #endif
 #endif
+
+#define HO_CONCAT_IMPL(a, b) a##b
+#define HO_CONCAT(a, b) HO_CONCAT_IMPL(a, b)
+
+template <typename T, size_t N>
+constexpr int32_t GetArraySize(T (&array)[N]) noexcept
+{
+    return static_cast<int32_t>(N);
+}
+
+#define HO_ARRAY_SIZE(arr) GetArraySize(arr)
+
+#define HO_ALIGN_CEIL(value, alignment) (((value) + (alignment) - 1) & ~((alignment) - 1))
+
+#define HO_ALIGN_FLOOR(value, alignment) ((value) & ~((alignment) - 1))
 
 #if defined(_MSC_VER)
 #define HO_DISABLE_COMPILER_WARNING_PUSH() __pragma(warning(push))

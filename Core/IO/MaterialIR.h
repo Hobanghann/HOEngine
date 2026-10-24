@@ -5,7 +5,6 @@
 #include "Core/Math/Color128.h"
 #include "Core/Math/Matrix3x3.h"
 #include "Core/Math/Vector4.h"
-#include "Core/Templates/ID.h"
 #include "Path.h"
 
 namespace ho
@@ -83,7 +82,7 @@ struct MaterialIR
     std::string NameStr;
 
     // Legacy / Phong Attributes
-    Color128 Ambient{0.001f, 0.001f, 0.001f, 1.f};
+    Color128 Ambient{0.01f, 0.01f, 0.01f, 1.f};
     Color128 Diffuse{1.f, 1.f, 1.f, 1.f};
     Color128 Specular{1.f, 1.f, 1.f, 1.f};
     float Shininess = 32.0f;

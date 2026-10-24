@@ -4,6 +4,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -512,7 +513,7 @@ std::unique_ptr<const MaterialIR> parseMaterial(const Path& path,
         pMaterialIR->Ambient = Color128(color3D.r, color3D.g, color3D.b);
         if (pMaterialIR->Ambient == Color128(0.0f, 0.0f, 0.0f))
         {
-            pMaterialIR->Ambient = Color128(0.001f, 0.001f, 0.001f);
+            pMaterialIR->Ambient = Color128(0.01f, 0.01f, 0.01f);
         }
     }
     if (AI_SUCCESS == assimpMaterial.Get(AI_MATKEY_COLOR_DIFFUSE, color3D))

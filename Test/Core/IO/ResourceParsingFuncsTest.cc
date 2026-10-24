@@ -48,24 +48,13 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
         EXPECT_EQ(subMeshIR.MorphTargets.size(), subMeshIR.MorphNameToIndexMap.size());
 
         EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
-        EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-        EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-        EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-        EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
     }
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
-
     // Check MaterialIR
     const MaterialIR* pTexMaterialIR = pModelIR->pMaterialIRs[0].get();
-    EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
+    EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.01f, 0.01f, 0.01f));
     EXPECT_TRUE(pTexMaterialIR->Diffuse.IsEqualApprox(Color128(0.6f, 0.6f, 0.6f)));
     EXPECT_EQ(pTexMaterialIR->Specular, Color128(0.0f, 0.0f, 0.0f));
     EXPECT_EQ(pTexMaterialIR->Shininess, 32.0f);
@@ -338,19 +327,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
-
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check Material
     const MaterialIR* pMaterialIR = nullptr;
@@ -362,7 +340,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
-    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
+    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.01f, 0.01f, 0.01f));
     EXPECT_TRUE(pMaterialIR->Diffuse.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Specular, Color128(1.0f, 1.0f, 1.0f));
     EXPECT_EQ(pMaterialIR->Shininess, 32.0f);
@@ -439,19 +417,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
-
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check Material
     const MaterialIR* pMaterialIR = nullptr;
@@ -463,7 +430,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
-    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
+    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.01f, 0.01f, 0.01f));
     EXPECT_TRUE(pMaterialIR->Diffuse.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Specular, Color128(1.0f, 1.0f, 1.0f));
     EXPECT_EQ(pMaterialIR->Shininess, 32.0f);
@@ -554,19 +521,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpe
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
-
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check Material
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);

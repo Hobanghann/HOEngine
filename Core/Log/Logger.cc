@@ -48,7 +48,7 @@ void Logger::Log(eLogLevel level, eLogCategory category, const char* file, int32
     vsnprintf(msgBuf, sizeof(msgBuf), fmt, args);
     va_end(args);
 
-    spdlog::source_loc loc{file, line, nullptr};
+    const spdlog::source_loc loc{file, line, nullptr};
 
     spdlog::level::level_enum spdLevel = spdlog::level::off;
     switch (level)
@@ -86,8 +86,8 @@ LogSinkImgui* Logger::GetImGuiSink()
 
 Logger::TraceScope::TraceScope(eLogCategory category, const char* file, int32_t line, const std::string& scopeNameStr)
   : Category(category)
-  , Line(line)
   , File(file)
+  , Line(line)
   , NameStr(scopeNameStr)
   , StartTime(std::chrono::steady_clock::now())
 {

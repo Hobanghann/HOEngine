@@ -17,8 +17,8 @@ namespace ho
 struct LogEntry
 {
     char Time[16] = {};
-    eLogLevel Level;
-    eLogCategory Category;
+    eLogLevel Level = eLogLevel::LogLevel_Info;
+    eLogCategory Category = eLogCategory::LogCategory_None;
     char SourceLocation[128] = {};
     std::string Message;
 };
@@ -51,7 +51,7 @@ class LogSinkImgui final : public spdlog::sinks::base_sink<std::mutex>
         LogEntry entry;
 
         auto timet = std::chrono::system_clock::to_time_t(msg.time);
-        std::tm tmBuf;
+        std::tm tmBuf{};
 #if defined(_WIN32)
         localtime_s(&tmBuf, &timet);
 #else
@@ -86,14 +86,14 @@ class LogSinkImgui final : public spdlog::sinks::base_sink<std::mutex>
 
         snprintf(entry.SourceLocation, sizeof(entry.SourceLocation), "%s:%d", msg.source.filename, msg.source.line);
 
-        std::string_view payloadStr(msg.payload.data(), msg.payload.size());
+        const std::string_view payloadStr(msg.payload.data(), msg.payload.size());
 
         entry.Category = LogCategory_None;
-        size_t spacePos = payloadStr.find(' ');
+        const size_t spacePos = payloadStr.find(' ');
 
         if (spacePos != std::string_view::npos)
         {
-            std::string categoryStr(payloadStr.substr(0, spacePos));
+            const std::string categoryStr(payloadStr.substr(0, spacePos));
             entry.Category = static_cast<eLogCategory>(std::stoi(categoryStr));
 
             entry.Message = payloadStr.substr(spacePos + 1);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Templates/GlobalPoolIndex.h"
+#include "Core/String/StringHandle.h"
 #include "Subsystems/UI/IUIDrawable.h"
 
 namespace ho
@@ -14,6 +14,13 @@ class IEngineWindow : public IUIDrawable
     }
 
     ~IEngineWindow() override = default;
+
+    virtual bool OnInit() = 0;
+    virtual bool OnPreUpdate(float deltaTime) = 0;
+    virtual bool OnUpdate(float deltaTime) = 0;
+    virtual bool OnPostUpdate(float deltaTime) = 0;
+    virtual bool OnRender() = 0;
+    virtual void OnShutdown() = 0;
 
     StringHandle GetName() const
     {

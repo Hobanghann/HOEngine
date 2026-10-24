@@ -6,8 +6,6 @@
 
 namespace ho
 {
-class TestAppMainWindow;
-
 class TestApp final : public IEngineApplication
 {
   public:
@@ -20,8 +18,5 @@ class TestApp final : public IEngineApplication
     bool OnPostUpdate(float deltaTime) override;
     bool OnRender() override;
     void OnShutdown() override;
-
-  private:
-    std::unique_ptr<TestAppMainWindow> mpMainWindow;
 };
 } // namespace ho

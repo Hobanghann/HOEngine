@@ -11,6 +11,33 @@ TestAppMainWindow::TestAppMainWindow()
 {
 }
 
+bool TestAppMainWindow::OnInit()
+{
+    return true;
+}
+
+bool TestAppMainWindow::OnPreUpdate(float deltaTime)
+{
+    return true;
+}
+
+bool TestAppMainWindow::OnUpdate(float deltaTime)
+{
+    return true;
+}
+
+bool TestAppMainWindow::OnPostUpdate(float deltaTime)
+{
+    return true;
+}
+
+bool TestAppMainWindow::OnRender()
+{
+    return true;
+}
+
+void TestAppMainWindow::OnShutdown() {}
+
 void TestAppMainWindow::DrawUI()
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -20,11 +47,11 @@ void TestAppMainWindow::DrawUI()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-    static const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-                                          ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
-                                          ImGuiWindowFlags_NoBringToFrontOnFocus;
+    static const ImGuiWindowFlags sFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                           ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
+                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-    if (ImGui::Begin("##TestAppMainWindowID", nullptr, flags))
+    if (ImGui::Begin("##TestAppMainWindowID", nullptr, sFlags))
     {
         const auto& titleBarTheme = UISystem::GetInstance().GetTitleBarTheme();
 
@@ -32,18 +59,18 @@ void TestAppMainWindow::DrawUI()
         drawMainWindowTitleBar(titleBarTheme);
         ImGui::PopStyleVar();
 
-        ImVec2 clientAreaSize = ImGui::GetContentRegionAvail();
+        const ImVec2 clientAreaSize = ImGui::GetContentRegionAvail();
 
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
 
-        static const ImGuiWindowFlags childFlags =
+        static const ImGuiWindowFlags sChildFlags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
 
-        if (ImGui::BeginChild("##ClientArea", clientAreaSize, 0, childFlags))
+        if (ImGui::BeginChild("##ClientArea", clientAreaSize, 0, sChildFlags))
         {
             // Draw docking space
-            ImGuiID dockspaceId = ImGui::GetID("TestAppWindowDockSpace");
-            ImVec2 remainingSpace = ImGui::GetContentRegionAvail();
+            const ImGuiID dockspaceId = ImGui::GetID("TestAppWindowDockSpace");
+            const ImVec2 remainingSpace = ImGui::GetContentRegionAvail();
             ImGui::DockSpace(dockspaceId, remainingSpace, ImGuiDockNodeFlags_None);
         }
         ImGui::EndChild();

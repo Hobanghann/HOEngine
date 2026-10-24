@@ -25,6 +25,7 @@ struct alignas(16) Basis2D
     [[nodiscard]] FORCE_INLINE Vector2 GetUp() const;
     [[nodiscard]] constexpr Vector2 GetScaledRight() const;
     [[nodiscard]] constexpr Vector2 GetScaledUp() const;
+    [[nodiscard]] FORCE_INLINE float GetRotateAngleRad() const;
 
     constexpr bool operator==(const Basis2D& rhs) const;
     constexpr bool operator!=(const Basis2D& rhs) const;
@@ -155,6 +156,12 @@ constexpr Vector2 Basis2D::GetScaledRight() const
 constexpr Vector2 Basis2D::GetScaledUp() const
 {
     return Matrix.GetCol1();
+}
+
+float Basis2D::GetRotateAngleRad() const
+{
+    const Vector2 right = GetRight();
+    return math::Atan2(right.Y, right.X);
 }
 
 constexpr bool Basis2D::operator==(const Basis2D& rhs) const

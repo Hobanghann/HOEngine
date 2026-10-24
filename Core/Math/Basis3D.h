@@ -39,6 +39,8 @@ struct Basis3D
     [[nodiscard]] constexpr Vector3 GetScaledRight() const;
     [[nodiscard]] constexpr Vector3 GetScaledUp() const;
     [[nodiscard]] constexpr Vector3 GetScaledForward() const;
+    [[nodiscard]] FORCE_INLINE Vector3 GetEulerAngleRad() const;
+    [[nodiscard]] FORCE_INLINE Quaternion GetQuaternion() const;
 
     [[nodiscard]] constexpr bool operator==(const Basis3D& rhs) const;
     [[nodiscard]] constexpr bool operator!=(const Basis3D& rhs) const;
@@ -215,6 +217,40 @@ constexpr Vector3 Basis3D::GetScaledUp() const
 constexpr Vector3 Basis3D::GetScaledForward() const
 {
     return Matrix.GetCol2();
+}
+
+Vector3 Basis3D::GetEulerAngleRad() const
+{
+    const Vector3 right = GetRight();
+    const Vector3 up = GetUp();
+    const Vector3 forward = GetForward();
+
+    float pitch = 0.0f;
+    float yaw = 0.0f;
+    float roll = 0.0f;
+
+    pitch = math::Asin(-forward.Y);
+
+    if (!math::IsEqualApprox(math::Abs(forward.Y), 1.0f))
+    {
+        yaw = math::Atan2(forward.X, forward.Z);
+        roll = math::Atan2(right.Y, up.Y);
+    }
+    else
+    {
+        yaw = math::Atan2(-right.Z, right.X);
+        roll = 0.0f;
+    }
+
+    return Vector3(pitch, yaw, roll);
+}
+
+Quaternion Basis3D::GetQuaternion() const
+{
+    const Vector3 right = GetRight();
+    const Vector3 up = GetUp();
+    const Vector3 forward = GetForward();
+    return Quaternion::FromMatrix(Matrix3x3(right, up, forward));
 }
 
 constexpr bool Basis3D::operator==(const Basis3D& rhs) const

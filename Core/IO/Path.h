@@ -118,7 +118,7 @@ Path Path::GetChildPath() const
     }
 
     auto it = mPath.begin();
-    size_t rootLength = it->string().length();
+    const size_t rootLength = it->string().length();
 
     if (++it == mPath.end())
     {

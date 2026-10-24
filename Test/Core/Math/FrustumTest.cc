@@ -27,7 +27,7 @@ class FrustumTest : public ::testing::Test
         right = Plane::FromNormalPoint(Vector3(1.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f));
         bottom = Plane::FromNormalPoint(Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f));
         top = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-        Near = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, -1.0f), Vector3(0.0f, 0.0f, -1.0f));
+        Near = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, -1.0f), Vector3(0.0f, 0.0f, 0.0f));
         far = Plane::FromNormalPoint(Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, 0.0f, 1.0f));
 
         defaultFrustum = Frustum();
@@ -103,7 +103,7 @@ TEST_F(FrustumTest, GetPointSide_InsideAndOutsidePoints_ReturnsCorrectSide)
 
 TEST_F(FrustumTest, GetLineSide_InsideOutsideAndIntersectingLines_ReturnsCorrectSide)
 {
-    Vector3 inside1(0.0f, 0.0f, 0.0f);
+    Vector3 inside1(0.0f, 0.0f, 0.1f);
     Vector3 inside2(0.5f, -0.2f, 0.7f);
     Vector3 outsidePosZ(0.0f, 0.0f, 2.0f);
     Vector3 outsidePosX(2.0f, 0.0f, 0.0f);
@@ -119,8 +119,8 @@ TEST_F(FrustumTest, GetLineSide_InsideOutsideAndIntersectingLines_ReturnsCorrect
 
 TEST_F(FrustumTest, GetTriangleSide_InsideOutsideAndIntersectingTriangles_ReturnsCorrectSide)
 {
-    Vector3 inA(0.0f, 0.0f, 0.0f);
-    Vector3 inB(0.2f, 0.3f, -0.7f);
+    Vector3 inA(0.0f, 0.0f, 0.1f);
+    Vector3 inB(0.2f, 0.3f, 0.7f);
     Vector3 inC(-0.8f, 0.1f, 0.9f);
 
     Vector3 outZ1(0.0f, 0.0f, 2.0f);
@@ -137,7 +137,7 @@ TEST_F(FrustumTest, GetTriangleSide_InsideOutsideAndIntersectingTriangles_Return
 
 TEST_F(FrustumTest, GetAabbSide_InsideOutsideAndIntersectingBoxes_ReturnsCorrectSide)
 {
-    AABB inside(Vector3(-0.5f, -0.5f, -0.5f), Vector3(0.5f, 0.5f, 0.5f));
+    AABB inside(Vector3(-0.5f, -0.5f, 0.5f), Vector3(0.5f, 0.5f, 0.7f));
     EXPECT_EQ(f1.GetAabbSide(inside), math::eSide::Inside);
 
     AABB intersect(Vector3(0.5f, -0.5f, -0.5f), Vector3(1.5f, 0.5f, 0.5f));
@@ -149,7 +149,7 @@ TEST_F(FrustumTest, GetAabbSide_InsideOutsideAndIntersectingBoxes_ReturnsCorrect
 
 TEST_F(FrustumTest, GetSphereSide_InsideOutsideAndIntersectingSpheres_ReturnsCorrectSide)
 {
-    Sphere inside(Vector3(0.0f, 0.0f, 0.0f), 0.5f);
+    Sphere inside(Vector3(0.5f, 0.5f, 0.5f), 0.3f);
     EXPECT_EQ(f1.GetSphereSide(inside), math::eSide::Inside);
 
     Sphere intersect(Vector3(1.2f, 0.0f, 0.0f), 0.5f);

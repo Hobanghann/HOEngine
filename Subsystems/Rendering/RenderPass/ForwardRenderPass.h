@@ -5,7 +5,7 @@
 
 namespace ho
 {
-class ForwardRenderPass : public IRenderPass
+class ForwardRenderPass final : public IRenderPass
 {
   public:
     ForwardRenderPass() = default;

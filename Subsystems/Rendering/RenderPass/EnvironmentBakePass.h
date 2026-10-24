@@ -5,7 +5,7 @@
 
 namespace ho
 {
-class EnvironmentBakePass : public IRenderPass
+class EnvironmentBakePass final : public IRenderPass
 {
   public:
     EnvironmentBakePass() = default;

@@ -5,7 +5,7 @@
 
 namespace ho
 {
-class DirLightShadowMapRenderPass : public IRenderPass
+class DirLightShadowMapRenderPass final : public IRenderPass
 {
   public:
     DirLightShadowMapRenderPass() = default;

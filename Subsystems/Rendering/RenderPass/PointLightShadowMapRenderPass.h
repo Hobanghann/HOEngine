@@ -5,7 +5,7 @@
 
 namespace ho
 {
-class PointLightShadowMapRenderPass : public IRenderPass
+class PointLightShadowMapRenderPass final : public IRenderPass
 {
   public:
     PointLightShadowMapRenderPass() = default;

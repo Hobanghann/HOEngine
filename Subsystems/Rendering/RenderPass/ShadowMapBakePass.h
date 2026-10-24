@@ -5,7 +5,7 @@
 
 namespace ho
 {
-class ShadowMapBakePass : public IRenderPass
+class ShadowMapBakePass final : public IRenderPass
 {
   public:
     ShadowMapBakePass() = default;

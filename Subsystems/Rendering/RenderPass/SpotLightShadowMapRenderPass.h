@@ -5,7 +5,7 @@
 
 namespace ho
 {
-class SpotLightShadowMapRenderPass : public IRenderPass
+class SpotLightShadowMapRenderPass final : public IRenderPass
 {
   public:
     SpotLightShadowMapRenderPass() = default;

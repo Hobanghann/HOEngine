@@ -70,4 +70,27 @@ void ObjectManager::ExpandAll()
     }
 }
 
+int32_t ObjectManager::getObjectCountRecursive(const Class* pObjType) const
+{
+    if (!pObjType)
+    {
+        return 0;
+    }
+
+    int32_t objCount = 0;
+    if (mpObjectPools[static_cast<int32_t>(pObjType->GetTypeID())])
+    {
+        objCount += mpObjectPools[static_cast<int32_t>(pObjType->GetTypeID())]->GetSize();
+    }
+
+    const Class* pChildClass = pObjType->GetFirstChild();
+    while (pChildClass)
+    {
+        objCount += getObjectCountRecursive(pChildClass);
+        pChildClass = pChildClass->GetNextSibling();
+    }
+
+    return objCount;
+}
+
 } // namespace ho

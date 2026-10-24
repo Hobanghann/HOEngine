@@ -40,11 +40,16 @@ class ObjectManager final
     int32_t GetObjectCount() const;
 
     template <typename T>
+    int32_t GetObjectCountExact() const;
+
+    template <typename T>
     void Expand(int32_t newSize);
 
     void ExpandAll();
 
   private:
+    int32_t getObjectCountRecursive(const Class* pObjType) const;
+
     FixedArray<ObjectPool*> mpObjectPools;
 };
 
@@ -85,9 +90,18 @@ int32_t ObjectManager::GetObjectCount() const
     static_assert(std::is_base_of_v<RObject, std::remove_const_t<T>>, "T is not Object drived class.");
     const Class& objType = ReflectionSystem::GetInstance().GetClassByType<T>();
 
+    return getObjectCountRecursive(&objType);
+}
+
+template <typename T>
+int32_t ObjectManager::GetObjectCountExact() const
+{
+    static_assert(std::is_base_of_v<RObject, std::remove_const_t<T>>, "T is not Object drived class.");
+    const Class& objType = ReflectionSystem::GetInstance().GetClassByType<T>();
+
     if (mpObjectPools[static_cast<int32_t>(objType.GetTypeID())])
     {
-        return mpObjectPools[static_cast<int32_t>(objType.GetTypeID())]->GetSize();
+        return getObjectCountRecursive(&objType);
     }
     return 0;
 }

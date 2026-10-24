@@ -434,7 +434,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTexture1D(eTextureFormat format
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::Texture1D;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;
@@ -461,7 +461,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTexture2D(
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::Texture2D;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;
@@ -486,7 +486,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTexture3D(
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::Texture3D;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;
@@ -511,7 +511,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTextureCubeMap(
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::TextureCubeMap;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;
@@ -536,7 +536,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTexture1DArray(
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::Texture1DArray;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;
@@ -569,7 +569,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTexture2DArray(eTextureFormat f
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::Texture2DArray;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;
@@ -594,7 +594,7 @@ GpuTextureHandle IRenderingBackend::PrepareCreateTextureCubeMapArray(
     hNewGpuTexture->Format = format;
     hNewGpuTexture->Type = eTextureType::TextureCubeMapArray;
 
-    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    hNewGpuTexture->hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     hNewGpuTexture->LastUsedFrame = 0;
     hNewGpuTexture->hThis = hNewGpuTexture;
     hNewGpuTexture->bPersistent = bPersistent;

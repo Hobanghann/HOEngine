@@ -46,7 +46,7 @@ struct RStaticMeshAsset final : public RIAsset
         int32_t LocalTransformCount = 0;
 
         StringHandle hRenderMaterialName = StringHandle::sNULL;
-        ObjectHandle<RMaterialAsset> hRenderMaterial = ObjectHandle<RMaterialAsset>::GetNULL();
+        ObjectHandle<RMaterialAsset> hRenderMaterial = ObjectHandle<RMaterialAsset>::sNULL;
 
         AABB AabbVolume;
         Sphere SphereVolume;

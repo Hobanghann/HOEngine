@@ -158,7 +158,7 @@ ObjectHandle<RStaticMeshAsset> AssetSystem::ImportStaticMesh(
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RStaticMeshAsset>::GetNULL();
+        return ObjectHandle<RStaticMeshAsset>::sNULL;
     }
 
     const std::string nameStr =
@@ -166,7 +166,7 @@ ObjectHandle<RStaticMeshAsset> AssetSystem::ImportStaticMesh(
     ObjectHandle<RStaticMeshAsset> hNewAsset = CreateAsset<RStaticMeshAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RStaticMeshAsset>::GetNULL();
+        return ObjectHandle<RStaticMeshAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -189,7 +189,7 @@ ObjectHandle<RMorphTargetsAsset> AssetSystem::ImportMorphTargets(const parser::M
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RMorphTargetsAsset>::GetNULL();
+        return ObjectHandle<RMorphTargetsAsset>::sNULL;
     }
 
     const std::string& nameStr =
@@ -197,7 +197,7 @@ ObjectHandle<RMorphTargetsAsset> AssetSystem::ImportMorphTargets(const parser::M
     ObjectHandle<RMorphTargetsAsset> hNewAsset = CreateAsset<RMorphTargetsAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMorphTargetsAsset>::GetNULL();
+        return ObjectHandle<RMorphTargetsAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -217,7 +217,7 @@ ObjectHandle<RMorphAnimationAsset> AssetSystem::ImportMorphAnimation(const parse
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RMorphAnimationAsset>::GetNULL();
+        return ObjectHandle<RMorphAnimationAsset>::sNULL;
     }
 
     const std::string& nameStr =
@@ -225,7 +225,7 @@ ObjectHandle<RMorphAnimationAsset> AssetSystem::ImportMorphAnimation(const parse
     ObjectHandle<RMorphAnimationAsset> hNewAsset = CreateAsset<RMorphAnimationAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMorphAnimationAsset>::GetNULL();
+        return ObjectHandle<RMorphAnimationAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -246,7 +246,7 @@ ObjectHandle<RMaterialAsset> AssetSystem::ImportMaterial(const parser::MaterialI
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     const std::string nameStr =
@@ -254,7 +254,7 @@ ObjectHandle<RMaterialAsset> AssetSystem::ImportMaterial(const parser::MaterialI
     ObjectHandle<RMaterialAsset> hNewAsset = CreateAsset<RMaterialAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -278,7 +278,7 @@ ObjectHandle<RMaterialAsset> AssetSystem::ImportTexturedMaterial(
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     const std::string nameStr =
@@ -286,7 +286,7 @@ ObjectHandle<RMaterialAsset> AssetSystem::ImportTexturedMaterial(
     ObjectHandle<RMaterialAsset> hNewAsset = CreateAsset<RMaterialAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -310,7 +310,7 @@ ObjectHandle<RTextureAsset> AssetSystem::ImportTexture2D(const parser::TextureIR
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     const std::string nameStr =
@@ -318,7 +318,7 @@ ObjectHandle<RTextureAsset> AssetSystem::ImportTexture2D(const parser::TextureIR
     ObjectHandle<RTextureAsset> hNewAsset = CreateAsset<RTextureAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -348,7 +348,7 @@ ObjectHandle<RTextureAsset> AssetSystem::ImportTextureCubemap(const std::string&
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     const std::string texNameStr = srcPosX.ResourcePath.GetParentPath().ToString() + "::TextureCubeMap::" + nameStr;
@@ -356,7 +356,7 @@ ObjectHandle<RTextureAsset> AssetSystem::ImportTextureCubemap(const std::string&
     ObjectHandle<RTextureAsset> hNewAsset = CreateAsset<RTextureAsset>(StringHandle(texNameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -390,7 +390,7 @@ ObjectHandle<RShaderAsset> AssetSystem::ImportShader(std::string* pOutErrorMsg,
     if (mPendingAssetImportQueue.IsFull())
     {
         HO_ASSERT(false, "Pending import queue is full. Check 'sPendingQueueSize'.");
-        return ObjectHandle<RShaderAsset>::GetNULL();
+        return ObjectHandle<RShaderAsset>::sNULL;
     }
 
     const std::string nameStr =
@@ -399,7 +399,7 @@ ObjectHandle<RShaderAsset> AssetSystem::ImportShader(std::string* pOutErrorMsg,
     ObjectHandle<RShaderAsset> hNewAsset = CreateAsset<RShaderAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RShaderAsset>::GetNULL();
+        return ObjectHandle<RShaderAsset>::sNULL;
     }
 
     AssetImportContext importCtx;
@@ -428,13 +428,13 @@ ObjectHandle<RStaticMeshAsset> AssetSystem::ImportStaticMeshImmediate(
     ObjectHandle<RStaticMeshAsset> hNewAsset = CreateAsset<RStaticMeshAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RStaticMeshAsset>::GetNULL();
+        return ObjectHandle<RStaticMeshAsset>::sNULL;
     }
 
     if (!importer::importStaticMesh(hNewAsset, srcMeshIR, pMaterialIRs, srcSkeletonIR, srcSkinIR))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RStaticMeshAsset>::GetNULL();
+        return ObjectHandle<RStaticMeshAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -448,13 +448,13 @@ ObjectHandle<RMorphTargetsAsset> AssetSystem::ImportMorphTargetsImmediate(const 
     ObjectHandle<RMorphTargetsAsset> hNewAsset = CreateAsset<RMorphTargetsAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMorphTargetsAsset>::GetNULL();
+        return ObjectHandle<RMorphTargetsAsset>::sNULL;
     }
 
     if (!importer::importMorphTargets(hNewAsset, srcMeshIR))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RMorphTargetsAsset>::GetNULL();
+        return ObjectHandle<RMorphTargetsAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -468,13 +468,13 @@ ObjectHandle<RMorphAnimationAsset> AssetSystem::ImportMorphAnimationImmediate(co
     ObjectHandle<RMorphAnimationAsset> hNewAsset = CreateAsset<RMorphAnimationAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMorphAnimationAsset>::GetNULL();
+        return ObjectHandle<RMorphAnimationAsset>::sNULL;
     }
 
     if (!importer::importMorphAnimation(hNewAsset, srcAnimIR))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RMorphAnimationAsset>::GetNULL();
+        return ObjectHandle<RMorphAnimationAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -489,13 +489,13 @@ ObjectHandle<RMaterialAsset> AssetSystem::ImportMaterialImmediate(const parser::
     ObjectHandle<RMaterialAsset> hNewAsset = CreateAsset<RMaterialAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     if (!importer::importMaterial(hNewAsset, srcMaterialIR, type))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -512,13 +512,13 @@ ObjectHandle<RMaterialAsset> AssetSystem::ImportTexturedMaterialImmediate(
     ObjectHandle<RMaterialAsset> hNewAsset = CreateAsset<RMaterialAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     if (!importer::importTexturedMaterial(hNewAsset, srcMaterialIR, type, pSrcTextureIRs))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RMaterialAsset>::GetNULL();
+        return ObjectHandle<RMaterialAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -534,13 +534,13 @@ ObjectHandle<RTextureAsset> AssetSystem::ImportTexture2DImmediate(const parser::
     ObjectHandle<RTextureAsset> hNewAsset = CreateAsset<RTextureAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     if (!importer::importTexture2D(hNewAsset, srcTextureIR, dstFormat, bGenerateMipmap))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -562,14 +562,14 @@ ObjectHandle<RTextureAsset> AssetSystem::ImportTextureCubemapImmediate(const std
     ObjectHandle<RTextureAsset> hNewAsset = CreateAsset<RTextureAsset>(StringHandle(texNameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     if (!importer::importTextureCubemap(
             hNewAsset, nameStr, srcPosX, srcNegX, srcPosY, srcNegY, srcPosZ, srcNegZ, dstFormat, bGenerateMipmap))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RTextureAsset>::GetNULL();
+        return ObjectHandle<RTextureAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;
@@ -587,13 +587,13 @@ ObjectHandle<RShaderAsset> AssetSystem::ImportShaderImmediate(std::string* pOutE
     ObjectHandle<RShaderAsset> hNewAsset = CreateAsset<RShaderAsset>(StringHandle(nameStr));
     if (hNewAsset.IsNULL())
     {
-        return ObjectHandle<RShaderAsset>::GetNULL();
+        return ObjectHandle<RShaderAsset>::sNULL;
     }
 
     if (!importer::importShader(hNewAsset, pOutErrorMsg, srcShaderIR, stage, compatibleMaterialType))
     {
         DeleteAsset(hNewAsset);
-        return ObjectHandle<RShaderAsset>::GetNULL();
+        return ObjectHandle<RShaderAsset>::sNULL;
     }
 
     hNewAsset->TransferState = eAssetTransferState::Ready;

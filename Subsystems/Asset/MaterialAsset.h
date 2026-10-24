@@ -29,11 +29,11 @@ struct RMaterialAsset final : public RIAsset
     {
         for (int32_t i = 0; i < static_cast<int32_t>(eShaderStage::Last); ++i)
         {
-            hShaders[i] = ObjectHandle<RShaderAsset>::GetNULL();
+            hShaders[i] = ObjectHandle<RShaderAsset>::sNULL;
         }
         for (int32_t i = 0; i < static_cast<int32_t>(eMaterialTextureUsage::Last); ++i)
         {
-            hTextures[i] = ObjectHandle<RTextureAsset>::GetNULL();
+            hTextures[i] = ObjectHandle<RTextureAsset>::sNULL;
             UVChannels[i] = 0;
             UVTransforms[i] = Matrix3x3::sIdentity;
         }

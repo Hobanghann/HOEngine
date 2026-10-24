@@ -52,7 +52,7 @@ struct GpuStaticMesh
 {
     uint64_t NativeHandlePoolID = 0;
 
-    ObjectHandle<RStaticMeshAsset> hOrigin = ObjectHandle<RStaticMeshAsset>::GetNULL();
+    ObjectHandle<RStaticMeshAsset> hOrigin = ObjectHandle<RStaticMeshAsset>::sNULL;
     uint64_t LastUsedFrame = 0;
     GpuStaticMeshHandle hThis = GpuStaticMeshHandle::sNULL;
     bool bPersistent = false;
@@ -78,7 +78,7 @@ struct GpuMaterial
     bool bHasTexture[static_cast<int32_t>(eMaterialTextureUsage::Last)] = {};
     GpuShaderHandle hGpuShaders[static_cast<int32_t>(eShaderStage::Last)] = {};
 
-    ObjectHandle<RMaterialAsset> hOrigin = ObjectHandle<RMaterialAsset>::GetNULL();
+    ObjectHandle<RMaterialAsset> hOrigin = ObjectHandle<RMaterialAsset>::sNULL;
     uint64_t LastUsedFrame = 0;
     GpuMaterialHandle hThis = GpuMaterialHandle::sNULL;
     bool bPersistent = false;
@@ -100,7 +100,7 @@ struct GpuTexture
     eTextureFormat Format = eTextureFormat::None;
     eTextureType Type = eTextureType::None;
 
-    ObjectHandle<RTextureAsset> hOrigin = ObjectHandle<RTextureAsset>::GetNULL();
+    ObjectHandle<RTextureAsset> hOrigin = ObjectHandle<RTextureAsset>::sNULL;
     uint64_t LastUsedFrame = 0;
     int32_t FrameBufferAttachmentCount = 0;
     GpuTextureHandle hThis = GpuTextureHandle::sNULL;
@@ -112,7 +112,7 @@ struct GpuShader
 {
     uint64_t NativeHandlePoolID = 0;
 
-    ObjectHandle<RShaderAsset> hOrigin = ObjectHandle<RShaderAsset>::GetNULL();
+    ObjectHandle<RShaderAsset> hOrigin = ObjectHandle<RShaderAsset>::sNULL;
     uint64_t LastUsedFrame = 0;
     GpuShaderHandle hThis = GpuShaderHandle::sNULL;
     bool bPersistent = false;
@@ -138,7 +138,7 @@ struct GpuMorphTargets
     // first target within the flattened global morph target array. If a SubMesh has no morph targets, the value is -1.
     FixedArray<int32_t> SubMeshBaseTargetOffset;
 
-    ObjectHandle<RMorphTargetsAsset> hOrigin = ObjectHandle<RMorphTargetsAsset>::GetNULL();
+    ObjectHandle<RMorphTargetsAsset> hOrigin = ObjectHandle<RMorphTargetsAsset>::sNULL;
     uint64_t LastUsedFrame = 0;
     GpuMorphTargetsHandle hThis = GpuMorphTargetsHandle::sNULL;
     bool bPersistent = false;

@@ -265,7 +265,7 @@ ObjectHandle<T> AssetSystem::CreateAsset(StringHandle hName)
 
     if (mNameToAssetMap.find(hName) != mNameToAssetMap.end())
     {
-        return ObjectHandle<T>::GetNULL();
+        return ObjectHandle<T>::sNULL;
     }
 
     ObjectHandle<T> hNewAsset = mhAssetPool->NewObject<T>();
@@ -285,7 +285,7 @@ ObjectHandle<T> AssetSystem::GetAssetByName(StringHandle hName) const
     auto it = mNameToAssetMap.find(hName);
     if (it == mNameToAssetMap.end())
     {
-        return ObjectHandle<T>::GetNULL();
+        return ObjectHandle<T>::sNULL;
     }
     return it->second.Cast<T>();
 }

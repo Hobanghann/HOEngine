@@ -57,7 +57,7 @@ struct Plane
 
 Plane Plane::FromCoefficients(float a, float b, float c, float d)
 {
-    Vector3 normal = Vector3(a, b, c);
+    const Vector3 normal = Vector3(a, b, c);
     const float mag = normal.Magnitude();
     return Plane(normal / mag, d / mag);
 }

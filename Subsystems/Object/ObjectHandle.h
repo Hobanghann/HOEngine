@@ -67,7 +67,7 @@ class ObjectHandle final
         static_assert(std::is_base_of_v<RObject, std::remove_const_t<TAssignable>>,
                       "TAssignable is not Object derived class.");
         setDebugValue();
-        return GetActualObjectType() == rhs.GetActualObjectType();
+        return GetActualObjectType().IsBaseOfRecursive(rhs.GetActualObjectType());
     }
 
     template <typename U>

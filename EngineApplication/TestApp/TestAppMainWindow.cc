@@ -51,8 +51,9 @@ void TestAppMainWindow::DrawUI()
                                            ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
                                            ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-    if (ImGui::Begin("##TestAppMainWindowID", nullptr, sFlags))
+    if (ImGui::Begin("##TestAppMainWindow", nullptr, sFlags))
     {
+        SetFocused(ImGui::IsWindowFocused());
         const auto& titleBarTheme = UISystem::GetInstance().GetTitleBarTheme();
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));

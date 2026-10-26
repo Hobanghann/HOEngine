@@ -72,6 +72,7 @@ foreach(APP_TYPE IN LISTS APP_TYPES)
         ${TARGET_NAME}
         PRIVATE
         COMPILER_FLAGS
+        REFLECTION_FLAGS
         PUBLIC
         ${PLATFORMS_NAME}
         ${ENGINE_NAME}

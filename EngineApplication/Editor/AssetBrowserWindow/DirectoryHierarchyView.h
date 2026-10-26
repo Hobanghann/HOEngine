@@ -47,8 +47,7 @@ class DirectoryHierarchyView final
     void drawTopBorder();
     void drawHeader();
     void drawDirectoryFilter(DirectoryHierarchy* pOutDirHierarchy);
-    void drawDirectoryTree(DirectoryHierarchy& directoryHierarchy,
-                           const DirectoryHierarchy::Directory& openedDir);
+    void drawDirectoryTree(DirectoryHierarchy& directoryHierarchy, const DirectoryHierarchy::Directory& openedDir);
     void drawDirectoryTreeRecursive(DirectoryHierarchy::Directory* pOutDrawDir,
                                     const DirectoryHierarchy::Directory& openedDir);
     void drawDirectoryTreeNode(DirectoryHierarchy::Directory* pOutDrawDir,

@@ -11,6 +11,7 @@ class IEngineApplication;
 
 struct EngineInitParam
 {
+    eGraphicsAPI GraphicsAPI = eGraphicsAPI::GL;
     eEngineApplicationType ApplicationType = eEngineApplicationType::None;
     int32_t MainWindowWidth = 0;
     int32_t MainWindowHeight = 0;
@@ -29,11 +30,16 @@ class Engine final
     void Shutdown();
 
   private:
+    void updateWindowTitleStats();
+
     GameTimer mEngineTimer;
 
     std::unique_ptr<IEngineApplication> mpRunningApp = nullptr;
 
     uint64_t mFrameCount = 0;
     bool mbRunning = true;
+
+    uint32_t mStatsFrameCount = 0;
+    float mStatsElapsedTime = 0.0f;
 };
 } // namespace ho

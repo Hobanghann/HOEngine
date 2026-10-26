@@ -746,7 +746,7 @@ void EditorSceneViewWindow::drawTransformGizmo(const SceneViewArea& area)
 
     Matrix4x4 worldMat = hSelectedObj->GetComponent<RTransformComponent>()->GetWorldTransform().Matrix.Transposed();
 
-    Matrix4x4 viewMat = mPerspCamera.GetViewMatrix().Transposed();
+    const Matrix4x4 viewMat = mPerspCamera.GetViewMatrix().Transposed();
     const Matrix4x4 projMat = mPerspCamera.GetProjMatrix().Transposed();
 
     ImGuizmo::Manipulate(&viewMat.Data[0][0],

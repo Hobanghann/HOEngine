@@ -14,9 +14,10 @@ FixedBlockAllocator::FixedBlockAllocator(int32_t blockSize, int32_t maxBlockCoun
 {
     HO_ASSERT(mBlockSize > 0 && mAlignment > 0, "Must be greater than zero.");
     mpMemoryPool = malloc(mBlockSize * mMaxBlockCount + mAlignment);
+    // NOLINTBEGIN(performance-no-int-to-ptr)
     HO_ASSERT(mpMemoryPool, "Failed to allocate memory.");
-    mpMemoryBegin = reinterpret_cast<uint8_t*>(
-        HO_ALIGN_CEIL(reinterpret_cast<uintptr_t>(mpMemoryPool), mAlignment)); // NOLINT(performance-no-int-to-ptr)
+    mpMemoryBegin = reinterpret_cast<uint8_t*>(HO_ALIGN_CEIL(reinterpret_cast<uintptr_t>(mpMemoryPool), mAlignment));
+    // NOLINTEND(performance-no-int-to-ptr)
     mpMemoryEnd = mpMemoryBegin + mBlockSize * mMaxBlockCount;
     mFreeAddress.reserve(mMaxBlockCount);
     mbIsAllocated.resize(mMaxBlockCount);

@@ -566,6 +566,7 @@ void RenderingBackendGL::AttachColorTargetRange(FrameBufferHandle hFrameBuffer,
     HO_ASSERT(baseSlice >= 0, "baseSlice must be non-negative.");
     HO_ASSERT(sliceCount > 0, "sliceCount must be greater than 0.");
 
+    // NOLINTBEGIN(bugprone-branch-clone)
     switch (hTarget->Type)
     {
         case eTextureType::Texture1D:
@@ -589,6 +590,7 @@ void RenderingBackendGL::AttachColorTargetRange(FrameBufferHandle hFrameBuffer,
             HO_ASSERT(false, "Unsupported texture type for color target.");
             break;
     }
+    // NOLINTEND(bugprone-branch-clone)
 
     HO_ASSERT(math::Max(1, hTarget->Width >> static_cast<uint32_t>(mipLevel)) == hFrameBuffer->Width &&
                   math::Max(1, hTarget->Height >> static_cast<uint32_t>(mipLevel)) == hFrameBuffer->Height,
@@ -749,6 +751,7 @@ void RenderingBackendGL::AttachDepthTargetRange(
     HO_ASSERT(baseSlice >= 0, "baseSlice must be non-negative.");
     HO_ASSERT(sliceCount > 0, "sliceCount must be greater than 0.");
 
+    // NOLINTBEGIN(bugprone-branch-clone)
     switch (hTarget->Type)
     {
         case eTextureType::Texture1D:
@@ -772,6 +775,7 @@ void RenderingBackendGL::AttachDepthTargetRange(
             HO_ASSERT(false, "Unsupported texture type for depth target.");
             break;
     }
+    // NOLINTEND(bugprone-branch-clone)
 
     HO_ASSERT(math::Max(1, hTarget->Width >> mipLevel) == hFrameBuffer->Width &&
                   math::Max(1, hTarget->Height >> mipLevel) == hFrameBuffer->Height,

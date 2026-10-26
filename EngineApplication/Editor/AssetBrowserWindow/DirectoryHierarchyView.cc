@@ -172,7 +172,8 @@ void DirectoryHierarchyView::handleDirectoryDragDrop(DirectoryHierarchy::Directo
     {
         const DirectoryHierarchy::Directory* pDraggedDir = pOutDrawDir;
 
-        ImGui::SetDragDropPayload("DND_DIRECTORY", &pDraggedDir, sizeof(DirectoryHierarchy::Directory*));
+        ImGui::SetDragDropPayload(
+            "DND_DIRECTORY", static_cast<const void*>(&pDraggedDir), sizeof(DirectoryHierarchy::Directory*));
 
         ImGui::PushFont(nullptr, 30.0f);
         ImGui::Text(ICON_MDI_FOLDER_OPEN);

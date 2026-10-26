@@ -55,8 +55,8 @@ bool AssetSystem::LoadBuiltInAssets()
     bool bSucceed = true;
     for (int32_t i = 0; i < HO_ARRAY_SIZE(phDstMeshOnly); ++i)
     {
-        Path path = builtInAssetPath / Path(std::string(relPathMeshOnly[i]));
-        std::unique_ptr<const parser::ModelIR> pIR = parser::parseModelFile(path, namesMeshOnly[i], true);
+        const Path path = builtInAssetPath / Path(std::string(relPathMeshOnly[i]));
+        const std::unique_ptr<const parser::ModelIR> pIR = parser::parseModelFile(path, namesMeshOnly[i], true);
         if (!pIR)
         {
             bSucceed = false;
@@ -103,8 +103,8 @@ bool AssetSystem::LoadBuiltInAssets()
     static_assert(HO_ARRAY_SIZE(phDst) == HO_ARRAY_SIZE(relPath) && HO_ARRAY_SIZE(relPath) == HO_ARRAY_SIZE(names));
     for (int32_t i = 0; i < HO_ARRAY_SIZE(phDst); ++i)
     {
-        Path path = builtInAssetPath / Path(std::string(relPath[i]));
-        std::unique_ptr<const parser::ModelIR> pIR = parser::parseModelFile(path, names[i], true);
+        const Path path = builtInAssetPath / Path(std::string(relPath[i]));
+        const std::unique_ptr<const parser::ModelIR> pIR = parser::parseModelFile(path, names[i], true);
         if (!pIR)
         {
             bSucceed = false;
@@ -838,7 +838,7 @@ void AssetSystem::deletePendingAssets()
 {
     while (!mPendingAssetDeleteQueue.IsEmpty())
     {
-        ObjectHandle<RIAsset> hAsset = mPendingAssetDeleteQueue.Front();
+        const ObjectHandle<RIAsset> hAsset = mPendingAssetDeleteQueue.Front();
         mNameToAssetMap.erase(hAsset->hName);
         mhAssetPool->DeleteObject(hAsset);
         mPendingAssetDeleteQueue.Pop();

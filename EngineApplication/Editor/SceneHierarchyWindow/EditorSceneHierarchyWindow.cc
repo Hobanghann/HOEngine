@@ -58,35 +58,28 @@ void EditorSceneHierarchyWindow::DrawUI()
 
 void EditorSceneHierarchyWindow::drawMainWindow()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     if (ImGui::Begin("Scene Hierarchy", &mbOpen, 0))
     {
+        SetFocused(ImGui::IsWindowFocused());
+
         drawSceneArea();
         ImGui::Spacing();
         drawToolbar();
         drawGameObjectHierarchy();
     }
     ImGui::End();
-    ImGui::PopStyleVar(2);
 }
 
 void EditorSceneHierarchyWindow::drawSceneArea()
 {
     const ObjectHandle<RScene> hCurrScene = mpOwner->GetCurrentScene();
 
-    static const float sItemGap = 8.0f;
-
-    ImGui::SetCursorPos({ImGui::GetCursorPosX() + sItemGap, ImGui::GetCursorPosY() + sItemGap});
-
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Scene:  ");
 
     ImGui::SameLine();
 
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + sItemGap);
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (sItemGap * 2.0f));
-
+    ImGui::SetNextItemWidth(-1);
     const char* preview = hCurrScene.IsNULL() ? "None" : *hCurrScene->GetName();
     if (ImGui::BeginCombo("##CurrentSceneCombo", preview, ImGuiComboFlags_PopupAlignLeft))
     {
@@ -112,9 +105,6 @@ void EditorSceneHierarchyWindow::drawToolbar()
 {
     const ObjectHandle<RScene> hCurrScene = mpOwner->GetCurrentScene();
 
-    static const float sItemGap = 8.0f;
-
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + sItemGap);
     if (ImGui::Button(ICON_MDI_PLUS " Add"))
     {
         if (hCurrScene.IsValid())
@@ -126,8 +116,7 @@ void EditorSceneHierarchyWindow::drawToolbar()
 
     ImGui::SameLine();
 
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + sItemGap);
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (sItemGap * 2.0f));
+    ImGui::SetNextItemWidth(-1);
     if (ImGui::InputTextWithHint("##GameObjectFilter",
                                  ICON_MDI_MAGNIFY "    Search Game Objects",
                                  mGameObjectFilter.InputBuf,
@@ -151,55 +140,67 @@ void EditorSceneHierarchyWindow::drawToolbar()
 
 void EditorSceneHierarchyWindow::drawGameObjectHierarchy()
 {
-    const ObjectHandle<RScene> hCurrScene = mpOwner->GetCurrentScene();
-
-    static const float sItemGap = 8.0f;
-
-    if (hCurrScene.IsValid())
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
+    if (ImGui::BeginChild(
+            "##GameObjectHierarchy", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar))
     {
-        static const int32_t sColumnCount = 2;
+        const ObjectHandle<RScene> hCurrScene = mpOwner->GetCurrentScene();
 
-        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, sItemGap * 0.25f));
+        static const float sItemGap = 8.0f;
 
-        if (ImGui::BeginTable("##GameObjectHierarchy", sColumnCount, 0, ImVec2(0.0f, 0.0f)))
+        if (hCurrScene.IsValid())
         {
-            ImGui::TableSetupColumn(
-                "Buttons", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_IndentDisable, 0.0f);
+            static const int32_t sColumnCount = 2;
 
-            ImGui::TableSetupColumn(
-                "TreeNode", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_IndentEnable, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, sItemGap * 0.25f));
 
-            for (const auto& hObj : hCurrScene->GetGameObjects<RGameObject>())
+            if (ImGui::BeginTable("##GameObjectHierarchy", sColumnCount, 0, ImVec2(0.0f, 0.0f)))
             {
-                if (hObj->GetComponent<RTransformComponent>()->GetParent().IsNULL())
+                ImGui::TableSetupColumn(
+                    "Buttons", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_IndentDisable, 0.0f);
+
+                ImGui::TableSetupColumn(
+                    "TreeNode", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_IndentEnable, 0.0f);
+
+                for (const auto& hObj : hCurrScene->GetGameObjects<RGameObject>())
                 {
-                    drawGameObjectTreeRecursive(hObj);
+                    if (hObj->GetComponent<RTransformComponent>()->GetParent().IsNULL())
+                    {
+                        drawGameObjectTreeRecursive(hObj);
+                    }
                 }
+
+                ImGui::EndTable();
             }
+            ImGui::PopStyleVar();
 
-            ImGui::EndTable();
-        }
-        ImGui::PopStyleVar();
+            ImGui::Dummy(ImGui::GetContentRegionAvail());
 
-        ImGui::Dummy(ImGui::GetContentRegionAvail());
-
-        if (ImGui::BeginDragDropTarget())
-        {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJ"))
+            if (ImGui::BeginDragDropTarget())
             {
-                const ObjectHandle<RGameObject> hDraggedObj =
-                    *reinterpret_cast<ObjectHandle<RGameObject>*>(payload->Data);
-
-                const ObjectHandle<RTransformComponent> hSrcParent =
-                    hDraggedObj->GetComponent<RTransformComponent>()->GetParent();
-                if (hSrcParent.IsValid())
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJ"))
                 {
-                    hSrcParent->RemoveChild(hDraggedObj->GetComponent<RTransformComponent>());
+                    const ObjectHandle<RGameObject> hDraggedObj =
+                        *reinterpret_cast<ObjectHandle<RGameObject>*>(payload->Data);
+
+                    const ObjectHandle<RTransformComponent> hSrcParent =
+                        hDraggedObj->GetComponent<RTransformComponent>()->GetParent();
+                    if (hSrcParent.IsValid())
+                    {
+                        hSrcParent->RemoveChild(hDraggedObj->GetComponent<RTransformComponent>());
+                    }
                 }
+                ImGui::EndDragDropTarget();
             }
-            ImGui::EndDragDropTarget();
         }
+        ImGui::EndChild();
     }
+    ImGui::PopStyleVar(4);
+    ImGui::PopStyleColor();
 }
 
 void EditorSceneHierarchyWindow::drawAddPopup()

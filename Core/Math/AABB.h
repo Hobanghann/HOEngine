@@ -2,10 +2,13 @@
 
 #include <string>
 
+#include "MathDefs.h"
 #include "Vector3.h"
 
 namespace ho
 {
+struct Sphere;
+
 struct alignas(16) AABB
 {
     [[nodiscard]] static AABB FromPositions(const Vector3* pPositions, int32_t count);
@@ -20,11 +23,16 @@ struct alignas(16) AABB
 
     [[nodiscard]] constexpr Vector3 GetCenter() const;
 
+    [[nodiscard]] constexpr Vector3 GetExtand() const;
+
     [[nodiscard]] constexpr bool operator==(const AABB& rhs) const;
     [[nodiscard]] constexpr bool operator!=(const AABB& rhs) const;
 
     [[nodiscard]] constexpr bool IsEqualApprox(const AABB& rhs) const;
     [[nodiscard]] constexpr bool IsNotEqualApprox(const AABB& rhs) const;
+
+    [[nodiscard]] math::eSide GetSide(const AABB& aabb) const;
+    [[nodiscard]] math::eSide GetSide(const Sphere& sphere) const;
 
     [[nodiscard]] std::string ToString() const;
 
@@ -45,6 +53,11 @@ constexpr AABB& AABB::operator=(const AABB& rhs) = default;
 constexpr Vector3 AABB::GetCenter() const
 {
     return (MinEdges + MaxEdges) * 0.5f;
+}
+
+constexpr Vector3 AABB::GetExtand() const
+{
+    return (MaxEdges - MinEdges) * 0.5f;
 }
 
 constexpr bool AABB::operator==(const AABB& rhs) const

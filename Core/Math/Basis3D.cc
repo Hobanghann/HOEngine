@@ -2,16 +2,6 @@
 
 namespace ho
 {
-Basis3D Basis3D::FromAxisAngle(const Vector3& axis, float angle)
-{
-    return Basis3D(Quaternion::FromAxisAngle(axis, angle));
-}
-
-Basis3D Basis3D::FromEuler(float angleXRad, float angleYRad, float angleZRad, math::eEulerOrder order)
-{
-    return Basis3D(Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order));
-}
-
 void Basis3D::RotateEuler(float angleXRad, float angleYRad, float angleZRad, math::eEulerOrder order)
 {
     const Matrix3x3 rotationMat = Matrix3x3::FromEuler(angleXRad, angleYRad, angleZRad, order);

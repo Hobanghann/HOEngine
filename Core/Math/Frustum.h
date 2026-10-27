@@ -27,6 +27,28 @@ struct Frustum
         Far = 5
     };
 
+    enum class eFrustumCorner
+    {
+        NearTopLeft = 0,
+        NearTopRight = 1,
+        NearBottomLeft = 2,
+        NearBottomRight = 3,
+
+        FarTopLeft = 4,
+        FarTopRight = 5,
+        FarBottomLeft = 6,
+        FarBottomRight = 7,
+
+        Last,
+    };
+
+    // It returns corners of frustum defined from matrix.
+    // You should use eFrustumCorner enum as index.
+    static void GetFrustumCorners(Vector3* pOutCorners, const Matrix4x4& m);
+
+    // If matrix is projection matrix, it returns frustum in view space.
+    // If matrix is proj * view matrix, it returns frustum in world space.
+    // If matrix is proj * view * world matrix, it returns frustum in local space.
     [[nodiscard]] static Frustum FromMatrix4x4(const Matrix4x4& m);
 
     Frustum() = default;

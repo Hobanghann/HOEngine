@@ -8,17 +8,21 @@
 #include "Core/Math/Sphere.h"
 #include "Core/Math/Transform3D.h"
 #include "Core/Templates/FixedArray.h"
-#include "Core/Templates/GlobalPoolIndex.h"
-#include "Core/Templates/WeakLocalPoolIndex.h"
+#include "IAsset.h"
 #include "MaterialAsset.h"
+#include "Subsystems/Object/ObjectHandle.h"
 
 namespace ho
 {
 struct GpuStaticMesh;
-using GpuStaticMeshHandle = WeakLocalPoolIndex<GpuStaticMesh, ObjectPool>;
+using GpuStaticMeshHandle = WeakTypedHandle<GpuStaticMesh, TypedObjectPool>;
 
-struct StaticMeshAsset
+struct RMaterialAsset;
+
+struct RStaticMeshAsset final : public RIAsset
 {
+    HO_INJECT_REFLECTION_CODE(RStaticMeshAsset)
+
     static const uint32_t sMaxUVChannel = 2;
     static const uint32_t sMaxColorChannel = 1;
 
@@ -29,33 +33,34 @@ struct StaticMeshAsset
         eMeshPrimitiveType PrimitiveType = eMeshPrimitiveType::None;
 
         int32_t PositionOffset = 0;
-        int32_t NormalOffset = 0;
-        int32_t TangentOffset = 0;
-        int32_t UVOffset = 0;
-        int32_t ColorOffset = 0;
+        int32_t NormalOffset = 0;  // -1 means it dosen't have normal
+        int32_t TangentOffset = 0; // -1 means it dosen't have tangent
+        int32_t UVOffset = 0;      // -1 means it dosen't have UV
+        int32_t ColorOffset = 0;   // -1 means it dosen't have color
         int32_t VertexCount = 0;
 
         int32_t IndexOffset = 0;
         int32_t IndexCount = 0;
 
+        int32_t LocalTransformOffset = 0;
+        int32_t LocalTransformCount = 0;
+
         StringHandle hRenderMaterialName = StringHandle::sNULL;
-        MaterialHandle hRenderMaterial = MaterialHandle::sNULL;
+        ObjectHandle<RMaterialAsset> hRenderMaterial = ObjectHandle<RMaterialAsset>::sNULL;
 
-        AABB Aabb;
-        Sphere Sphere;
-
-        Transform3D LocalTransform;
+        AABB AabbVolume;
+        Sphere SphereVolume;
     };
 
-    StaticMeshAsset() = default;
-    StaticMeshAsset(const StaticMeshAsset&) = delete;
-    StaticMeshAsset& operator=(const StaticMeshAsset&) = delete;
-    ~StaticMeshAsset() = default;
+    RStaticMeshAsset() = default;
+    RStaticMeshAsset(const RStaticMeshAsset&) = delete;
+    RStaticMeshAsset& operator=(const RStaticMeshAsset&) = delete;
+    ~RStaticMeshAsset() override = default;
 
-    StaticMeshAsset(StaticMeshAsset&&) noexcept = default;
-    StaticMeshAsset& operator=(StaticMeshAsset&&) noexcept = default;
+    RStaticMeshAsset(RStaticMeshAsset&&) noexcept = default;
+    RStaticMeshAsset& operator=(RStaticMeshAsset&&) noexcept = default;
 
-    StringHandle hName = StringHandle::sNULL;
+    int32_t GetByteSize() const override;
 
     FixedArray<Vector3> Positions;
     FixedArray<Vector3> Normals;
@@ -65,13 +70,14 @@ struct StaticMeshAsset
 
     FixedArray<uint32_t> Indices;
 
+    FixedArray<Transform3D> LocalTransforms;
+
     FixedArray<SubMesh> SubMeshes;
 
-    AABB Aabb;
-    Sphere Sphere;
+    AABB AabbVolume;
+    Sphere SphereVolume;
 
-    GpuStaticMeshHandle hRenderProxy = GpuStaticMeshHandle::sNULL;
+    GpuStaticMeshHandle hRenderProxy;
 };
 
-using StaticMeshHandle = WeakLocalPoolIndex<StaticMeshAsset, ObjectPool>;
 } // namespace ho

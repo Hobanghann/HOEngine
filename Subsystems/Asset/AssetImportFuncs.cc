@@ -10,6 +10,7 @@
 #include "Core/IO/ShaderIR.h"
 #include "Core/Log/Logger.h"
 #include "Core/Templates/FixedArray.h"
+#include "TextureUtils.h"
 
 namespace ho
 {
@@ -29,14 +30,6 @@ static parser::MaterialIR::eTextureUsage toIRTextureUsage(eMaterialTextureUsage 
 
 static bool isLinearImageFormat(Image::eFormat format);
 static bool isIntegerImageFormat(Image::eFormat format);
-
-static bool isUncompressedTextureFormat(eTextureFormat format);
-[[maybe_unused]] static bool isLinearTextureFormat(eTextureFormat format);
-[[maybe_unused]] static bool isIntegerTextureFormat(eTextureFormat format);
-static int32_t getTexturePixelBytes(eTextureFormat format);
-static int32_t getTextureBlockCount(int32_t length);
-static int32_t getTextureBlockBytes(eTextureFormat format);
-static int32_t calculateMipLevels(int32_t width, int32_t height);
 
 shaderc_shader_kind toShadercStageGLSL(eShaderStage stage);
 // ============================================================================
@@ -62,22 +55,24 @@ static std::vector<uint32_t> compileFileGLSL(const shaderc::Compiler& compiler,
                                              const std::string& sourceName,
                                              shaderc_shader_kind kind,
                                              const std::string& source,
+                                             std::string* pOutErrorMsg,
                                              bool optimize = false);
 
 // ===========================================================================
 //  Public Function Definitions
 // ===========================================================================
 
-std::unique_ptr<StaticMeshAsset> importStaticMesh(
-    const parser::MeshIR& srcMeshIR,
-    const std::vector<std::unique_ptr<const parser::MaterialIR>>& pMaterialIRs,
-    const parser::SkeletonIR& srcSkeletonIR,
-    const parser::SkinIR& srcSkinIR)
+bool importStaticMesh(ObjectHandle<RStaticMeshAsset> hOutAsset,
+                      const parser::MeshIR& srcMeshIR,
+                      const std::vector<std::unique_ptr<const parser::MaterialIR>>& pMaterialIRs,
+                      const parser::SkeletonIR& srcSkeletonIR,
+                      const parser::SkinIR& srcSkinIR)
 {
-    std::unique_ptr<StaticMeshAsset> pNewMesh = std::make_unique<StaticMeshAsset>();
-    const std::string nameStr =
-        srcMeshIR.ResourcePath.RemovedExtension().ToString() + "::StaticMesh::" + srcMeshIR.NameStr;
-    pNewMesh->hName = StringHandle(nameStr);
+    if (hOutAsset.IsNULL())
+    {
+        return false;
+    }
+
     int32_t allPositionCount = 0;
     int32_t allNormalCount = 0;
     int32_t allTangentCount = 0;
@@ -86,86 +81,47 @@ std::unique_ptr<StaticMeshAsset> importStaticMesh(
     int32_t allIndexCount = 0;
     for (const auto& subMeshIR : srcMeshIR.SubMeshes)
     {
-        allPositionCount += static_cast<int32_t>(subMeshIR.Positions.size());
-        allNormalCount += static_cast<int32_t>(subMeshIR.Normals.size());
-        allTangentCount += static_cast<int32_t>(subMeshIR.Tangents.size());
-        allUVCount += static_cast<int32_t>(subMeshIR.UVs.size());
-        allColorCount += static_cast<int32_t>(subMeshIR.Colors.size());
+        const int32_t currVertexCount = static_cast<int32_t>(subMeshIR.Positions.size());
+
+        allPositionCount += currVertexCount;
+
+        if (!subMeshIR.Normals.empty())
+        {
+            HO_ASSERT(currVertexCount == static_cast<int32_t>(subMeshIR.Normals.size()),
+                      "Vertex count mismatch between positions and normals in submesh.");
+            allNormalCount += static_cast<int32_t>(subMeshIR.Normals.size());
+        }
+
+        if (!subMeshIR.Tangents.empty())
+        {
+            HO_ASSERT(currVertexCount == static_cast<int32_t>(subMeshIR.Tangents.size()),
+                      "Vertex count mismatch between positions and tangents in submesh.");
+            allTangentCount += static_cast<int32_t>(subMeshIR.Tangents.size());
+        }
+
+        if (!subMeshIR.UVs.empty())
+        {
+            HO_ASSERT(currVertexCount == static_cast<int32_t>(subMeshIR.UVs.size()),
+                      "Vertex count mismatch between positions and UVs in submesh.");
+            allUVCount += static_cast<int32_t>(subMeshIR.UVs.size());
+        }
+
+        if (!subMeshIR.Colors.empty())
+        {
+            HO_ASSERT(currVertexCount == static_cast<int32_t>(subMeshIR.Colors.size()),
+                      "Vertex count mismatch between positions and colors in submesh.");
+            allColorCount += static_cast<int32_t>(subMeshIR.Colors.size());
+        }
+
         allIndexCount += static_cast<int32_t>(subMeshIR.Indices.size());
     }
 
     FixedArray<Vector3> positions(allPositionCount);
     FixedArray<Vector3> normals(allNormalCount);
     FixedArray<Vector4> tangents(allTangentCount);
-    FixedArray<std::array<Vector2, StaticMeshAsset::sMaxUVChannel>> uvs(allUVCount);
-    FixedArray<std::array<Color32, StaticMeshAsset::sMaxColorChannel>> colors(allColorCount);
+    FixedArray<std::array<Vector2, RStaticMeshAsset::sMaxUVChannel>> uvs(allUVCount);
+    FixedArray<std::array<Color32, RStaticMeshAsset::sMaxColorChannel>> colors(allColorCount);
     FixedArray<uint32_t> indices(allIndexCount);
-
-    int32_t positionOffset = 0;
-    int32_t normalOffset = 0;
-    int32_t tangentOffset = 0;
-    int32_t uvOffset = 0;
-    int32_t colorOffset = 0;
-    int32_t indexOffset = 0;
-    FixedArray<StaticMeshAsset::SubMesh> subMeshes(static_cast<int32_t>(srcMeshIR.SubMeshes.size()));
-    for (int32_t smi = 0; smi < static_cast<int32_t>(srcMeshIR.SubMeshes.size()); ++smi)
-    {
-        const parser::MeshIR::SubMesh& subMeshIR = srcMeshIR.SubMeshes[smi];
-
-        subMeshes[smi].hName = StringHandle(subMeshIR.NameStr);
-
-        subMeshes[smi].PrimitiveType = toAssetPrimitiveType(subMeshIR.PrimitiveType);
-
-        for (int32_t i = 0; i < static_cast<int32_t>(subMeshIR.Positions.size()); ++i)
-        {
-            positions[positionOffset + i] = subMeshIR.Positions[i];
-        }
-        for (int32_t i = 0; i < static_cast<int32_t>(subMeshIR.Normals.size()); ++i)
-        {
-            normals[normalOffset + i] = subMeshIR.Normals[i];
-        }
-        for (int32_t i = 0; i < static_cast<int32_t>(subMeshIR.Tangents.size()); ++i)
-        {
-            tangents[tangentOffset + i] = subMeshIR.Tangents[i];
-        }
-        for (int32_t i = 0; i < static_cast<int32_t>(subMeshIR.UVs.size()); ++i)
-        {
-            uvs[uvOffset + i] = subMeshIR.UVs[i];
-        }
-        for (int32_t i = 0; i < static_cast<int32_t>(subMeshIR.Colors.size()); ++i)
-        {
-            colors[colorOffset + i] = subMeshIR.Colors[i];
-        }
-        for (int32_t i = 0; i < static_cast<int32_t>(subMeshIR.Indices.size()); ++i)
-        {
-            indices[indexOffset + i] = subMeshIR.Indices[i];
-        }
-
-        subMeshes[smi].PositionOffset = positionOffset;
-        subMeshes[smi].NormalOffset = normalOffset;
-        subMeshes[smi].TangentOffset = tangentOffset;
-        subMeshes[smi].UVOffset = uvOffset;
-        subMeshes[smi].ColorOffset = colorOffset;
-        subMeshes[smi].VertexCount = static_cast<int32_t>(subMeshIR.Positions.size());
-
-        subMeshes[smi].IndexOffset = indexOffset;
-        subMeshes[smi].IndexCount = static_cast<int32_t>(subMeshIR.Indices.size());
-
-        const parser::MaterialIR& matIR = *pMaterialIRs[srcMeshIR.SubMeshes[smi].RenderMaterialIndex];
-        const std::string matNameStr =
-            matIR.ResourcePath.RemovedExtension().ToString() + "::Material::" + matIR.NameStr;
-        subMeshes[smi].hRenderMaterialName = StringHandle(matNameStr);
-
-        subMeshes[smi].Aabb = subMeshIR.Aabb;
-        subMeshes[smi].Sphere = subMeshIR.Sphere;
-
-        positionOffset += static_cast<int32_t>(subMeshIR.Positions.size());
-        normalOffset += static_cast<int32_t>(subMeshIR.Normals.size());
-        tangentOffset += static_cast<int32_t>(subMeshIR.Tangents.size());
-        uvOffset += static_cast<int32_t>(subMeshIR.UVs.size());
-        colorOffset += static_cast<int32_t>(subMeshIR.Colors.size());
-        indexOffset += static_cast<int32_t>(subMeshIR.Indices.size());
-    }
 
     FixedArray<Transform3D> accTransforms(static_cast<int32_t>(srcSkeletonIR.BoneNameStrs.size()));
     for (int32_t i = 0; i < accTransforms.GetSize(); ++i)
@@ -182,68 +138,352 @@ std::unique_ptr<StaticMeshAsset> importStaticMesh(
         }
     }
 
-    for (int32_t i = 0; i < accTransforms.GetSize(); ++i)
+    int32_t allTransformCount = 0;
+    for (int32_t i = 0; i < static_cast<int32_t>(srcSkinIR.BindSubMeshIndices.size()); ++i)
     {
-        for (int32_t j = 0; j < static_cast<int32_t>(srcSkinIR.BindSubMeshIndices[i].size()); ++j)
+        allTransformCount += static_cast<int32_t>(srcSkinIR.BindSubMeshIndices[i].size());
+    }
+    FixedArray<Transform3D> localTransforms(allTransformCount);
+
+    int32_t currVertexCount = 0;
+    int32_t positionOffset = 0;
+    int32_t normalOffset = 0;
+    int32_t tangentOffset = 0;
+    int32_t uvOffset = 0;
+    int32_t colorOffset = 0;
+    int32_t indexOffset = 0;
+    int32_t localTransformOffset = 0;
+    FixedArray<RStaticMeshAsset::SubMesh> subMeshes(static_cast<int32_t>(srcMeshIR.SubMeshes.size()));
+    for (int32_t smi = 0; smi < static_cast<int32_t>(srcMeshIR.SubMeshes.size()); ++smi)
+    {
+        const parser::MeshIR::SubMesh& subMeshIR = srcMeshIR.SubMeshes[smi];
+        subMeshes[smi].hName = StringHandle(subMeshIR.NameStr);
+        subMeshes[smi].PrimitiveType = toAssetPrimitiveType(subMeshIR.PrimitiveType);
+        currVertexCount = static_cast<int32_t>(subMeshIR.Positions.size());
+
+        // Positions
+        HO_ASSERT(!subMeshIR.Positions.empty(), "Submesh can't be empty.");
+        subMeshes[smi].PositionOffset = positionOffset;
+        std::memcpy((positions.Data() + positionOffset), subMeshIR.Positions.data(), sizeof(Vector3) * currVertexCount);
+        positionOffset += currVertexCount;
+
+        // Normals
+        subMeshes[smi].NormalOffset = -1;
+        if (!subMeshIR.Normals.empty())
         {
-            const int32_t targetSubMeshIdx = srcSkinIR.BindSubMeshIndices[i][j];
-            subMeshes[targetSubMeshIdx].LocalTransform = accTransforms[i];
+            subMeshes[smi].NormalOffset = normalOffset;
+            std::memcpy(normals.Data() + normalOffset, subMeshIR.Normals.data(), sizeof(Vector3) * currVertexCount);
+            normalOffset += currVertexCount;
+        }
+
+        // Tangents
+        subMeshes[smi].TangentOffset = -1;
+        if (!subMeshIR.Tangents.empty())
+        {
+            subMeshes[smi].TangentOffset = tangentOffset;
+            std::memcpy(tangents.Data() + tangentOffset, subMeshIR.Tangents.data(), sizeof(Vector4) * currVertexCount);
+            tangentOffset += currVertexCount;
+        }
+
+        // UVs
+        subMeshes[smi].UVOffset = -1;
+        if (!subMeshIR.UVs.empty())
+        {
+            subMeshes[smi].UVOffset = uvOffset;
+            std::memcpy(uvs.Data() + uvOffset,
+                        subMeshIR.UVs.data(),
+                        sizeof(std::array<Vector2, RStaticMeshAsset::sMaxUVChannel>) * currVertexCount);
+            uvOffset += currVertexCount;
+        }
+
+        // Colors
+        subMeshes[smi].ColorOffset = -1;
+        if (!subMeshIR.Colors.empty())
+        {
+            subMeshes[smi].ColorOffset = colorOffset;
+            std::memcpy(colors.Data() + colorOffset,
+                        subMeshIR.Colors.data(),
+                        sizeof(std::array<Color32, RStaticMeshAsset::sMaxColorChannel>) * currVertexCount);
+            colorOffset += currVertexCount;
+        }
+
+        // Indices
+        subMeshes[smi].IndexOffset = indexOffset;
+        std::memcpy(
+            indices.Data() + indexOffset, subMeshIR.Indices.data(), sizeof(uint32_t) * subMeshIR.Indices.size());
+        indexOffset += static_cast<int32_t>(subMeshIR.Indices.size());
+
+        subMeshes[smi].VertexCount = currVertexCount;
+        subMeshes[smi].IndexCount = static_cast<int32_t>(subMeshIR.Indices.size());
+
+        // Transform
+        int32_t localTransformCount = 0;
+        for (int32_t ti = 0; ti < accTransforms.GetSize(); ++ti)
+        {
+            for (int32_t bsmi = 0; bsmi < static_cast<int32_t>(srcSkinIR.BindSubMeshIndices[ti].size()); ++bsmi)
+            {
+                if (smi == srcSkinIR.BindSubMeshIndices[ti][bsmi])
+                {
+                    localTransforms[localTransformOffset + localTransformCount] = accTransforms[ti];
+                    ++localTransformCount;
+                }
+            }
+        }
+        subMeshes[smi].LocalTransformOffset = localTransformOffset;
+        subMeshes[smi].LocalTransformCount = localTransformCount;
+        localTransformOffset += localTransformCount;
+
+        // Material
+        HO_ASSERT(subMeshIR.RenderMaterialIndex < static_cast<int32_t>(pMaterialIRs.size()),
+                  "Material index out of bounds.");
+        const parser::MaterialIR& matIR = *pMaterialIRs[subMeshIR.RenderMaterialIndex];
+        const std::string matNameStr = matIR.ResourcePath.GetParentPath().ToString() + "::Material::" + matIR.NameStr;
+        subMeshes[smi].hRenderMaterialName = StringHandle(matNameStr);
+
+        subMeshes[smi].AabbVolume = AABB::FromPositions(subMeshIR.Positions.data(), currVertexCount);
+        subMeshes[smi].SphereVolume = Sphere::FromPositionsRitter(subMeshIR.Positions.data(), currVertexCount);
+    }
+
+    hOutAsset->Positions = std::move(positions);
+    hOutAsset->Normals = std::move(normals);
+    hOutAsset->Tangents = std::move(tangents);
+    hOutAsset->UVs = std::move(uvs);
+    hOutAsset->Colors = std::move(colors);
+    hOutAsset->Indices = std::move(indices);
+    hOutAsset->LocalTransforms = std::move(localTransforms);
+    hOutAsset->SubMeshes = std::move(subMeshes);
+
+    size_t totalWorldVertexCount = 0;
+    for (int32_t smi = 0; smi < hOutAsset->SubMeshes.GetSize(); ++smi)
+    {
+        totalWorldVertexCount +=
+            static_cast<size_t>(hOutAsset->SubMeshes[smi].VertexCount) * hOutAsset->SubMeshes[smi].LocalTransformCount;
+    }
+
+    std::vector<Vector3> worldPositions;
+    worldPositions.reserve(totalWorldVertexCount);
+
+    for (int32_t smi = 0; smi < hOutAsset->SubMeshes.GetSize(); ++smi)
+    {
+        for (int32_t lti = 0; lti < hOutAsset->SubMeshes[smi].LocalTransformCount; ++lti)
+        {
+            for (int32_t pi = 0; pi < hOutAsset->SubMeshes[smi].VertexCount; ++pi)
+            {
+                worldPositions.push_back(
+                    hOutAsset->LocalTransforms[hOutAsset->SubMeshes[smi].LocalTransformOffset + lti].Transform(
+                        hOutAsset->Positions[hOutAsset->SubMeshes[smi].PositionOffset + pi]));
+            }
         }
     }
 
-    pNewMesh->Positions = std::move(positions);
-    pNewMesh->Normals = std::move(normals);
-    pNewMesh->Tangents = std::move(tangents);
-    pNewMesh->UVs = std::move(uvs);
-    pNewMesh->Colors = std::move(colors);
-    pNewMesh->Indices = std::move(indices);
-    pNewMesh->SubMeshes = std::move(subMeshes);
+    hOutAsset->AabbVolume = AABB::FromPositions(worldPositions.data(), static_cast<int32_t>(worldPositions.size()));
+    hOutAsset->SphereVolume =
+        Sphere::FromPositionsRitter(worldPositions.data(), static_cast<int32_t>(worldPositions.size()));
 
-    pNewMesh->Aabb = srcMeshIR.Aabb;
-    pNewMesh->Sphere = srcMeshIR.Sphere;
-
-    return pNewMesh;
+    return true;
 }
 
-std::unique_ptr<MaterialAsset> importMaterial(const parser::MaterialIR& srcMaterialIR, eMaterialAssetType type)
+bool importMorphTargets(ObjectHandle<RMorphTargetsAsset> hOutAsset, const parser::MeshIR& srcMeshIR)
 {
-    std::unique_ptr<MaterialAsset> pNewMaterial = std::make_unique<MaterialAsset>();
-    const std::string nameStr =
-        srcMaterialIR.ResourcePath.RemovedExtension().ToString() + "::Material::" + srcMaterialIR.NameStr;
-    pNewMaterial->hName = StringHandle(nameStr);
-    pNewMaterial->Type = type;
+    if (hOutAsset.IsNULL())
+    {
+        return false;
+    }
 
-    pNewMaterial->PipelineState.AlphaMode = toAssetAlphaMode(srcMaterialIR.AlphaMode);
-    pNewMaterial->PipelineState.AlphaBlendMode = toAssetAlphaBlendMode(srcMaterialIR.BlendMode);
-    pNewMaterial->PipelineState.bWireframe = srcMaterialIR.bWireframe;
-    pNewMaterial->PipelineState.bBackfaceCulling = srcMaterialIR.bBackfaceCulling;
+    int32_t currVertexCount = 0;
+    int32_t allHasMorphSubMeshCount = 0;
+    int32_t allPositionCount = 0;
+    int32_t allNormalCount = 0;
+    int32_t allTangentCount = 0;
+    for (const auto& subMeshIR : srcMeshIR.SubMeshes)
+    {
+        if (!subMeshIR.MorphTargets.empty())
+        {
+            ++allHasMorphSubMeshCount;
+            currVertexCount = static_cast<int32_t>(subMeshIR.Positions.size());
+            for (const auto& morphTargetIR : subMeshIR.MorphTargets)
+            {
+                if (currVertexCount != static_cast<int32_t>(morphTargetIR.Positions.size()))
+                {
+                    HO_ASSERT(false, "Vertex count mismatch between submesh and morph target.");
+                    return false;
+                }
+                allPositionCount += static_cast<int32_t>(morphTargetIR.Positions.size());
+                if (!morphTargetIR.Normals.empty())
+                {
+                    if (currVertexCount != static_cast<int32_t>(morphTargetIR.Normals.size()))
+                    {
+                        HO_ASSERT(false, "Vertex count mismatch between morph target's position and normal.");
+                        return false;
+                    }
+                    allNormalCount += static_cast<int32_t>(morphTargetIR.Normals.size());
+                }
+                if (!morphTargetIR.Tangents.empty())
+                {
+                    if (currVertexCount != static_cast<int32_t>(morphTargetIR.Tangents.size()))
+                    {
+                        HO_ASSERT(false, "Vertex count mismatch between morph target's position and tangent.");
+                        return false;
+                    }
+                    allTangentCount += static_cast<int32_t>(morphTargetIR.Tangents.size());
+                }
+            }
+        }
+    }
 
-    pNewMaterial->Ambient = srcMaterialIR.Ambient;
-    pNewMaterial->Diffuse = srcMaterialIR.Diffuse;
-    pNewMaterial->Specular = srcMaterialIR.Specular;
-    pNewMaterial->Shininess = srcMaterialIR.Shininess;
+    if (allHasMorphSubMeshCount == 0)
+    {
+        return false;
+    }
 
-    pNewMaterial->Albedo = srcMaterialIR.Albedo;
-    pNewMaterial->Metallic = srcMaterialIR.Metallic;
-    pNewMaterial->Roughness = srcMaterialIR.Roughness;
-    pNewMaterial->IndexOfRefraction = srcMaterialIR.IndexOfRefraction;
+    FixedArray<RMorphTargetsAsset::MorphTargets> subMeshMorphTargets(static_cast<int32_t>(allHasMorphSubMeshCount));
+    FixedArray<Vector3> positions(allPositionCount);
+    FixedArray<Vector3> normals(allNormalCount);
+    FixedArray<Vector4> tangents(allTangentCount);
 
-    pNewMaterial->Opacity = srcMaterialIR.Opacity;
-    pNewMaterial->AlphaThreshold = srcMaterialIR.AlphaThreshold;
-    pNewMaterial->Emissive = srcMaterialIR.Emissive;
-    pNewMaterial->EmissiveIntensity = srcMaterialIR.EmissiveIntensity;
-    pNewMaterial->NormalScale = srcMaterialIR.NormalScale;
-    pNewMaterial->OcclusionStrength = srcMaterialIR.OcclusionStrength;
+    int32_t subMeshMorphTargetsOffset = 0;
+    int32_t positionOffset = 0;
+    int32_t normalOffset = 0;
+    int32_t tangentOffset = 0;
+    for (int32_t smi = 0; smi < static_cast<int32_t>(srcMeshIR.SubMeshes.size()); ++smi)
+    {
+        const parser::MeshIR::SubMesh& subMeshIR = srcMeshIR.SubMeshes[smi];
 
-    return pNewMaterial;
+        if (!subMeshIR.MorphTargets.empty())
+        {
+            currVertexCount = static_cast<int32_t>(subMeshIR.Positions.size());
+
+            subMeshMorphTargets[subMeshMorphTargetsOffset].SubMeshIndex = smi;
+            subMeshMorphTargets[subMeshMorphTargetsOffset].VertexCount = currVertexCount;
+
+            FixedArray<RMorphTargetsAsset::MorphTarget> targets(static_cast<int32_t>(subMeshIR.MorphTargets.size()));
+            for (int32_t mti = 0; mti < static_cast<int32_t>(subMeshIR.MorphTargets.size()); ++mti)
+            {
+                const parser::MeshIR::MorphTarget& morphTargetIR = subMeshIR.MorphTargets[mti];
+
+                targets[mti].hName = StringHandle(morphTargetIR.NameStr);
+
+                targets[mti].PositionOffset = positionOffset;
+                std::memcpy(positions.Data() + positionOffset,
+                            morphTargetIR.Positions.data(),
+                            sizeof(Vector3) * currVertexCount);
+                positionOffset += currVertexCount;
+
+                targets[mti].NormalOffset = -1;
+                if (!morphTargetIR.Normals.empty())
+                {
+                    targets[mti].NormalOffset = normalOffset;
+                    std::memcpy(
+                        normals.Data() + normalOffset, morphTargetIR.Normals.data(), sizeof(Vector3) * currVertexCount);
+                    normalOffset += currVertexCount;
+                }
+
+                targets[mti].TangentOffset = -1;
+                if (!morphTargetIR.Tangents.empty())
+                {
+                    targets[mti].TangentOffset = tangentOffset;
+                    std::memcpy(tangents.Data() + tangentOffset,
+                                morphTargetIR.Tangents.data(),
+                                sizeof(Vector4) * currVertexCount);
+                    tangentOffset += currVertexCount;
+                }
+
+                targets[mti].Weight = morphTargetIR.Weight;
+            }
+
+            subMeshMorphTargets[subMeshMorphTargetsOffset].Targets = std::move(targets);
+
+            ++subMeshMorphTargetsOffset;
+        }
+    }
+
+    hOutAsset->SubMeshMorphTargets = std::move(subMeshMorphTargets);
+    hOutAsset->Positions = std::move(positions);
+    hOutAsset->Normals = std::move(normals);
+    hOutAsset->Tangents = std::move(tangents);
+
+    return true;
 }
 
-std::unique_ptr<MaterialAsset> importTexturedMaterial(
-    const parser::MaterialIR& srcMaterialIR,
-    eMaterialAssetType type,
-    const std::vector<std::unique_ptr<const parser::TextureIR>>& pSrcTextureIRs)
+bool importMorphAnimation(ObjectHandle<RMorphAnimationAsset> hOutAsset, const parser::AnimationIR& srcAnimIR)
 {
-    std::unique_ptr<MaterialAsset> pNewMaterial = importMaterial(srcMaterialIR, type);
+    hOutAsset->Duration = srcAnimIR.Duration;
+
+    FixedArray<RMorphAnimationAsset::MorphTrack> morphTracks(static_cast<int32_t>(srcAnimIR.MorphTargetTracks.size()));
+    for (int32_t ti = 0; ti < static_cast<int32_t>(srcAnimIR.MorphTargetTracks.size()); ++ti)
+    {
+        const parser::AnimationIR::MorphTargetTrack& morphTrackIR = srcAnimIR.MorphTargetTracks[ti];
+
+        FixedArray<int32_t> subMeshIndices(static_cast<int32_t>(morphTrackIR.SubMeshIndices.size()));
+        std::memcpy(subMeshIndices.Data(),
+                    morphTrackIR.SubMeshIndices.data(),
+                    sizeof(int32_t) * morphTrackIR.SubMeshIndices.size());
+        morphTracks[ti].SubmeshIndices = std::move(subMeshIndices);
+
+        FixedArray<RMorphAnimationAsset::MorphKey> keySequence(static_cast<int32_t>(morphTrackIR.KeySequence.size()));
+        for (int32_t ki = 0; ki < static_cast<int32_t>(morphTrackIR.KeySequence.size()); ki++)
+        {
+            const parser::AnimationIR::MorphKey& keyIR = morphTrackIR.KeySequence[ki];
+
+            keySequence[ki].Time = keyIR.Time;
+
+            FixedArray<int32_t> morphTargetIndices(static_cast<int32_t>(keyIR.MorphTargetIndices.size()));
+            std::memcpy(morphTargetIndices.Data(),
+                        keyIR.MorphTargetIndices.data(),
+                        sizeof(int32_t) * keyIR.MorphTargetIndices.size());
+            keySequence[ki].MorphTargetIndices = std::move(morphTargetIndices);
+
+            FixedArray<float> weights(static_cast<int32_t>(keyIR.Weights.size()));
+            std::memcpy(weights.Data(), keyIR.Weights.data(), sizeof(int32_t) * keyIR.Weights.size());
+            keySequence[ki].Weights = std::move(weights);
+        }
+        morphTracks[ti].KeySequence = std::move(keySequence);
+    }
+
+    hOutAsset->Tracks = std::move(morphTracks);
+    return true;
+}
+
+bool importMaterial(ObjectHandle<RMaterialAsset> hOutAsset,
+                    const parser::MaterialIR& srcMaterialIR,
+                    eMaterialAssetType type)
+{
+    hOutAsset->Type = type;
+
+    hOutAsset->PipelineState.AlphaMode = toAssetAlphaMode(srcMaterialIR.AlphaMode);
+    hOutAsset->PipelineState.AlphaBlendMode = toAssetAlphaBlendMode(srcMaterialIR.BlendMode);
+    hOutAsset->PipelineState.bWireframe = srcMaterialIR.bWireframe;
+    hOutAsset->PipelineState.bBackfaceCulling = srcMaterialIR.bBackfaceCulling;
+
+    hOutAsset->Ambient = srcMaterialIR.Ambient;
+    hOutAsset->Diffuse = srcMaterialIR.Diffuse;
+    hOutAsset->Specular = srcMaterialIR.Specular;
+    hOutAsset->Shininess = srcMaterialIR.Shininess;
+
+    hOutAsset->Albedo = srcMaterialIR.Albedo;
+    hOutAsset->Metallic = srcMaterialIR.Metallic;
+    hOutAsset->Roughness = srcMaterialIR.Roughness;
+    hOutAsset->IndexOfRefraction = srcMaterialIR.IndexOfRefraction;
+
+    hOutAsset->Opacity = srcMaterialIR.Opacity;
+    hOutAsset->AlphaThreshold = srcMaterialIR.AlphaThreshold;
+    hOutAsset->Emissive = srcMaterialIR.Emissive;
+    hOutAsset->EmissiveIntensity = srcMaterialIR.EmissiveIntensity;
+    hOutAsset->NormalScale = srcMaterialIR.NormalScale;
+    hOutAsset->OcclusionStrength = srcMaterialIR.OcclusionStrength;
+
+    return true;
+}
+
+bool importTexturedMaterial(ObjectHandle<RMaterialAsset> hOutAsset,
+                            const parser::MaterialIR& srcMaterialIR,
+                            eMaterialAssetType type,
+                            const std::vector<std::unique_ptr<const parser::TextureIR>>& pSrcTextureIRs)
+{
+    if (!importMaterial(hOutAsset, srcMaterialIR, type))
+    {
+        return false;
+    }
 
     for (int32_t i = 1; i < static_cast<int32_t>(eMaterialTextureUsage::Last); ++i)
     {
@@ -251,75 +491,74 @@ std::unique_ptr<MaterialAsset> importTexturedMaterial(
         const int32_t texIndex = srcMaterialIR.TextureIRIndices[static_cast<int32_t>(texIrUsage)];
         if (texIndex == -1)
         {
-            pNewMaterial->hTextureNames[i] = StringHandle::sNULL;
+            hOutAsset->hTextureNames[i] = StringHandle::sNULL;
         }
         else
         {
-            const std::string nameStr = pSrcTextureIRs[texIndex]->ResourcePath.RemovedExtension().ToString() +
-                                        "::Texture::2D::" + pSrcTextureIRs[texIndex]->NameStr;
-            pNewMaterial->hTextureNames[i] = StringHandle(nameStr);
+            const std::string nameStr = pSrcTextureIRs[texIndex]->ResourcePath.GetParentPath().ToString() +
+                                        "::Texture2D::" + pSrcTextureIRs[texIndex]->NameStr;
+            hOutAsset->hTextureNames[i] = StringHandle(nameStr);
         }
-        pNewMaterial->UVChannels[i] = srcMaterialIR.UVChannels[static_cast<int32_t>(texIrUsage)];
-        pNewMaterial->UVTransforms[i] = srcMaterialIR.UVTransforms[static_cast<int32_t>(texIrUsage)];
+        hOutAsset->UVChannels[i] = srcMaterialIR.UVChannels[static_cast<int32_t>(texIrUsage)];
+        hOutAsset->UVTransforms[i] = srcMaterialIR.UVTransforms[static_cast<int32_t>(texIrUsage)];
     }
 
-    return pNewMaterial;
+    return true;
 }
 
 // Assumes srcTextureIR always uses a 4-channel memory layout (RGBA),
 // regardless of the actual color channels or format of the source image.
 // TODO: Refactor later. Doing way too much and BC compression logic is heavily duplicated.
-std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextureIR,
-                                              eTextureFormat dstFormat,
-                                              bool bGenerateMipmap)
+bool importTexture2D(ObjectHandle<RTextureAsset> hOutAsset,
+                     const parser::TextureIR& srcTextureIR,
+                     eTextureFormat dstFormat,
+                     bool bGenerateMipmap)
 
 {
     if (srcTextureIR.Img.GetBitmap() == nullptr)
     {
         HO_ASSERT(false, "Source image was failed to parse.");
-        return nullptr;
+        return false;
     }
 
-    std::unique_ptr<TextureAsset> pNewTexture = std::make_unique<TextureAsset>();
-    const std::string nameStr =
-        srcTextureIR.ResourcePath.RemovedExtension().ToString() + "::Texture::2D::" + srcTextureIR.NameStr;
-    pNewTexture->hName = StringHandle(nameStr);
-    pNewTexture->Width = srcTextureIR.Img.GetWidth();
-    pNewTexture->Height = srcTextureIR.Img.GetHeight();
-    pNewTexture->Depth = 1;
-    pNewTexture->ArraySize = 1;
-    pNewTexture->MipLevels = bGenerateMipmap ? calculateMipLevels(pNewTexture->Width, pNewTexture->Height) : 1;
-    pNewTexture->Format = dstFormat;
-    pNewTexture->Type = eTextureType::Texture2D;
+    hOutAsset->Width = srcTextureIR.Img.GetWidth();
+    hOutAsset->Height = srcTextureIR.Img.GetHeight();
+    hOutAsset->Depth = 1;
+    hOutAsset->ArraySize = 1;
+    hOutAsset->MipLevels = bGenerateMipmap ? texutils::calculateMipLevels(hOutAsset->Width, hOutAsset->Height) : 1;
+    hOutAsset->Format = dstFormat;
+    hOutAsset->Type = eTextureType::Texture2D;
 
     // Construct sub texture layouts
     int32_t totalDataSize = 0;
-    int32_t imgWidth = pNewTexture->Width;
-    int32_t imgHeight = pNewTexture->Height;
-    pNewTexture->Layouts = FixedArray<TextureAsset::SubTextureLayout>(pNewTexture->MipLevels);
-    for (int32_t i = 0; i < pNewTexture->MipLevels; ++i)
+    hOutAsset->Layouts = FixedArray<RTextureAsset::SubTextureLayout>(hOutAsset->MipLevels);
+    for (int32_t mipLevel = 0; mipLevel < hOutAsset->MipLevels; ++mipLevel)
     {
-        pNewTexture->Layouts[i].Offset = totalDataSize;
-        if (isUncompressedTextureFormat(dstFormat))
+        const int32_t mipWidth =
+            math::Max(1, static_cast<int32_t>(static_cast<uint32_t>(srcTextureIR.Img.GetWidth()) >> mipLevel));
+        const int32_t mipHeight =
+            math::Max(1, static_cast<int32_t>(static_cast<uint32_t>(srcTextureIR.Img.GetHeight()) >> mipLevel));
+        hOutAsset->Layouts[mipLevel].Offset = totalDataSize;
+        if (texutils::isUncompressedTextureFormat(dstFormat))
         {
-            pNewTexture->Layouts[i].RowPitch = imgWidth * getTexturePixelBytes(dstFormat);
-            pNewTexture->Layouts[i].Size = imgHeight * pNewTexture->Layouts[i].RowPitch;
+            hOutAsset->Layouts[mipLevel].RowPitch = mipWidth * texutils::getTexturePixelBytes(dstFormat);
+            hOutAsset->Layouts[mipLevel].Size = mipHeight * hOutAsset->Layouts[mipLevel].RowPitch;
         }
         else
         {
-            pNewTexture->Layouts[i].RowPitch = getTextureBlockCount(imgWidth) * getTextureBlockBytes(dstFormat);
-            pNewTexture->Layouts[i].Size = getTextureBlockCount(imgHeight) * pNewTexture->Layouts[i].RowPitch;
+            hOutAsset->Layouts[mipLevel].RowPitch =
+                texutils::getTextureBlockCount(mipWidth) * texutils::getTextureBlockBytes(dstFormat);
+            hOutAsset->Layouts[mipLevel].Size =
+                texutils::getTextureBlockCount(mipHeight) * hOutAsset->Layouts[mipLevel].RowPitch;
         }
 
-        totalDataSize += pNewTexture->Layouts[i].Size;
-        imgWidth = math::Max(1, static_cast<int32_t>(imgWidth / 2));
-        imgHeight = math::Max(1, static_cast<int32_t>(imgHeight / 2));
+        totalDataSize += hOutAsset->Layouts[mipLevel].Size;
     }
-    pNewTexture->DataBlob = FixedArray<uint8_t>(totalDataSize);
+    hOutAsset->DataBlob = FixedArray<uint8_t>(totalDataSize);
 
     // Generate compressed mipmaps
-    int32_t originImgWidth = pNewTexture->Width;
-    int32_t originImgHeight = pNewTexture->Height;
+    int32_t originImgWidth = hOutAsset->Width;
+    int32_t originImgHeight = hOutAsset->Height;
     int32_t resizedImgWidth = originImgWidth;
     int32_t resizedImgHeight = originImgHeight;
     int32_t imgPixelBytes = 0;
@@ -331,7 +570,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                   isLinearImageFormat(srcTextureIR.Img.GetFormat())))
             {
                 HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
-                return nullptr;
+                return false;
             }
             imgPixelBytes = 1;
             break;
@@ -341,7 +580,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                   isLinearImageFormat(srcTextureIR.Img.GetFormat())))
             {
                 HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
-                return nullptr;
+                return false;
             }
             imgPixelBytes = 2;
             break;
@@ -349,15 +588,16 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
             imgPixelBytes = isIntegerImageFormat(srcTextureIR.Img.GetFormat()) ? 4 : 16;
     }
 
-    const int32_t texPixelBytes =
-        isUncompressedTextureFormat(dstFormat) ? getTexturePixelBytes(dstFormat) : getTextureBlockBytes(dstFormat);
+    const int32_t texPixelBytes = texutils::isUncompressedTextureFormat(dstFormat)
+                                      ? texutils::getTexturePixelBytes(dstFormat)
+                                      : texutils::getTextureBlockBytes(dstFormat);
     if (texPixelBytes == 0)
     {
         HO_ASSERT(false, "Invalid texture pixel bytes (0).");
-        return nullptr;
+        return false;
     }
-    FixedArray<uint8_t> imgBuffers[2] = {FixedArray<uint8_t>(pNewTexture->Width * pNewTexture->Height * imgPixelBytes),
-                                         FixedArray<uint8_t>(pNewTexture->Width * pNewTexture->Height * imgPixelBytes)};
+    FixedArray<uint8_t> imgBuffers[2] = {FixedArray<uint8_t>(hOutAsset->Width * hOutAsset->Height * imgPixelBytes),
+                                         FixedArray<uint8_t>(hOutAsset->Width * hOutAsset->Height * imgPixelBytes)};
     int32_t frontBufferIndex = 0;
     int32_t backBufferIndex = 1;
 
@@ -387,10 +627,10 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
         default:
             layout = STBIR_4CHANNEL;
     }
-    for (int32_t i = 0; i < pNewTexture->MipLevels; ++i)
+    for (int32_t mipLevel = 0; mipLevel < hOutAsset->MipLevels; ++mipLevel)
     {
-        const int32_t texWidth = pNewTexture->Layouts[i].RowPitch / texPixelBytes;
-        const int32_t texHeight = pNewTexture->Layouts[i].Size / pNewTexture->Layouts[i].RowPitch;
+        const int32_t texWidth = hOutAsset->Layouts[mipLevel].RowPitch / texPixelBytes;
+        const int32_t texHeight = hOutAsset->Layouts[mipLevel].Size / hOutAsset->Layouts[mipLevel].RowPitch;
         // Resize original image to half (from back buffer to front buffer)
         const void* pResizeSuccess = nullptr;
         switch (srcTextureIR.Img.GetFormat())
@@ -440,30 +680,34 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 break;
             default:
                 HO_ASSERT(false, "Invalid image format.");
-                return nullptr;
+                return false;
         }
 
         if (!pResizeSuccess)
         {
             HO_ASSERT(false, "Failed to resize image.");
-            return nullptr;
+            return false;
         }
 
         // Compress current mipmap (from front buffer to dataBlob buffer)
         const uint8_t* pSrcImageBufferUint8 = imgBuffers[frontBufferIndex].Data();
         const float* pSrcImageBufferFloat = reinterpret_cast<float*>(imgBuffers[frontBufferIndex].Data());
+        uint8_t* pDstTextureBufferUint8 = hOutAsset->DataBlob.Data() + hOutAsset->Layouts[mipLevel].Offset;
+        half_float::half* pDstTextureBufferHalfFloat =
+            reinterpret_cast<half_float::half*>(hOutAsset->DataBlob.Data() + hOutAsset->Layouts[mipLevel].Offset);
+        float* pDstTextureBufferFloat =
+            reinterpret_cast<float*>(hOutAsset->DataBlob.Data() + hOutAsset->Layouts[mipLevel].Offset);
         switch (dstFormat)
         {
             case eTextureFormat::R8_UNORM:
                 if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                            (pDstTextureBufferUint8 + hi * texWidth + wi)[0] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                         }
                     }
@@ -471,21 +715,20 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be integer, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R8G8_UNORM:
                 if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 2)[0] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[0] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 2)[1] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[1] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
                         }
                     }
@@ -493,25 +736,24 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be integer, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R8G8B8A8_UNORM:
                 if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[0] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[0] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[1] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[1] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[2] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[2] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[2]; // copy b channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[3] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[3] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[3]; // copy a channel.
                         }
                     }
@@ -519,19 +761,18 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be integer, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R8_SRGB:
                 if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     !isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                            (pDstTextureBufferUint8 + hi * texWidth + wi)[0] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                         }
                     }
@@ -539,21 +780,20 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be integer, srgb format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R8G8_SRGB:
                 if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     !isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 2)[0] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[0] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 2)[1] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[1] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
                         }
                     }
@@ -561,25 +801,24 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be integer, srgb format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R8G8B8A8_SRGB:
                 if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     !isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[0] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[0] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[1] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[1] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[2] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[2] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[2]; // copy b channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[3] =
+                            (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[3] =
                                 (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[3]; // copy a channel.
                         }
                     }
@@ -587,20 +826,18 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be integer, srgb format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R16_FLOAT:
                 if (!isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    half_float::half* pDstTextureBuffer = reinterpret_cast<half_float::half*>(
-                        pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset);
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                            (pDstTextureBufferHalfFloat + hi * texWidth + wi)[0] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                         }
                     }
@@ -608,22 +845,20 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be float, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R16G16_FLOAT:
                 if (!isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    half_float::half* pDstTextureBuffer = reinterpret_cast<half_float::half*>(
-                        pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset);
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 2)[0] =
+                            (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 2)[0] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 2)[1] =
+                            (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 2)[1] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[1]; // copy g channel.
                         }
                     }
@@ -631,26 +866,24 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be float, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R16G16B16A16_FLOAT:
                 if (!isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    half_float::half* pDstTextureBuffer = reinterpret_cast<half_float::half*>(
-                        pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset);
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[0] =
+                            (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[0] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[1] =
+                            (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[1] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[1]; // copy g channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[2] =
+                            (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[2] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[2]; // copy b channel.
-                            (pDstTextureBuffer + (hi * texWidth + wi) * 4)[3] =
+                            (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[3] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[3]; // copy a channel.
                         }
                     }
@@ -658,20 +891,18 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be float, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
             case eTextureFormat::R32_FLOAT:
                 if (!isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                     isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                 {
-                    float* pDstTextureBuffer =
-                        reinterpret_cast<float*>(pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset);
                     for (int32_t hi = 0; hi < texHeight; ++hi)
                     {
                         for (int32_t wi = 0; wi < texWidth; ++wi)
                         {
-                            (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                            (pDstTextureBufferFloat + hi * texWidth + wi)[0] =
                                 (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                         }
                     }
@@ -679,7 +910,7 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                 else
                 {
                     HO_ASSERT(false, "Source image must be float, linear format. Please check source image format.");
-                    return nullptr;
+                    return false;
                 }
                 break;
 
@@ -746,60 +977,58 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                     surface.stride = resizedImgWidth * imgPixelBytes;
                 }
 
-                uint8_t* pDstTextureBuffer = pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i].Offset;
-
                 switch (dstFormat)
                 {
                     case eTextureFormat::BC1_UNORM:
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            CompressBlocksBC1(&surface, pDstTextureBuffer);
+                            CompressBlocksBC1(&surface, pDstTextureBufferUint8);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be linear integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC1_SRGB:
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             !isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            CompressBlocksBC1(&surface, pDstTextureBuffer);
+                            CompressBlocksBC1(&surface, pDstTextureBufferUint8);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be sRGB integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC3_UNORM:
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            CompressBlocksBC3(&surface, pDstTextureBuffer);
+                            CompressBlocksBC3(&surface, pDstTextureBufferUint8);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be linear integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC3_SRGB:
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             !isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            CompressBlocksBC3(&surface, pDstTextureBuffer);
+                            CompressBlocksBC3(&surface, pDstTextureBufferUint8);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be sRGB integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC4_UNORM:
@@ -807,13 +1036,13 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            CompressBlocksBC4(&surface, pDstTextureBuffer);
+                            CompressBlocksBC4(&surface, pDstTextureBufferUint8);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be linear integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC5_UNORM:
@@ -821,13 +1050,13 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                         if (isIntegerImageFormat(srcTextureIR.Img.GetFormat()) &&
                             isLinearImageFormat(srcTextureIR.Img.GetFormat()))
                         {
-                            CompressBlocksBC5(&surface, pDstTextureBuffer);
+                            CompressBlocksBC5(&surface, pDstTextureBufferUint8);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be linear integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC6H_UF16:
@@ -849,12 +1078,12 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                             // Compress
                             bc6h_enc_settings bc6hSettings{};
                             GetProfile_bc6h_basic(&bc6hSettings);
-                            CompressBlocksBC6H(&surface, pDstTextureBuffer, &bc6hSettings);
+                            CompressBlocksBC6H(&surface, pDstTextureBufferUint8, &bc6hSettings);
                         }
                         else
                         {
                             HO_ASSERT(false, "Source image must be float format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC7_UNORM:
@@ -871,13 +1100,13 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                                 GetProfile_alpha_basic(&bc7Settings);
                             }
 
-                            CompressBlocksBC7(&surface, pDstTextureBuffer, &bc7Settings);
+                            CompressBlocksBC7(&surface, pDstTextureBufferUint8, &bc7Settings);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be linear integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     case eTextureFormat::BC7_SRGB:
@@ -894,24 +1123,24 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
                                 GetProfile_alpha_basic(&bc7Settings);
                             }
 
-                            CompressBlocksBC7(&surface, pDstTextureBuffer, &bc7Settings);
+                            CompressBlocksBC7(&surface, pDstTextureBufferUint8, &bc7Settings);
                         }
                         else
                         {
                             HO_ASSERT(false,
                                       "Source image must be sRGB integer format. Please check source image format.");
-                            return nullptr;
+                            return false;
                         }
                         break;
                     default:
                         HO_ASSERT(false, "Invalid texture format.");
-                        return nullptr;
+                        return false;
                 }
             }
             break;
             default:
                 HO_ASSERT(false, "Invalid texture format.");
-                return nullptr;
+                return false;
         }
 
         frontBufferIndex = (frontBufferIndex + 1) % 2;
@@ -923,21 +1152,22 @@ std::unique_ptr<TextureAsset> importTexture2D(const parser::TextureIR& srcTextur
         resizedImgHeight = math::Max(1, static_cast<int32_t>(originImgHeight / 2));
     }
 
-    return pNewTexture;
+    return true;
 }
 
 // Assumes srcTextureIR always uses a 4-channel memory layout (RGBA),
 // regardless of the actual color channels or format of the source image.
 // TODO: Refactor later. Doing way too much and BC compression logic is heavily duplicated.
-std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
-                                                   const parser::TextureIR& srcPosX,
-                                                   const parser::TextureIR& srcNegX,
-                                                   const parser::TextureIR& srcPosY,
-                                                   const parser::TextureIR& srcNegY,
-                                                   const parser::TextureIR& srcPosZ,
-                                                   const parser::TextureIR& srcNegZ,
-                                                   eTextureFormat dstFormat,
-                                                   bool bGenerateMipmap)
+bool importTextureCubemap(ObjectHandle<RTextureAsset> hOutAsset,
+                          const std::string& nameStr,
+                          const parser::TextureIR& srcPosX,
+                          const parser::TextureIR& srcNegX,
+                          const parser::TextureIR& srcPosY,
+                          const parser::TextureIR& srcNegY,
+                          const parser::TextureIR& srcPosZ,
+                          const parser::TextureIR& srcNegZ,
+                          eTextureFormat dstFormat,
+                          bool bGenerateMipmap)
 {
     // Validate parameters
     if (srcPosX.Img.GetBitmap() == nullptr || srcNegX.Img.GetBitmap() == nullptr ||
@@ -945,7 +1175,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
         srcPosZ.Img.GetBitmap() == nullptr || srcNegZ.Img.GetBitmap() == nullptr)
     {
         HO_ASSERT(false, "Source images were failed to parse.");
-        return nullptr;
+        return false;
     }
 
     const int32_t baseWidth = srcPosX.Img.GetWidth();
@@ -957,7 +1187,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
     if (baseWidth != baseHeight)
     {
         HO_ASSERT(false, "Cubemap faces must be square (width == height).");
-        return nullptr;
+        return false;
     }
 
     if (srcNegX.Img.GetWidth() != baseWidth || srcNegX.Img.GetHeight() != baseHeight ||
@@ -967,7 +1197,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
         srcNegZ.Img.GetWidth() != baseWidth || srcNegZ.Img.GetHeight() != baseHeight)
     {
         HO_ASSERT(false, "All 6 faces of a cubemap must have the exact same dimensions.");
-        return nullptr;
+        return false;
     }
 
     if (srcNegX.Img.GetFormat() != baseFormat || srcPosY.Img.GetFormat() != baseFormat ||
@@ -984,54 +1214,46 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
         srcNegZ.Img.GetPhysicalChannelCount() != basePhysicalChannels)
     {
         HO_ASSERT(false, "All 6 faces of a cubemap must have the exact same format and channel counts.");
-        return nullptr;
+        return false;
     }
 
-    std::unique_ptr<TextureAsset> pNewTexture = std::make_unique<TextureAsset>();
-    const std::string texNameStr = srcPosX.ResourcePath.GetParentPath().ToString() + "::Texture::CubeMap::" + nameStr;
-    pNewTexture->hName = StringHandle(texNameStr);
-    pNewTexture->Width = baseWidth;
-    pNewTexture->Height = baseHeight;
-    pNewTexture->Depth = 6;
-    pNewTexture->ArraySize = 1;
-    pNewTexture->MipLevels = bGenerateMipmap ? calculateMipLevels(pNewTexture->Width, pNewTexture->Height) : 1;
-    pNewTexture->Format = dstFormat;
-    pNewTexture->Type = eTextureType::TextureCubeMap;
+    hOutAsset->Width = baseWidth;
+    hOutAsset->Height = baseHeight;
+    hOutAsset->Depth = 1;
+    hOutAsset->ArraySize = 1;
+    hOutAsset->MipLevels = bGenerateMipmap ? texutils::calculateMipLevels(hOutAsset->Width, hOutAsset->Height) : 1;
+    hOutAsset->Format = dstFormat;
+    hOutAsset->Type = eTextureType::TextureCubeMap;
 
     // Construct sub texture layouts
     int32_t totalDataSize = 0;
-    int32_t imgWidth = pNewTexture->Width;
-    int32_t imgHeight = pNewTexture->Height;
-    pNewTexture->Layouts = FixedArray<TextureAsset::SubTextureLayout>(pNewTexture->MipLevels * 6);
-    for (int32_t i = 0; i < pNewTexture->MipLevels; ++i)
+    hOutAsset->Layouts = FixedArray<RTextureAsset::SubTextureLayout>(hOutAsset->MipLevels);
+    for (int32_t mipLevel = 0; mipLevel < hOutAsset->MipLevels; ++mipLevel)
     {
-        for (int32_t face = 0; face < 6; ++face)
+        const int32_t mipWidth = math::Max(1, static_cast<int32_t>(static_cast<uint32_t>(baseWidth) >> mipLevel));
+        const int32_t mipHeight = math::Max(1, static_cast<int32_t>(static_cast<uint32_t>(baseHeight) >> mipLevel));
+        hOutAsset->Layouts[mipLevel].Offset = totalDataSize;
+        if (texutils::isUncompressedTextureFormat(dstFormat))
         {
-            pNewTexture->Layouts[i * 6 + face].Offset = totalDataSize;
-            if (isUncompressedTextureFormat(dstFormat))
-            {
-                pNewTexture->Layouts[i * 6 + face].RowPitch = imgWidth * getTexturePixelBytes(dstFormat);
-                pNewTexture->Layouts[i * 6 + face].Size = imgHeight * pNewTexture->Layouts[i * 6 + face].RowPitch;
-            }
-            else
-            {
-                pNewTexture->Layouts[i * 6 + face].RowPitch =
-                    getTextureBlockCount(imgWidth) * getTextureBlockBytes(dstFormat);
-                pNewTexture->Layouts[i * 6 + face].Size =
-                    getTextureBlockCount(imgHeight) * pNewTexture->Layouts[i * 6 + face].RowPitch;
-            }
-
-            totalDataSize += pNewTexture->Layouts[i * 6 + face].Size;
+            hOutAsset->Layouts[mipLevel].RowPitch = mipWidth * texutils::getTexturePixelBytes(dstFormat);
+            hOutAsset->Layouts[mipLevel].Size = 6 * mipHeight * hOutAsset->Layouts[mipLevel].RowPitch;
         }
-        imgWidth = math::Max(1, static_cast<int32_t>(imgWidth / 2));
-        imgHeight = math::Max(1, static_cast<int32_t>(imgHeight / 2));
+        else
+        {
+            hOutAsset->Layouts[mipLevel].RowPitch =
+                texutils::getTextureBlockCount(mipWidth) * texutils::getTextureBlockBytes(dstFormat);
+            hOutAsset->Layouts[mipLevel].Size =
+                6 * texutils::getTextureBlockCount(mipHeight) * hOutAsset->Layouts[mipLevel].RowPitch;
+        }
+
+        totalDataSize += hOutAsset->Layouts[mipLevel].Size;
     }
-    pNewTexture->DataBlob = FixedArray<uint8_t>(totalDataSize);
+    hOutAsset->DataBlob = FixedArray<uint8_t>(totalDataSize);
 
     // Generate compressed mipmaps
     const parser::TextureIR* const pSrcTexIRs[6] = {&srcPosX, &srcNegX, &srcPosY, &srcNegY, &srcPosZ, &srcNegZ};
-    int32_t originImgWidth = pNewTexture->Width;
-    int32_t originImgHeight = pNewTexture->Height;
+    int32_t originImgWidth = hOutAsset->Width;
+    int32_t originImgHeight = hOutAsset->Height;
     int32_t resizedImgWidth = originImgWidth;
     int32_t resizedImgHeight = originImgHeight;
     int32_t imgPixelBytes = 0;
@@ -1042,7 +1264,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
             if (!(isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat)))
             {
                 HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
-                return nullptr;
+                return false;
             }
             imgPixelBytes = 1;
             break;
@@ -1051,7 +1273,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
             if (!(isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat)))
             {
                 HO_ASSERT(false, "Source image must be linear integer format. Please check source image format.");
-                return nullptr;
+                return false;
             }
             imgPixelBytes = 2;
             break;
@@ -1059,19 +1281,20 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
             imgPixelBytes = isIntegerImageFormat(baseFormat) ? 4 : 16;
     }
 
-    const int32_t texPixelBytes =
-        isUncompressedTextureFormat(dstFormat) ? getTexturePixelBytes(dstFormat) : getTextureBlockBytes(dstFormat);
+    const int32_t texPixelBytes = texutils::isUncompressedTextureFormat(dstFormat)
+                                      ? texutils::getTexturePixelBytes(dstFormat)
+                                      : texutils::getTextureBlockBytes(dstFormat);
     if (texPixelBytes == 0)
     {
         HO_ASSERT(false, "Invalid texture pixel bytes (0).");
-        return nullptr;
+        return false;
     }
     FixedArray<uint8_t> imgBuffers[2][6] = {};
     for (int32_t i = 0; i < 2; ++i)
     {
         for (int32_t j = 0; j < 6; ++j)
         {
-            imgBuffers[i][j] = FixedArray<uint8_t>(pNewTexture->Width * pNewTexture->Height * imgPixelBytes);
+            imgBuffers[i][j] = FixedArray<uint8_t>(hOutAsset->Width * hOutAsset->Height * imgPixelBytes);
         }
     }
     int32_t frontBufferIndex = 0;
@@ -1107,13 +1330,12 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
             layout = STBIR_4CHANNEL;
     }
 
-    for (int32_t i = 0; i < pNewTexture->MipLevels; ++i)
+    for (int32_t mipLevel = 0; mipLevel < hOutAsset->MipLevels; ++mipLevel)
     {
+        const int32_t texWidth = hOutAsset->Layouts[mipLevel].RowPitch / texPixelBytes;
+        const int32_t texHeight = hOutAsset->Layouts[mipLevel].Size / hOutAsset->Layouts[mipLevel].RowPitch;
         for (int32_t face = 0; face < 6; ++face)
         {
-            const int32_t texWidth = pNewTexture->Layouts[i * 6 + face].RowPitch / texPixelBytes;
-            const int32_t texHeight =
-                pNewTexture->Layouts[i * 6 + face].Size / pNewTexture->Layouts[i * 6 + face].RowPitch;
             // Resize original image to half (from back buffer to front buffer)
             const void* pResizeSuccess = nullptr;
             switch (baseFormat)
@@ -1163,30 +1385,36 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     break;
                 default:
                     HO_ASSERT(false, "Invalid image format.");
-                    return nullptr;
+                    return false;
             }
 
             if (!pResizeSuccess)
             {
                 HO_ASSERT(false, "Failed to resize image.");
-                return nullptr;
+                return false;
             }
 
             // Compress current mipmap (from front buffer to dataBlob buffer)
             const uint8_t* pSrcImageBufferUint8 = imgBuffers[frontBufferIndex][face].Data();
             const float* pSrcImageBufferFloat = reinterpret_cast<float*>(imgBuffers[frontBufferIndex][face].Data());
+            uint8_t* pDstTextureBufferUint8 = hOutAsset->DataBlob.Data() + hOutAsset->Layouts[mipLevel].Offset +
+                                              face * (hOutAsset->Layouts[mipLevel].Size / 6);
+            half_float::half* pDstTextureBufferHalfFloat =
+                reinterpret_cast<half_float::half*>(hOutAsset->DataBlob.Data() + hOutAsset->Layouts[mipLevel].Offset +
+                                                    face * (hOutAsset->Layouts[mipLevel].Size / 6));
+            float* pDstTextureBufferFloat =
+                reinterpret_cast<float*>(hOutAsset->DataBlob.Data() + hOutAsset->Layouts[mipLevel].Offset +
+                                         face * (hOutAsset->Layouts[mipLevel].Size / 6));
             switch (dstFormat)
             {
                 case eTextureFormat::R8_UNORM:
                     if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        uint8_t* pDstTextureBuffer =
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                                (pDstTextureBufferUint8 + hi * texWidth + wi)[0] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                             }
                         }
@@ -1195,21 +1423,19 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be integer, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R8G8_UNORM:
                     if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        uint8_t* pDstTextureBuffer =
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 2)[0] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[0] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 2)[1] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[1] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
                             }
                         }
@@ -1218,25 +1444,23 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be integer, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R8G8B8A8_UNORM:
                     if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        uint8_t* pDstTextureBuffer =
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[0] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[0] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[1] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[1] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[2] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[2] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[2]; // copy b channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[3] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[3] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[3]; // copy a channel.
                             }
                         }
@@ -1245,19 +1469,17 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be integer, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R8_SRGB:
                     if (isIntegerImageFormat(baseFormat) && !isLinearImageFormat(baseFormat))
                     {
-                        uint8_t* pDstTextureBuffer =
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                                (pDstTextureBufferUint8 + hi * texWidth + wi)[0] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                             }
                         }
@@ -1266,21 +1488,19 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be integer, srgb format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R8G8_SRGB:
                     if (isIntegerImageFormat(baseFormat) && !isLinearImageFormat(baseFormat))
                     {
-                        uint8_t* pDstTextureBuffer =
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 2)[0] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[0] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 2)[1] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 2)[1] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
                             }
                         }
@@ -1289,25 +1509,23 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be integer, srgb format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R8G8B8A8_SRGB:
                     if (isIntegerImageFormat(baseFormat) && !isLinearImageFormat(baseFormat))
                     {
-                        uint8_t* pDstTextureBuffer =
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[0] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[0] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[1] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[1] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[1]; // copy g channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[2] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[2] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[2]; // copy b channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[3] =
+                                (pDstTextureBufferUint8 + (hi * texWidth + wi) * 4)[3] =
                                     (pSrcImageBufferUint8 + (hi * texWidth + wi) * 4)[3]; // copy a channel.
                             }
                         }
@@ -1316,19 +1534,17 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be integer, srgb format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R16_FLOAT:
                     if (!isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        half_float::half* pDstTextureBuffer = reinterpret_cast<half_float::half*>(
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset);
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                                (pDstTextureBufferHalfFloat + hi * texWidth + wi)[0] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                             }
                         }
@@ -1337,21 +1553,19 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be float, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R16G16_FLOAT:
                     if (!isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        half_float::half* pDstTextureBuffer = reinterpret_cast<half_float::half*>(
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset);
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 2)[0] =
+                                (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 2)[0] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 2)[1] =
+                                (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 2)[1] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[1]; // copy g channel.
                             }
                         }
@@ -1360,25 +1574,23 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be float, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R16G16B16A16_FLOAT:
                     if (!isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        half_float::half* pDstTextureBuffer = reinterpret_cast<half_float::half*>(
-                            pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset);
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[0] =
+                                (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[0] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[1] =
+                                (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[1] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[1]; // copy g channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[2] =
+                                (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[2] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[2]; // copy b channel.
-                                (pDstTextureBuffer + (hi * texWidth + wi) * 4)[3] =
+                                (pDstTextureBufferHalfFloat + (hi * texWidth + wi) * 4)[3] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[3]; // copy a channel.
                             }
                         }
@@ -1387,19 +1599,17 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be float, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
                 case eTextureFormat::R32_FLOAT:
                     if (!isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                     {
-                        float* pDstTextureBuffer = reinterpret_cast<float*>(pNewTexture->DataBlob.Data() +
-                                                                            pNewTexture->Layouts[i * 6 + face].Offset);
                         for (int32_t hi = 0; hi < texHeight; ++hi)
                         {
                             for (int32_t wi = 0; wi < texWidth; ++wi)
                             {
-                                (pDstTextureBuffer + hi * texWidth + wi)[0] =
+                                (pDstTextureBufferFloat + hi * texWidth + wi)[0] =
                                     (pSrcImageBufferFloat + (hi * texWidth + wi) * 4)[0]; // copy r channel.
                             }
                         }
@@ -1408,7 +1618,7 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                     {
                         HO_ASSERT(false,
                                   "Source image must be float, linear format. Please check source image format.");
-                        return nullptr;
+                        return false;
                     }
                     break;
 
@@ -1476,89 +1686,86 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                         surface.stride = resizedImgWidth * imgPixelBytes;
                     }
 
-                    uint8_t* pDstTextureBuffer =
-                        pNewTexture->DataBlob.Data() + pNewTexture->Layouts[i * 6 + face].Offset;
-
                     switch (dstFormat)
                     {
                         case eTextureFormat::BC1_UNORM:
                             if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                             {
-                                CompressBlocksBC1(&surface, pDstTextureBuffer);
+                                CompressBlocksBC1(&surface, pDstTextureBufferUint8);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be linear integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC1_SRGB:
                             if (isIntegerImageFormat(baseFormat) && !isLinearImageFormat(baseFormat))
                             {
-                                CompressBlocksBC1(&surface, pDstTextureBuffer);
+                                CompressBlocksBC1(&surface, pDstTextureBufferUint8);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be sRGB integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC3_UNORM:
                             if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                             {
-                                CompressBlocksBC3(&surface, pDstTextureBuffer);
+                                CompressBlocksBC3(&surface, pDstTextureBufferUint8);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be linear integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC3_SRGB:
                             if (isIntegerImageFormat(baseFormat) && !isLinearImageFormat(baseFormat))
                             {
-                                CompressBlocksBC3(&surface, pDstTextureBuffer);
+                                CompressBlocksBC3(&surface, pDstTextureBufferUint8);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be sRGB integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC4_UNORM:
                         case eTextureFormat::BC4_SNORM:
                             if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                             {
-                                CompressBlocksBC4(&surface, pDstTextureBuffer);
+                                CompressBlocksBC4(&surface, pDstTextureBufferUint8);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be linear integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC5_UNORM:
                         case eTextureFormat::BC5_SNORM:
                             if (isIntegerImageFormat(baseFormat) && isLinearImageFormat(baseFormat))
                             {
-                                CompressBlocksBC5(&surface, pDstTextureBuffer);
+                                CompressBlocksBC5(&surface, pDstTextureBufferUint8);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be linenar integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC6H_UF16:
@@ -1580,13 +1787,13 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                                 // Compress
                                 bc6h_enc_settings bc6hSettings{};
                                 GetProfile_bc6h_basic(&bc6hSettings);
-                                CompressBlocksBC6H(&surface, pDstTextureBuffer, &bc6hSettings);
+                                CompressBlocksBC6H(&surface, pDstTextureBufferUint8, &bc6hSettings);
                             }
                             else
                             {
                                 HO_ASSERT(false,
                                           "Source image must be float format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC7_UNORM:
@@ -1602,14 +1809,14 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                                     GetProfile_alpha_basic(&bc7Settings);
                                 }
 
-                                CompressBlocksBC7(&surface, pDstTextureBuffer, &bc7Settings);
+                                CompressBlocksBC7(&surface, pDstTextureBufferUint8, &bc7Settings);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be linear integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         case eTextureFormat::BC7_SRGB:
@@ -1625,25 +1832,25 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
                                     GetProfile_alpha_basic(&bc7Settings);
                                 }
 
-                                CompressBlocksBC7(&surface, pDstTextureBuffer, &bc7Settings);
+                                CompressBlocksBC7(&surface, pDstTextureBufferUint8, &bc7Settings);
                             }
                             else
                             {
                                 HO_ASSERT(
                                     false,
                                     "Source image must be sRGB integer format. Please check source image format.");
-                                return nullptr;
+                                return false;
                             }
                             break;
                         default:
                             HO_ASSERT(false, "Invalid texture format.");
-                            return nullptr;
+                            return false;
                     }
                 }
                 break;
                 default:
                     HO_ASSERT(false, "Invalid texture format.");
-                    return nullptr;
+                    return false;
             }
         }
 
@@ -1658,35 +1865,37 @@ std::unique_ptr<TextureAsset> importTextureCubeMap(const std::string& nameStr,
         resizedImgWidth = math::Max(1, static_cast<int32_t>(originImgWidth / 2));
         resizedImgHeight = math::Max(1, static_cast<int32_t>(originImgHeight / 2));
     }
-    return pNewTexture;
+    return true;
 }
 
-std::unique_ptr<ShaderAsset> importShader(const parser::ShaderIR& srcShaderIR,
-                                          eShaderStage stage,
-                                          uint8_t compatibleMaterialTypes)
+bool importShader(ObjectHandle<RShaderAsset> hOutAsset,
+                  std::string* pOutErrorMsg,
+                  const parser::ShaderIR& srcShaderIR,
+                  eShaderStage stage,
+                  eMaterialAssetType compatibleMaterialTypes)
 {
-    std::unique_ptr<ShaderAsset> pNewShader = std::make_unique<ShaderAsset>();
-    const std::string name =
-        srcShaderIR.ResourcePath.RemovedExtension().ToString() + "::Shader::" + srcShaderIR.NameStr;
-    pNewShader->hName = StringHandle(name);
-    pNewShader->SourceStr = srcShaderIR.SourceStr;
+    hOutAsset->SourceStr = srcShaderIR.SourceStr;
 
     const shaderc::Compiler compiler;
     bool bOptimize = true; // NOLINT
 #if defined(DEBUG) | defined(_DEBUG)
     bOptimize = false;
 #endif
-    std::vector<uint32_t> binary =
-        compileFileGLSL(compiler, srcShaderIR.NameStr, toShadercStageGLSL(stage), srcShaderIR.SourceStr, bOptimize);
-    pNewShader->Binary = FixedArray<uint32_t>(static_cast<int32_t>(binary.size()));
+    std::vector<uint32_t> binary = compileFileGLSL(
+        compiler, srcShaderIR.NameStr, toShadercStageGLSL(stage), srcShaderIR.SourceStr, pOutErrorMsg, bOptimize);
+    if (binary.empty())
+    {
+        return false;
+    }
+    hOutAsset->Binary = FixedArray<uint32_t>(static_cast<int32_t>(binary.size()));
     for (int32_t i = 0; i < static_cast<int32_t>(binary.size()); ++i)
     {
-        pNewShader->Binary[i] = binary[i];
+        hOutAsset->Binary[i] = binary[i];
     }
 
-    pNewShader->Stage = stage;
-    pNewShader->CompatibleMaterialTypes = compatibleMaterialTypes;
-    return pNewShader;
+    hOutAsset->Stage = stage;
+    hOutAsset->CompatibleMaterialType = compatibleMaterialTypes;
+    return true;
 }
 
 // ===========================================================================
@@ -1881,186 +2090,18 @@ bool isIntegerImageFormat(Image::eFormat format)
     }
 }
 
-bool isUncompressedTextureFormat(eTextureFormat format)
-{
-    switch (format)
-    {
-        case eTextureFormat::R8_UNORM:
-        case eTextureFormat::R8G8_UNORM:
-        case eTextureFormat::R8G8B8A8_UNORM:
-        case eTextureFormat::R8_SRGB:
-        case eTextureFormat::R8G8_SRGB:
-        case eTextureFormat::R8G8B8A8_SRGB:
-        case eTextureFormat::R16_FLOAT:
-        case eTextureFormat::R16G16_FLOAT:
-        case eTextureFormat::R16G16B16A16_FLOAT:
-        case eTextureFormat::R32_FLOAT:
-            return true;
-
-        case eTextureFormat::BC1_UNORM:
-        case eTextureFormat::BC1_SRGB:
-        case eTextureFormat::BC3_UNORM:
-        case eTextureFormat::BC3_SRGB:
-        case eTextureFormat::BC4_UNORM:
-        case eTextureFormat::BC4_SNORM:
-        case eTextureFormat::BC5_UNORM:
-        case eTextureFormat::BC5_SNORM:
-        case eTextureFormat::BC6H_UF16:
-        case eTextureFormat::BC6H_SF16:
-        case eTextureFormat::BC7_UNORM:
-        case eTextureFormat::BC7_SRGB:
-            return false;
-
-        default:
-            HO_ASSERT(false, "Invalid texture format.");
-            return false;
-    }
-}
-
-bool isLinearTextureFormat(eTextureFormat format)
-{
-    switch (format)
-    {
-        case eTextureFormat::R8_UNORM:
-        case eTextureFormat::R8G8_UNORM:
-        case eTextureFormat::R8G8B8A8_UNORM:
-        case eTextureFormat::R16_FLOAT:
-        case eTextureFormat::R16G16_FLOAT:
-        case eTextureFormat::R16G16B16A16_FLOAT:
-        case eTextureFormat::R32_FLOAT:
-        case eTextureFormat::BC1_UNORM:
-        case eTextureFormat::BC3_UNORM:
-        case eTextureFormat::BC4_UNORM:
-        case eTextureFormat::BC4_SNORM:
-        case eTextureFormat::BC5_UNORM:
-        case eTextureFormat::BC5_SNORM:
-        case eTextureFormat::BC6H_UF16:
-        case eTextureFormat::BC6H_SF16:
-        case eTextureFormat::BC7_UNORM:
-            return true;
-
-        case eTextureFormat::R8_SRGB:
-        case eTextureFormat::R8G8_SRGB:
-        case eTextureFormat::R8G8B8A8_SRGB:
-        case eTextureFormat::BC1_SRGB:
-        case eTextureFormat::BC3_SRGB:
-        case eTextureFormat::BC7_SRGB:
-            return false;
-
-        default:
-            HO_ASSERT(false, "Invalid texture format.");
-            return false;
-    }
-}
-
-bool isIntegerTextureFormat(eTextureFormat format)
-{
-    switch (format)
-    {
-        case eTextureFormat::R8_UNORM:
-        case eTextureFormat::R8_SRGB:
-        case eTextureFormat::R8G8_UNORM:
-        case eTextureFormat::R8G8_SRGB:
-        case eTextureFormat::R8G8B8A8_UNORM:
-        case eTextureFormat::R8G8B8A8_SRGB:
-        case eTextureFormat::BC1_UNORM:
-        case eTextureFormat::BC1_SRGB:
-        case eTextureFormat::BC3_UNORM:
-        case eTextureFormat::BC3_SRGB:
-        case eTextureFormat::BC4_UNORM:
-        case eTextureFormat::BC4_SNORM:
-        case eTextureFormat::BC5_UNORM:
-        case eTextureFormat::BC5_SNORM:
-        case eTextureFormat::BC7_UNORM:
-        case eTextureFormat::BC7_SRGB:
-            return true;
-
-        case eTextureFormat::R16_FLOAT:
-        case eTextureFormat::R16G16_FLOAT:
-        case eTextureFormat::R16G16B16A16_FLOAT:
-        case eTextureFormat::R32_FLOAT:
-        case eTextureFormat::BC6H_UF16:
-        case eTextureFormat::BC6H_SF16:
-            return false;
-
-        case eTextureFormat::None:
-        default:
-            HO_ASSERT(false, "Invalid or None texture format.");
-            return false;
-    }
-}
-
-int32_t getTexturePixelBytes(eTextureFormat format)
-{
-    switch (format)
-    {
-        case eTextureFormat::R8_UNORM:
-        case eTextureFormat::R8_SRGB:
-            return 1;
-        case eTextureFormat::R8G8_UNORM:
-        case eTextureFormat::R8G8_SRGB:
-        case eTextureFormat::R16_FLOAT:
-            return 2;
-        case eTextureFormat::R8G8B8A8_UNORM:
-        case eTextureFormat::R8G8B8A8_SRGB:
-        case eTextureFormat::R16G16_FLOAT:
-        case eTextureFormat::R32_FLOAT:
-            return 4;
-        case eTextureFormat::R16G16B16A16_FLOAT:
-            return 8;
-        default:
-            HO_ASSERT(false, "It's not uncompressed format.");
-            return 0;
-    }
-}
-
-int32_t getTextureBlockCount(int32_t length)
-{
-    return math::Max(1, (length + 3) / 4);
-}
-
-int32_t getTextureBlockBytes(eTextureFormat format)
-{
-    switch (format)
-    {
-        case eTextureFormat::BC1_UNORM:
-        case eTextureFormat::BC1_SRGB:
-            return 8;
-        case eTextureFormat::BC3_UNORM:
-        case eTextureFormat::BC3_SRGB:
-            return 16;
-        case eTextureFormat::BC4_UNORM:
-        case eTextureFormat::BC4_SNORM:
-            return 8;
-        case eTextureFormat::BC5_UNORM:
-        case eTextureFormat::BC5_SNORM:
-            return 16;
-        case eTextureFormat::BC6H_UF16:
-        case eTextureFormat::BC6H_SF16:
-            HO_ASSERT(false, "Currently not supports BC6 format.");
-            return 0;
-        case eTextureFormat::BC7_UNORM:
-        case eTextureFormat::BC7_SRGB:
-            return 16;
-        default:
-            HO_ASSERT(false, "It's not compressed format.");
-            return 0;
-    }
-}
-
-int32_t calculateMipLevels(int32_t width, int32_t height)
-{
-    return static_cast<int32_t>(math::Floor(log2f(static_cast<float>(math::Max(width, height))))) + 1;
-}
-
 shaderc_shader_kind toShadercStageGLSL(eShaderStage stage)
 {
     switch (stage)
     {
         case eShaderStage::VertexShader:
             return shaderc_shader_kind::shaderc_glsl_vertex_shader;
+        case eShaderStage::GeometryShader:
+            return shaderc_shader_kind::shaderc_glsl_geometry_shader;
         case eShaderStage::FragmentShader:
             return shaderc_shader_kind::shaderc_glsl_fragment_shader;
+        case eShaderStage::ComputeShader:
+            return shaderc_shader_kind::shaderc_glsl_compute_shader;
         default:
             HO_ASSERT(false, "Invalid shader stage.");
             return shaderc_shader_kind::shaderc_glsl_infer_from_source;
@@ -2082,7 +2123,6 @@ std::string preprocessShaderGLSL(const shaderc::Compiler& compiler,
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success)
     {
-        HO_LOG_ERROR((std::string("Shader Preprocessing Failed:\n") + result.GetErrorMessage()).c_str());
         return "";
     }
 
@@ -2109,7 +2149,6 @@ std::string compileFileToAssemblyGLSL(const shaderc::Compiler& compiler,
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success)
     {
-        HO_LOG_ERROR((std::string("Shader Assembly Failed:\n") + result.GetErrorMessage()).c_str());
         return "";
     }
 
@@ -2120,6 +2159,7 @@ std::vector<uint32_t> compileFileGLSL(const shaderc::Compiler& compiler,
                                       const std::string& sourceName,
                                       shaderc_shader_kind kind,
                                       const std::string& source,
+                                      std::string* pOutErrorMsg,
                                       bool optimize)
 {
     shaderc::CompileOptions options;
@@ -2136,8 +2176,10 @@ std::vector<uint32_t> compileFileGLSL(const shaderc::Compiler& compiler,
 
     if (module.GetCompilationStatus() != shaderc_compilation_status_success)
     {
-        HO_LOG_ERROR((std::string("Shader Compilation Failed:\n") + module.GetErrorMessage()).c_str());
-        HO_ASSERT(false, "Shader compilation failed.");
+        if (pOutErrorMsg)
+        {
+            *pOutErrorMsg = module.GetErrorMessage();
+        }
         return std::vector<uint32_t>();
     }
 

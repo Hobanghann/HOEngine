@@ -6,11 +6,16 @@
 
 namespace ho
 {
+struct Matrix3x3;
+struct Matrix4x4;
+
 struct alignas(16) Matrix2x2
 {
     constexpr Matrix2x2();
-    constexpr Matrix2x2(const Vector2& col0, const Vector2& col1);
     constexpr Matrix2x2(const Matrix2x2&) = default;
+    constexpr Matrix2x2(const Vector2& col0, const Vector2& col1);
+    explicit Matrix2x2(const Matrix3x3& mat);
+    explicit Matrix2x2(const Matrix4x4& mat);
     constexpr Matrix2x2& operator=(const Matrix2x2& rhs);
     ~Matrix2x2() = default;
 
@@ -253,9 +258,9 @@ void Matrix2x2::Orthonormalize()
     Vector2 x = GetCol0();
     Vector2 y = GetCol1();
 
-    x.Normalize();
-    y -= x * (x.Dot(y));
     y.Normalize();
+    x -= y * (y.Dot(x));
+    x.Normalize();
 
     SetCol0(x);
     SetCol1(y);

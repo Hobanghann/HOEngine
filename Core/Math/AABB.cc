@@ -1,5 +1,7 @@
 #include "AABB.h"
 
+#include "Sphere.h"
+
 namespace ho
 {
 
@@ -43,6 +45,62 @@ AABB AABB::FromPositions(const Vector3* pPositions, int32_t count)
         }
     }
     return AABB(minEdges, maxEdges);
+}
+
+math::eSide AABB::GetSide(const AABB& aabb) const
+{
+    bool bIsInside = true;
+
+    for (int32_t i = 0; i < 3; ++i)
+    {
+        if (aabb.MaxEdges.Data[i] < MinEdges.Data[i] || aabb.MinEdges.Data[i] > MaxEdges.Data[i])
+        {
+            return math::eSide::Outside;
+        }
+
+        if (aabb.MinEdges.Data[i] < MinEdges.Data[i] || aabb.MaxEdges.Data[i] > MaxEdges.Data[i])
+        {
+            bIsInside = false;
+        }
+    }
+
+    return bIsInside ? math::eSide::Inside : math::eSide::Intersect;
+}
+
+math::eSide AABB::GetSide(const Sphere& sphere) const
+{
+    float sqDist = 0.0f;
+    bool bIsInside = true;
+
+    for (int32_t i = 0; i < 3; ++i)
+    {
+        const float center = sphere.Center.Data[i];
+        const float minEdge = MinEdges.Data[i];
+        const float maxEdge = MaxEdges.Data[i];
+
+        if (center < minEdge)
+        {
+            const float diff = minEdge - center;
+            sqDist += diff * diff;
+        }
+        else if (center > maxEdge)
+        {
+            const float diff = center - maxEdge;
+            sqDist += diff * diff;
+        }
+
+        if (center - sphere.Radius < minEdge || center + sphere.Radius > maxEdge)
+        {
+            bIsInside = false;
+        }
+    }
+
+    if (sqDist > sphere.Radius * sphere.Radius)
+    {
+        return math::eSide::Outside;
+    }
+
+    return bIsInside ? math::eSide::Inside : math::eSide::Intersect;
 }
 
 std::string AABB::ToString() const

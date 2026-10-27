@@ -7,26 +7,43 @@
 
 namespace ho
 {
+void Frustum::GetFrustumCorners(Vector3* pOutCorners, const Matrix4x4& m)
+{
+    HO_ASSERT(pOutCorners, "It can't be null.");
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::NearTopLeft)] = Vector3(-1.0f, 1.0f, 0.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::NearTopRight)] = Vector3(1.0f, 1.0f, 0.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::NearBottomLeft)] = Vector3(-1.0f, -1.0f, 0.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::NearBottomRight)] = Vector3(1.0f, -1.0f, 0.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::FarTopLeft)] = Vector3(-1.0f, 1.0f, 1.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::FarTopRight)] = Vector3(1.0f, 1.0f, 1.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::FarBottomLeft)] = Vector3(-1.0f, -1.0f, 1.0f);
+    pOutCorners[static_cast<int32_t>(eFrustumCorner::FarBottomRight)] = Vector3(1.0f, -1.0f, 1.0f);
+    const Matrix4x4 invMat = m.Inverse();
+    for (int i = 0; i < static_cast<int32_t>(eFrustumCorner::Last); ++i)
+    {
+        pOutCorners[i] = (invMat * pOutCorners[i].ToHomogeneous()).ToCartesian();
+    }
+}
 
 Frustum Frustum::FromMatrix4x4(const Matrix4x4& m)
 {
     Vector4 coefficients = -(m.Row3 + m.Row0);
-    const Plane left = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane left = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 - m.Row0);
-    const Plane right = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane right = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 + m.Row1);
-    const Plane bottom = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane bottom = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 - m.Row1);
-    const Plane top = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane top = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
-    coefficients = -(m.Row3 + m.Row2);
-    const Plane near = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    coefficients = -m.Row2;
+    const Plane near = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     coefficients = -(m.Row3 - m.Row2);
-    const Plane far = Plane(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
+    const Plane far = Plane::FromCoefficients(coefficients.X, coefficients.Y, coefficients.Z, coefficients.W);
 
     return Frustum(left, right, bottom, top, near, far);
 }

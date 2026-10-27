@@ -16,7 +16,7 @@ struct alignas(16) Vector3 final
     constexpr Vector3();
     constexpr Vector3(float x, float y, float z);
     constexpr Vector3(const Vector3&) = default;
-    constexpr explicit Vector3(const Vector2& v);
+    constexpr Vector3(const Vector2& v, float z = 0.0f);
     explicit Vector3(const Vector4& v);
     constexpr Vector3& operator=(const Vector3& rhs);
     ~Vector3() = default;
@@ -110,10 +110,10 @@ constexpr Vector3::Vector3(float x, float y, float z)
 {
 }
 
-constexpr Vector3::Vector3(const Vector2& v)
+constexpr Vector3::Vector3(const Vector2& v, float z)
   : X(v.X)
   , Y(v.Y)
-  , Z(0.0f)
+  , Z(z)
 {
 }
 

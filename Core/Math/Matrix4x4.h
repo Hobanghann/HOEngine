@@ -6,14 +6,17 @@
 
 namespace ho
 {
+struct Matrix2x2;
 struct Matrix3x3;
 struct Vector3;
 
 struct alignas(16) Matrix4x4
 {
     constexpr Matrix4x4();
-    constexpr Matrix4x4(const Vector4& col0, const Vector4& col1, const Vector4& col2, const Vector4& col3);
     constexpr Matrix4x4(const Matrix4x4&) = default;
+    constexpr Matrix4x4(const Vector4& col0, const Vector4& col1, const Vector4& col2, const Vector4& col3);
+    explicit Matrix4x4(const Matrix2x2& mat);
+    explicit Matrix4x4(const Matrix3x3& mat);
     constexpr Matrix4x4& operator=(const Matrix4x4& rhs);
     ~Matrix4x4() = default;
 
@@ -64,7 +67,6 @@ struct alignas(16) Matrix4x4
     [[nodiscard]] constexpr float Trace() const;
     [[nodiscard]] constexpr float Determinant() const;
 
-    [[nodiscard]] Matrix3x3 ToMatrix3x3() const;
     [[nodiscard]] std::string ToString() const;
 
     static const Matrix4x4 sIdentity;
@@ -337,12 +339,12 @@ void Matrix4x4::Orthonormalize()
     Vector4 z = GetCol2();
     Vector4 w = GetCol3();
 
-    x.Normalize();
-    y -= x * (x.Dot(y));
-    y.Normalize();
-    z -= x * (x.Dot(z)) + y * (y.Dot(z));
     z.Normalize();
-    w -= x * (x.Dot(w)) + y * (y.Dot(w)) + z * (z.Dot(w));
+    x -= z * (z.Dot(x));
+    x.Normalize();
+    y -= z * (z.Dot(y)) + x * (x.Dot(y));
+    y.Normalize();
+    w -= z * (z.Dot(w)) + x * (x.Dot(w)) + y * (y.Dot(w));
     w.Normalize();
 
     SetCol0(x);
@@ -425,7 +427,7 @@ constexpr void Matrix4x4::Invert()
 
     const float det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 
-    if (math::IsZeroApprox(det))
+    if (math::IsEqualApprox(det, 0.0f, math::EPSILON_CMP2))
     {
         const Vector4 nanv(math::FLOAT_NAN, math::FLOAT_NAN, math::FLOAT_NAN, math::FLOAT_NAN);
         Row0 = Row1 = Row2 = Row3 = nanv;

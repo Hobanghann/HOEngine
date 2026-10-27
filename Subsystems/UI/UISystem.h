@@ -1,18 +1,17 @@
 #pragma once
 
 #include "Core/Templates/FixedQueue.h"
-#include "IUIDrawable.h"
 #include "TitleBarTheme.h"
 
 struct ImFont;
 
 namespace ho
 {
-class Engine;
+class IUIDrawable;
 
 class UISystem final
 {
-    friend Engine;
+    friend class Engine;
 
   public:
     UISystem(const UISystem&) = delete;
@@ -50,6 +49,8 @@ class UISystem final
     static void deleteInstance();
 
     bool init();
+
+    void draw();
 
     void submitDrawCommandForUI();
 

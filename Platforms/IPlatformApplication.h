@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <string>
 
@@ -38,6 +39,8 @@ class IPlatformApplication
                                   int32_t mainWindowClientWidth,
                                   int32_t mainWindowClientHeight) = 0;
 
+    void DestroyPendingSubWindows();
+
     virtual void BeginFrame() = 0;
 
     virtual bool ProcessPlatformMessages() = 0;
@@ -61,6 +64,11 @@ class IPlatformApplication
     virtual void Shutdown() = 0;
 
     virtual void* GetNativeHandle() const = 0;
+
+    IPlatformWindow* GetMainWindow()
+    {
+        return spMainWindow.get();
+    }
 
     const IPlatformWindow* GetMainWindow() const
     {
@@ -98,6 +106,7 @@ class IPlatformApplication
     virtual void uploadIconTexture(const std::string& iconPathStr) = 0;
 
     static std::unique_ptr<IPlatformWindow> spMainWindow;
+    static std::list<std::unique_ptr<IPlatformWindow>> spSubWindows;
 
     void* mIconNativeHandle = nullptr;
     int32_t mIconWidth = 0;

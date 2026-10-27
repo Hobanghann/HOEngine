@@ -14,29 +14,47 @@ class Basis2DTest : public ::testing::Test
     void SetUp() override
     {
         defaultBasis = Basis2D();
-        scaleBasis = Basis2D(Vector2(2.0f, 0.0f), Vector2(0.0f, 3.0f));
+        scaleBasis = Basis2D(Matrix2x2(Vector2(2.0f, 0.0f), Vector2(0.0f, 3.0f)));
         float angle = math::PI / 4.0f;
         float sin = std::sin(angle);
         float cos = std::cos(angle);
         rotationBasis = Basis2D(Matrix2x2(Vector2(cos, sin), Vector2(-sin, cos)));
-        nonOrthoBasis = Basis2D(Vector2(1.0f, 0.5f), Vector2(0.3f, 1.0f));
+        nonOrthoBasis = Basis2D(Matrix2x2(Vector2(1.0f, 0.5f), Vector2(0.3f, 1.0f)));
     }
 
     Basis2D defaultBasis, scaleBasis, rotationBasis, nonOrthoBasis;
 };
+
+TEST_F(Basis2DTest, FactoryFunctions_AllParameters_InitializesBasisCorrectly)
+{
+    Basis2D newScaleBasis = Basis2D::FromScale(Vector2(2.0f, 3.0f));
+    EXPECT_EQ(newScaleBasis.Matrix.Row0, Vector2(2.0f, 0.0f));
+    EXPECT_EQ(newScaleBasis.Matrix.Row1, Vector2(0.0f, 3.0f));
+
+    float angle = math::PI / 4.0f;
+    float sin = std::sin(angle);
+    float cos = std::cos(angle);
+
+    Basis2D angleBasis = Basis2D::FromAngle(math::PI / 4.0f);
+    EXPECT_NEAR(angleBasis.Matrix.Row0.X, cos, math::EPSILON_CMP);
+    EXPECT_NEAR(angleBasis.Matrix.Row0.Y, -sin, math::EPSILON_CMP);
+    EXPECT_NEAR(angleBasis.Matrix.Row1.X, sin, math::EPSILON_CMP);
+    EXPECT_NEAR(angleBasis.Matrix.Row1.Y, cos, math::EPSILON_CMP);
+
+    Basis2D scaleAngleBasis = Basis2D::FromScaleAngle(Vector2(2.0f, 3.0f), math::PI / 4.0f);
+    EXPECT_NEAR(scaleAngleBasis.Matrix.Row0.X, 2.0f * cos, math::EPSILON_CMP);
+    EXPECT_NEAR(scaleAngleBasis.Matrix.Row0.Y, 3.0f * -sin, math::EPSILON_CMP);
+    EXPECT_NEAR(scaleAngleBasis.Matrix.Row1.X, 2.0f * sin, math::EPSILON_CMP);
+    EXPECT_NEAR(scaleAngleBasis.Matrix.Row1.Y, 3.0f * cos, math::EPSILON_CMP);
+}
 
 TEST_F(Basis2DTest, Constructor_DefaultAndAllParameters_InitializesMatrixCorrectly)
 {
     EXPECT_EQ(defaultBasis.Matrix.Row0, Vector2(1.0f, 0.0f));
     EXPECT_EQ(defaultBasis.Matrix.Row1, Vector2(0.0f, 1.0f));
 
-    EXPECT_EQ(scaleBasis.Matrix.Row0, Vector2(2.0f, 0.0f));
-    EXPECT_EQ(scaleBasis.Matrix.Row1, Vector2(0.0f, 3.0f));
-
-    Matrix2x2 m(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
-    Basis2D basisFromMat(m);
-    EXPECT_EQ(basisFromMat.Matrix.Row0, Vector2(1.0f, 3.0f));
-    EXPECT_EQ(basisFromMat.Matrix.Row1, Vector2(2.0f, 4.0f));
+    EXPECT_EQ(nonOrthoBasis.Matrix.Row0, Vector2(1.0f, 0.3f));
+    EXPECT_EQ(nonOrthoBasis.Matrix.Row1, Vector2(0.5f, 1.0f));
 }
 
 TEST_F(Basis2DTest, OperatorAssign_AnotherBasis_CopiesValues)
@@ -60,9 +78,9 @@ TEST_F(Basis2DTest, GetVectorsAndScale_ValidBasis_ReturnsCorrectDirectionsAndMag
 
 TEST_F(Basis2DTest, OperatorComparison_DifferentBases_ReturnsCorrectBoolean)
 {
-    Basis2D b1(Vector2(1.0f, 0.0f), Vector2(0.0f, 1.0f));
-    Basis2D b2(Vector2(1.0f, 0.0f), Vector2(0.0f, 1.0f));
-    Basis2D b3(Vector2(2.0f, 0.0f), Vector2(0.0f, 3.0f));
+    Basis2D b1(Matrix2x2(Vector2(1.0f, 0.0f), Vector2(0.0f, 1.0f)));
+    Basis2D b2(Matrix2x2(Vector2(1.0f, 0.0f), Vector2(0.0f, 1.0f)));
+    Basis2D b3(Matrix2x2(Vector2(2.0f, 0.0f), Vector2(0.0f, 3.0f)));
 
     EXPECT_TRUE(b1 == b2);
     EXPECT_FALSE(b1 != b2);
@@ -71,8 +89,8 @@ TEST_F(Basis2DTest, OperatorComparison_DifferentBases_ReturnsCorrectBoolean)
 
 TEST_F(Basis2DTest, IsEqualApprox_WithinEpsilon_ReturnsTrue)
 {
-    Basis2D b1(Vector2(1.0f, 0.0f), Vector2(0.0f, 1.0f));
-    Basis2D b2(Vector2(1.000001f, 0.0f), Vector2(0.0f, 0.999999f));
+    Basis2D b1(Matrix2x2(Vector2(1.0f, 0.0f), Vector2(0.0f, 1.0f)));
+    Basis2D b2(Matrix2x2(Vector2(1.000001f, 0.0f), Vector2(0.0f, 0.999999f)));
     EXPECT_TRUE(b1.IsEqualApprox(b2));
     EXPECT_FALSE(b1.IsNotEqualApprox(b2));
 }
@@ -109,7 +127,7 @@ TEST_F(Basis2DTest, Orthonormalize_NonOrthonormalBasis_MakesBasisOrthonormal)
 
 TEST_F(Basis2DTest, Scale_GlobalAndLocal_AppliesScalingCorrectly)
 {
-    Basis2D b(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
+    Basis2D b(Matrix2x2(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f)));
 
     Basis2D b1 = b;
     b1.Scale(Vector2(2.0f, 3.0f));
@@ -137,7 +155,7 @@ TEST_F(Basis2DTest, Scale_GlobalAndLocal_AppliesScalingCorrectly)
 
 TEST_F(Basis2DTest, Rotate_GlobalAndLocal_AppliesRotationCorrectly)
 {
-    Basis2D b(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
+    Basis2D b(Matrix2x2(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f)));
 
     Basis2D b1 = b;
     b1.Rotate(math::PI / 4.0f);
@@ -184,7 +202,7 @@ TEST_F(Basis2DTest, LookAt_TargetDirection_OrientsBasisWhileMaintainingScale)
     b.LookAt(Vector2(1.0f, 0.0f));
 
     EXPECT_TRUE(b.IsOrthogonal());
-    EXPECT_TRUE(b.IsEqualApprox(Basis2D(Vector2(0.0f, -2.0f), Vector2(3.0f, 0.0f))));
+    EXPECT_TRUE(b.IsEqualApprox(Basis2D(Matrix2x2(Vector2(0.0f, -2.0f), Vector2(3.0f, 0.0f)))));
 }
 
 TEST_F(Basis2DTest, LookAt_ZeroTarget_DoesNotChangeOrientation)
@@ -223,8 +241,8 @@ TEST_F(Basis2DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 
 TEST_F(Basis2DTest, OperatorMul_TwoBases_ReturnsCombinedTransform)
 {
-    Basis2D b1(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
-    Basis2D b2(Vector2(4.0f, 3.0f), Vector2(2.0f, 1.0f));
+    Basis2D b1(Matrix2x2(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f)));
+    Basis2D b2(Matrix2x2(Vector2(4.0f, 3.0f), Vector2(2.0f, 1.0f)));
     Matrix2x2 m1 = Matrix2x2(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
     Matrix2x2 m2 = Matrix2x2(Vector2(4.0f, 3.0f), Vector2(2.0f, 1.0f));
 
@@ -234,7 +252,7 @@ TEST_F(Basis2DTest, OperatorMul_TwoBases_ReturnsCombinedTransform)
 
 TEST_F(Basis2DTest, Transform_Vector_ReturnsCorrectlyTransformedVector)
 {
-    Basis2D b1(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
+    Basis2D b1(Matrix2x2(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f)));
     Matrix2x2 m1 = Matrix2x2(Vector2(1.0f, 2.0f), Vector2(3.0f, 4.0f));
     Vector2 v(1.0f, 1.0f);
 

@@ -7,19 +7,23 @@
 
 namespace ho
 {
+struct Matrix2x2;
+struct Matrix4x4;
 
 struct alignas(16) Matrix3x3
 {
-    [[nodiscard]] static Matrix3x3 FromAxisAngle(const Vector3& axis, float angle);
-    [[nodiscard]] static Matrix3x3 FromEuler(float x,
-                                             float y,
-                                             float z,
-                                             math::eEulerOrder order = math::eEulerOrder::ZYX);
-    [[nodiscard]] constexpr static Matrix3x3 FromQuaternion(const Quaternion& q);
+    [[nodiscard]] static FORCE_INLINE Matrix3x3 FromAxisAngle(const Vector3& axis, float angle);
+    [[nodiscard]] static constexpr Matrix3x3 FromEuler(float x,
+                                                       float y,
+                                                       float z,
+                                                       math::eEulerOrder order = math::eEulerOrder::ZYX);
+    [[nodiscard]] static constexpr Matrix3x3 FromQuaternion(const Quaternion& q);
 
     constexpr Matrix3x3();
-    constexpr Matrix3x3(const Vector3& col0, const Vector3& col1, const Vector3& col2);
     constexpr Matrix3x3(const Matrix3x3&) = default;
+    constexpr Matrix3x3(const Vector3& col0, const Vector3& col1, const Vector3& col2);
+    explicit Matrix3x3(const Matrix2x2& mat);
+    explicit Matrix3x3(const Matrix4x4& mat);
     constexpr Matrix3x3& operator=(const Matrix3x3& rhs);
     ~Matrix3x3() = default;
 
@@ -84,6 +88,105 @@ struct alignas(16) Matrix3x3
         float Data[3][4] = {}; // with pad
     };
 };
+
+Matrix3x3 Matrix3x3::FromAxisAngle(const Vector3& axis, float angle)
+{
+    const Vector3 n = axis.Normalized();
+    const float x = n.X;
+    const float y = n.Y;
+    const float z = n.Z;
+    float sin = 0.0f;
+    float cos = 0.0f;
+    math::SinCos(&sin, &cos, angle);
+    const float t = 1.0f - cos;
+
+    Matrix3x3 m;
+    m.Data[0][0] = cos + t * x * x;
+    m.Data[0][1] = t * x * y - sin * z;
+    m.Data[0][2] = t * x * z + sin * y;
+
+    m.Data[1][0] = t * x * y + sin * z;
+    m.Data[1][1] = cos + t * y * y;
+    m.Data[1][2] = t * y * z - sin * x;
+
+    m.Data[2][0] = t * x * z - sin * y;
+    m.Data[2][1] = t * y * z + sin * x;
+    m.Data[2][2] = cos + t * z * z;
+
+    return m;
+}
+
+constexpr Matrix3x3 Matrix3x3::FromEuler(float x, float y, float z, math::eEulerOrder order)
+{
+    float sinX = 0.0f;
+    float cosX = 0.0f;
+    math::SinCos(&sinX, &cosX, x);
+    const Matrix3x3 rotationMatX =
+        Matrix3x3(Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, cosX, sinX), Vector3(0.0f, -sinX, cosX));
+    float sinY = 0.0f;
+    float cosY = 0.0f;
+    math::SinCos(&sinY, &cosY, y);
+    const Matrix3x3 rotationMatY =
+        Matrix3x3(Vector3(cosY, 0.0f, -sinY), Vector3(0.0f, 1.0f, 0.0f), Vector3(sinY, 0.0f, cosY));
+    float sinZ = 0.0f;
+    float cosZ = 0.0f;
+    math::SinCos(&sinZ, &cosZ, z);
+    const Matrix3x3 rotationMatZ =
+        Matrix3x3(Vector3(cosZ, sinZ, 0.0f), Vector3(-sinZ, cosZ, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
+
+    Matrix3x3 m;
+    switch (order)
+    {
+        case math::eEulerOrder::XYZ:
+            m = rotationMatZ * rotationMatY * rotationMatX;
+            break;
+        case math::eEulerOrder::XZY:
+            m = rotationMatY * rotationMatZ * rotationMatX;
+            break;
+        case math::eEulerOrder::YXZ:
+            m = rotationMatZ * rotationMatX * rotationMatY;
+            break;
+        case math::eEulerOrder::YZX:
+            m = rotationMatX * rotationMatZ * rotationMatY;
+            break;
+        case math::eEulerOrder::ZXY:
+            m = rotationMatY * rotationMatX * rotationMatZ;
+            break;
+        case math::eEulerOrder::ZYX:
+            m = rotationMatX * rotationMatY * rotationMatZ;
+            break;
+        default:
+            m = Matrix3x3();
+            break;
+    }
+    return m;
+}
+
+// This function for converting a quaternion to a 3x3 matrix is adapted from
+// the set_quaternion() method in the Godot Engine's Basis class.
+// Source: https://github.com/godotengine/godot/blob/master/core/math/basis.cpp
+constexpr Matrix3x3 Matrix3x3::FromQuaternion(const Quaternion& q)
+{
+    Matrix3x3 m;
+    const float d = q.SqrdMagnitude();
+    const float s = 2.0f / d;
+    const float xs = q.X * s;
+    const float ys = q.Y * s;
+    const float zs = q.Z * s;
+    const float wx = q.W * xs;
+    const float wy = q.W * ys;
+    const float wz = q.W * zs;
+    const float xx = q.X * xs;
+    const float xy = q.X * ys;
+    const float xz = q.X * zs;
+    const float yy = q.Y * ys;
+    const float yz = q.Y * zs;
+    const float zz = q.Z * zs;
+    m.SetCol0(Vector3(1.0f - (yy + zz), xy + wz, xz - wy));
+    m.SetCol1(Vector3(xy - wz, 1.0f - (xx + zz), yz + wx));
+    m.SetCol2(Vector3(xz + wy, yz - wx, 1.0f - (xx + yy)));
+    return m;
+}
 
 constexpr Matrix3x3::Matrix3x3()
   : Row0(Vector3())
@@ -295,11 +398,11 @@ void Matrix3x3::Orthonormalize()
     Vector3 y = GetCol1();
     Vector3 z = GetCol2();
 
-    x.Normalize();
-    y -= x * (x.Dot(y));
-    y.Normalize();
-    z -= (x * (x.Dot(z)) + y * (y.Dot(z)));
     z.Normalize();
+    x -= z * (z.Dot(x));
+    x.Normalize();
+    y -= (z * (z.Dot(y)) + x * (x.Dot(y)));
+    y.Normalize();
 
     SetCol0(x);
     SetCol1(y);
@@ -372,32 +475,6 @@ constexpr float Matrix3x3::Determinant() const
 {
     return Row0.X * (Row1.Y * Row2.Z - Row1.Z * Row2.Y) - Row0.Y * (Row1.X * Row2.Z - Row1.Z * Row2.X) +
            Row0.Z * (Row1.X * Row2.Y - Row1.Y * Row2.X);
-}
-
-// This function for converting a quaternion to a 3x3 matrix is adapted from
-// the set_quaternion() method in the Godot Engine's Basis class.
-// Source: https://github.com/godotengine/godot/blob/master/core/math/basis.cpp
-constexpr Matrix3x3 Matrix3x3::FromQuaternion(const Quaternion& q)
-{
-    Matrix3x3 m;
-    const float d = q.SqrdMagnitude();
-    const float s = 2.0f / d;
-    const float xs = q.X * s;
-    const float ys = q.Y * s;
-    const float zs = q.Z * s;
-    const float wx = q.W * xs;
-    const float wy = q.W * ys;
-    const float wz = q.W * zs;
-    const float xx = q.X * xs;
-    const float xy = q.X * ys;
-    const float xz = q.X * zs;
-    const float yy = q.Y * ys;
-    const float yz = q.Y * zs;
-    const float zz = q.Z * zs;
-    m.SetCol0(Vector3(1.0f - (yy + zz), xy + wz, xz - wy));
-    m.SetCol1(Vector3(xy - wz, 1.0f - (xx + zz), yz + wx));
-    m.SetCol2(Vector3(xz + wy, yz - wx, 1.0f - (xx + yy)));
-    return m;
 }
 
 INLINE constexpr Matrix3x3 Matrix3x3::sIdentity =

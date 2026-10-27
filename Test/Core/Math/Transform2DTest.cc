@@ -15,7 +15,7 @@ class Transform2DTest : public ::testing::Test
     void SetUp() override
     {
         defaultBasis = Basis2D();
-        scaleBasis = Basis2D(Vector2(2.0f, 0.0f), Vector2(0.0f, 3.0f));
+        scaleBasis = Basis2D(Matrix2x2(Vector2(2.0f, 0.0f), Vector2(0.0f, 3.0f)));
 
         float angle = math::PI / 4.0f;
         float sin = std::sin(angle);
@@ -23,22 +23,61 @@ class Transform2DTest : public ::testing::Test
         rotationBasis = Basis2D(Matrix2x2(Vector2(cos, -sin), Vector2(sin, cos)));
 
         defaultTransform = Transform2D();
-        scaleTransform = Transform2D(scaleBasis, Vector2(1.0f, 2.0f));
-        transformFromBasis = Transform2D(rotationBasis, Vector2(3.0f, 4.0f));
-        nonOrthoTransform = Transform2D(Basis2D(Vector2(1.0f, 0.2f), Vector2(0.3f, 1.0f)), Vector2(2.0f, 1.0f));
+        scaleTransform =
+            Transform2D(Matrix3x3(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(1.0f, 2.0f, 1.0f)));
+        transformFromBasis =
+            Transform2D(Matrix3x3(Vector3(cos, -sin, 0.0f), Vector3(sin, cos, 0.0f), Vector3(3.0f, 4.0f, 1.0f)));
+        nonOrthoTransform =
+            Transform2D(Matrix3x3(Vector3(1.0f, 0.2f, 0.0f), Vector3(0.3f, 1.0f, 0.0f), Vector3(2.0f, 1.0f, 1.0f)));
     }
 
     Basis2D defaultBasis, scaleBasis, rotationBasis;
     Transform2D defaultTransform, scaleTransform, transformFromBasis, nonOrthoTransform;
 };
 
+TEST_F(Transform2DTest, FactoryFunctions_AllParameters_InitializesTransformCorrectly)
+{
+    Vector2 scale(2.0f, 3.0f);
+    Vector2 origin(1.0f, 2.0f);
+    Transform2D scaleOriginTransform = Transform2D::FromScalePosition(scale, origin);
+
+    EXPECT_EQ(scaleOriginTransform.GetPosition(), origin);
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol0(), Vector3(2.0f, 0.0f, 0.0f));
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol1(), Vector3(0.0f, 3.0f, 0.0f));
+    EXPECT_EQ(scaleOriginTransform.Matrix.GetCol2(), Vector3(1.0f, 2.0f, 1.0f));
+
+    float angle = math::PI / 4.0f;
+    float sin = std::sin(angle);
+    float cos = std::cos(angle);
+    Vector2 rotOrigin(3.0f, 4.0f);
+    Transform2D rotOriginTransform = Transform2D::FromAnglePosition(angle, rotOrigin);
+
+    EXPECT_NEAR(rotOriginTransform.Matrix.GetCol0().X, cos, 1e-5f);
+    EXPECT_NEAR(rotOriginTransform.Matrix.GetCol0().Y, sin, 1e-5f);
+    EXPECT_NEAR(rotOriginTransform.Matrix.GetCol1().X, -sin, 1e-5f);
+    EXPECT_NEAR(rotOriginTransform.Matrix.GetCol1().Y, cos, 1e-5f);
+    EXPECT_EQ(rotOriginTransform.GetPosition(), rotOrigin);
+
+    Transform2D complexTransform = Transform2D::FromScaleAnglePosition(scale, angle, rotOrigin);
+    EXPECT_NEAR(complexTransform.Matrix.GetCol0().X, scale.X * cos, 1e-5f);
+    EXPECT_NEAR(complexTransform.Matrix.GetCol0().Y, scale.X * sin, 1e-5f);
+    EXPECT_NEAR(complexTransform.Matrix.GetCol1().X, scale.Y * -sin, 1e-5f);
+    EXPECT_NEAR(complexTransform.Matrix.GetCol1().Y, scale.Y * cos, 1e-5f);
+    EXPECT_EQ(complexTransform.GetPosition(), rotOrigin);
+
+    Transform2D basisOnlyTransform = Transform2D::FromBasis(rotationBasis);
+    EXPECT_EQ(basisOnlyTransform.GetBasis(), rotationBasis);
+    EXPECT_EQ(basisOnlyTransform.GetPosition(), Vector2(0.0f, 0.0f));
+
+    Transform2D basisWithOriginTransform = Transform2D::FromBasisPosition(rotationBasis, origin);
+    EXPECT_EQ(basisWithOriginTransform.GetBasis(), rotationBasis);
+    EXPECT_EQ(basisWithOriginTransform.GetPosition(), origin);
+}
+
 TEST_F(Transform2DTest, Constructor_DefaultAndAllParameters_InitializesMatrixCorrectly)
 {
     EXPECT_EQ(defaultTransform.GetBasis(), defaultBasis);
-    EXPECT_EQ(defaultTransform.GetOrigin(), Vector2(0.0f, 0.0f));
-
-    EXPECT_EQ(scaleTransform.GetBasis(), scaleBasis);
-    EXPECT_EQ(scaleTransform.GetOrigin(), Vector2(1.0f, 2.0f));
+    EXPECT_EQ(defaultTransform.GetPosition(), Vector2(0.0f, 0.0f));
 
     Matrix3x3 m = scaleTransform.Matrix;
     Transform2D transformFromMatrix(m);
@@ -63,9 +102,9 @@ TEST_F(Transform2DTest, GetAndSet_ValidTransform_UpdatesAndReturnsProperties)
     EXPECT_NEAR(t.GetScaleX(), Vector2(2.0f, 0.0f).Magnitude(), math::EPSILON_CMP);
     EXPECT_NEAR(t.GetScaleY(), Vector2(0.0f, 3.0f).Magnitude(), math::EPSILON_CMP);
 
-    EXPECT_EQ(transformFromBasis.GetOrigin(), Vector2(3.0f, 4.0f));
-    transformFromBasis.SetOrigin(Vector2(4.0f, 3.0f));
-    EXPECT_EQ(transformFromBasis.GetOrigin(), Vector2(4.0f, 3.0f));
+    EXPECT_EQ(transformFromBasis.GetPosition(), Vector2(3.0f, 4.0f));
+    transformFromBasis.SetPosition(Vector2(4.0f, 3.0f));
+    EXPECT_EQ(transformFromBasis.GetPosition(), Vector2(4.0f, 3.0f));
 
     EXPECT_EQ(transformFromBasis.GetBasis(), rotationBasis);
     transformFromBasis.SetBasis(scaleBasis);
@@ -74,9 +113,9 @@ TEST_F(Transform2DTest, GetAndSet_ValidTransform_UpdatesAndReturnsProperties)
 
 TEST_F(Transform2DTest, OperatorComparison_DifferentTransforms_ReturnsCorrectBoolean)
 {
-    Transform2D t1(scaleBasis, Vector2(1.0f, 2.0f));
-    Transform2D t2(scaleBasis, Vector2(1.0f, 2.0f));
-    Transform2D t3(rotationBasis, Vector2(3.0f, 4.0f));
+    Transform2D t1 = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t2 = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t3 = Transform2D::FromBasisPosition(rotationBasis, Vector2(3.0f, 4.0f));
 
     EXPECT_TRUE(t1 == t2);
     EXPECT_FALSE(t1 != t2);
@@ -85,8 +124,9 @@ TEST_F(Transform2DTest, OperatorComparison_DifferentTransforms_ReturnsCorrectBoo
 
 TEST_F(Transform2DTest, IsEqualApprox_WithinEpsilon_ReturnsTrue)
 {
-    Transform2D t1(scaleBasis, Vector2(1.0f, 2.0f));
-    Transform2D t2(Basis2D(Vector2(2.000001f, 0.0f), Vector2(0.0f, 3.000001f)), Vector2(1.000001f, 2.000001f));
+    Transform2D t1 = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t2 = Transform2D::FromBasisPosition(
+        Basis2D(Matrix2x2(Vector2(2.000001f, 0.0f), Vector2(0.0f, 3.000001f))), Vector2(1.000001f, 2.000001f));
     EXPECT_TRUE(t1.IsEqualApprox(t2));
     EXPECT_FALSE(t1.IsNotEqualApprox(t2));
 }
@@ -126,7 +166,7 @@ TEST_F(Transform2DTest, Orthonormalize_NonOrthonormalTransform_MakesTransformOrt
 
 TEST_F(Transform2DTest, Scale_GlobalSpace_AppliesScalingCorrectly)
 {
-    Transform2D t(rotationBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(rotationBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 baseMat = t.Matrix;
     Matrix3x3 scaleMat(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
@@ -148,7 +188,7 @@ TEST_F(Transform2DTest, Scale_GlobalSpace_AppliesScalingCorrectly)
 
 TEST_F(Transform2DTest, Scale_LocalSpace_AppliesScalingCorrectly)
 {
-    Transform2D t(rotationBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(rotationBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 baseMat = t.Matrix;
     Matrix3x3 scaleMat(Vector3(2.0f, 0.0f, 0.0f), Vector3(0.0f, 3.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
 
@@ -170,7 +210,7 @@ TEST_F(Transform2DTest, Scale_LocalSpace_AppliesScalingCorrectly)
 
 TEST_F(Transform2DTest, Rotate_GlobalSpace_AppliesRotationCorrectly)
 {
-    Transform2D t(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 baseMat = t.Matrix;
     float angle = math::PI / 4.0f;
     float sin = std::sin(angle);
@@ -187,7 +227,7 @@ TEST_F(Transform2DTest, Rotate_GlobalSpace_AppliesRotationCorrectly)
 
 TEST_F(Transform2DTest, Rotate_LocalSpace_AppliesRotationCorrectly)
 {
-    Transform2D t(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 baseMat = t.Matrix;
     float angle = math::PI / 4.0f;
     float sin = std::sin(angle);
@@ -204,7 +244,7 @@ TEST_F(Transform2DTest, Rotate_LocalSpace_AppliesRotationCorrectly)
 
 TEST_F(Transform2DTest, Translate_GlobalSpace_AppliesTranslationCorrectly)
 {
-    Transform2D t(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 baseMat = t.Matrix;
 
     Vector2 translationVector(3.0f, 4.0f);
@@ -221,7 +261,7 @@ TEST_F(Transform2DTest, Translate_GlobalSpace_AppliesTranslationCorrectly)
 
 TEST_F(Transform2DTest, Translate_LocalSpace_AppliesTranslationCorrectly)
 {
-    Transform2D t(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 baseMat = t.Matrix;
 
     Vector2 translationVector(3.0f, 4.0f);
@@ -267,7 +307,7 @@ TEST_F(Transform2DTest, LookAt_StandardTarget_OrientsBasisWhileMaintainingScale)
     Vector2 at(1.0f, 2.0f);
     Transform2D t = transformFromBasis;
     t.LookAt(at);
-    Vector2 dir = (at - transformFromBasis.GetOrigin()).Normalized();
+    Vector2 dir = (at - transformFromBasis.GetPosition()).Normalized();
 
     EXPECT_TRUE(t.GetBasis().IsOrthogonal());
     EXPECT_TRUE(t.GetUp().IsEqualApprox(dir));
@@ -275,13 +315,13 @@ TEST_F(Transform2DTest, LookAt_StandardTarget_OrientsBasisWhileMaintainingScale)
     EXPECT_NEAR(t.GetScaleX(), transformFromBasis.GetScaleX(), math::EPSILON_CMP);
     EXPECT_NEAR(t.GetRight().Dot(dir), 0.0f, math::EPSILON_CMP);
 
-    EXPECT_TRUE(t.GetOrigin().IsEqualApprox(transformFromBasis.GetOrigin()));
+    EXPECT_TRUE(t.GetPosition().IsEqualApprox(transformFromBasis.GetPosition()));
 }
 
 TEST_F(Transform2DTest, LookAt_TargetIsOrigin_DoesNotChangeOrientation)
 {
     Transform2D t = transformFromBasis;
-    Vector2 at = t.GetOrigin();
+    Vector2 at = t.GetPosition();
     t.LookAt(at);
 
     EXPECT_TRUE(t == transformFromBasis);
@@ -289,7 +329,7 @@ TEST_F(Transform2DTest, LookAt_TargetIsOrigin_DoesNotChangeOrientation)
 
 TEST_F(Transform2DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 {
-    Vector2 at = (transformFromBasis.GetUp() * 2.0f) + transformFromBasis.GetOrigin();
+    Vector2 at = (transformFromBasis.GetUp() * 2.0f) + transformFromBasis.GetPosition();
     Transform2D t = transformFromBasis;
     t.LookAt(at);
 
@@ -298,8 +338,8 @@ TEST_F(Transform2DTest, LookAt_SameDirection_DoesNotChangeOrientation)
 
 TEST_F(Transform2DTest, OperatorMul_TwoTransforms_ReturnsCombinedTransform)
 {
-    Transform2D t1(scaleBasis, Vector2(1.0f, 2.0f));
-    Transform2D t2(rotationBasis, Vector2(3.0f, 4.0f));
+    Transform2D t1 = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t2 = Transform2D::FromBasisPosition(rotationBasis, Vector2(3.0f, 4.0f));
 
     EXPECT_TRUE((t1 * t2).Matrix.IsEqualApprox(t1.Matrix * t2.Matrix));
     EXPECT_TRUE((t2 * t1).Matrix.IsEqualApprox(t2.Matrix * t1.Matrix));
@@ -307,7 +347,7 @@ TEST_F(Transform2DTest, OperatorMul_TwoTransforms_ReturnsCombinedTransform)
 
 TEST_F(Transform2DTest, Transform_Vector_ReturnsCorrectlyTransformedVector)
 {
-    Transform2D t(scaleBasis, Vector2(1.0f, 2.0f));
+    Transform2D t = Transform2D::FromBasisPosition(scaleBasis, Vector2(1.0f, 2.0f));
     Matrix3x3 m = t.Matrix;
     Vector2 v(2.0f, 3.0f);
 
@@ -315,7 +355,7 @@ TEST_F(Transform2DTest, Transform_Vector_ReturnsCorrectlyTransformedVector)
     EXPECT_TRUE(t.InvTransform(v).IsEqualApprox(Vector2(m.Inverse() * Vector3(v.X, v.Y, 1.0f))));
     EXPECT_FALSE(t.InvTransformFast(v).IsEqualApprox(Vector2(m.Inverse() * Vector3(v.X, v.Y, 1.0f))));
 
-    Transform2D orthoTransform(rotationBasis, Vector2(1.0f, 2.0f));
+    Transform2D orthoTransform = Transform2D::FromBasisPosition(rotationBasis, Vector2(1.0f, 2.0f));
     EXPECT_TRUE(orthoTransform.InvTransformFast(v).IsEqualApprox(
         Vector2(orthoTransform.Matrix.Inverse() * Vector3(v.X, v.Y, 1.0f))));
 }

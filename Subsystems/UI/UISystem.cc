@@ -10,8 +10,9 @@
 // clang-format on
 
 #include "Core/IO/Path.h"
+#include "IUIDrawable.h"
 #include "Platforms/IPlatformApplication.h"
-#include "Subsystems/Rendering/IRenderingSystem.h"
+#include "Subsystems/Rendering/RenderingSystem.h"
 
 namespace ho
 {
@@ -113,12 +114,12 @@ bool UISystem::init()
                                        mTitleBarTheme.BgColor.B * 0.5f,
                                        mTitleBarTheme.BgColor.A};
     style.Colors[ImGuiCol_ChildBg] = {
-        mTitleBarTheme.BgColor.R * 0.4f, mTitleBarTheme.BgColor.G * 0.4f, mTitleBarTheme.BgColor.B * 0.4f, 1.0f};
+        mTitleBarTheme.BgColor.R * 0.8f, mTitleBarTheme.BgColor.G * 0.8f, mTitleBarTheme.BgColor.B * 0.8f, 1.0f};
     style.Colors[ImGuiCol_PopupBg] = {
-        mTitleBarTheme.BgColor.R * 0.6f, mTitleBarTheme.BgColor.G * 0.6f, mTitleBarTheme.BgColor.B * 0.6f, 0.95f};
+        mTitleBarTheme.BgColor.R * 0.7f, mTitleBarTheme.BgColor.G * 0.7f, mTitleBarTheme.BgColor.B * 0.7f, 0.9f};
 
     style.Colors[ImGuiCol_Border] = {
-        mTitleBarTheme.BgColor.R * 0.3f, mTitleBarTheme.BgColor.G * 0.3f, mTitleBarTheme.BgColor.B * 0.3f, 1.0f};
+        mTitleBarTheme.BgColor.R * 2.0f, mTitleBarTheme.BgColor.G * 2.0f, mTitleBarTheme.BgColor.B * 2.0f, 1.0f};
     style.Colors[ImGuiCol_BorderShadow] = {0.0f, 0.0f, 0.0f, 0.0f};
 
     style.Colors[ImGuiCol_FrameBg] = {
@@ -136,20 +137,20 @@ bool UISystem::init()
                                       mTitleBarTheme.BgColor.G * 1.5f,
                                       mTitleBarTheme.BgColor.B * 1.5f,
                                       mTitleBarTheme.BgColor.A};
-    style.Colors[ImGuiCol_TitleBgActive] = {mTitleBarTheme.BgColor.R * 2.0f,
-                                            mTitleBarTheme.BgColor.G * 2.0f,
-                                            mTitleBarTheme.BgColor.B * 2.0f,
+    style.Colors[ImGuiCol_TitleBgActive] = {mTitleBarTheme.BgColor.R * 2.5f,
+                                            mTitleBarTheme.BgColor.G * 2.5f,
+                                            mTitleBarTheme.BgColor.B * 2.5f,
                                             mTitleBarTheme.BgColor.A};
-    style.Colors[ImGuiCol_TitleBgCollapsed] = {mTitleBarTheme.BgColor.R * 1.5f,
-                                               mTitleBarTheme.BgColor.G * 1.5f,
-                                               mTitleBarTheme.BgColor.B * 1.5f,
+    style.Colors[ImGuiCol_TitleBgCollapsed] = {mTitleBarTheme.BgColor.R * 0.7f,
+                                               mTitleBarTheme.BgColor.G * 0.7f,
+                                               mTitleBarTheme.BgColor.B * 0.7f,
                                                mTitleBarTheme.BgColor.A};
     style.Colors[ImGuiCol_MenuBarBg] = {
         mTitleBarTheme.BgColor.R, mTitleBarTheme.BgColor.G, mTitleBarTheme.BgColor.B, mTitleBarTheme.BgColor.A};
 
-    style.Colors[ImGuiCol_ScrollbarBg] = {mTitleBarTheme.BgColor.R * 0.8f,
-                                          mTitleBarTheme.BgColor.G * 0.8f,
-                                          mTitleBarTheme.BgColor.B * 0.8f,
+    style.Colors[ImGuiCol_ScrollbarBg] = {mTitleBarTheme.BgColor.R * 1.1f,
+                                          mTitleBarTheme.BgColor.G * 1.1f,
+                                          mTitleBarTheme.BgColor.B * 1.1f,
                                           mTitleBarTheme.BgColor.A};
     style.Colors[ImGuiCol_ScrollbarGrab] = {
         mTitleBarTheme.BgColor.R, mTitleBarTheme.BgColor.G, mTitleBarTheme.BgColor.B, mTitleBarTheme.BgColor.A * 0.5f};
@@ -171,16 +172,18 @@ bool UISystem::init()
                                                mTitleBarTheme.ButtonActiveColor.G,
                                                mTitleBarTheme.ButtonActiveColor.B,
                                                1.0f};
-    style.Colors[ImGuiCol_Button] = {
-        mTitleBarTheme.BgColor.R * 1.0f, mTitleBarTheme.BgColor.G * 1.0f, mTitleBarTheme.BgColor.B * 1.0f, 1.0f};
-    style.Colors[ImGuiCol_ButtonHovered] = {mTitleBarTheme.ButtonHoveredColor.R,
-                                            mTitleBarTheme.ButtonHoveredColor.G,
-                                            mTitleBarTheme.ButtonHoveredColor.B,
-                                            mTitleBarTheme.ButtonHoveredColor.A};
-    style.Colors[ImGuiCol_ButtonActive] = {mTitleBarTheme.ButtonActiveColor.R,
-                                           mTitleBarTheme.ButtonActiveColor.G,
-                                           mTitleBarTheme.ButtonActiveColor.B,
-                                           mTitleBarTheme.ButtonActiveColor.A};
+    style.Colors[ImGuiCol_Button] = {mTitleBarTheme.ButtonHoveredColor.R,
+                                     mTitleBarTheme.ButtonHoveredColor.G,
+                                     mTitleBarTheme.ButtonHoveredColor.B,
+                                     mTitleBarTheme.ButtonHoveredColor.A};
+    style.Colors[ImGuiCol_ButtonHovered] = {mTitleBarTheme.ButtonActiveColor.R,
+                                            mTitleBarTheme.ButtonActiveColor.G,
+                                            mTitleBarTheme.ButtonActiveColor.B,
+                                            mTitleBarTheme.ButtonActiveColor.A};
+    style.Colors[ImGuiCol_ButtonActive] = {mTitleBarTheme.ButtonActiveColor.R * 1.3f,
+                                           mTitleBarTheme.ButtonActiveColor.G * 1.3f,
+                                           mTitleBarTheme.ButtonActiveColor.B * 1.3f,
+                                           mTitleBarTheme.ButtonActiveColor.A * 1.3f};
 
     style.Colors[ImGuiCol_Header] = {
         mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
@@ -194,77 +197,75 @@ bool UISystem::init()
                                            mTitleBarTheme.ButtonActiveColor.A};
 
     style.Colors[ImGuiCol_Separator] = {
-        mTitleBarTheme.BgColor.R * 0.4f, mTitleBarTheme.BgColor.G * 0.4f, mTitleBarTheme.BgColor.B * 0.4f, 1.0f};
-    style.Colors[ImGuiCol_SeparatorHovered] = {mTitleBarTheme.ButtonHoveredColor.R,
-                                               mTitleBarTheme.ButtonHoveredColor.G,
-                                               mTitleBarTheme.ButtonHoveredColor.B,
+        mTitleBarTheme.BgColor.R * 1.5f, mTitleBarTheme.BgColor.G * 1.5f, mTitleBarTheme.BgColor.B * 1.5f, 1.0f};
+    style.Colors[ImGuiCol_SeparatorHovered] = {mTitleBarTheme.ButtonHoveredColor.R * 1.5f,
+                                               mTitleBarTheme.ButtonHoveredColor.G * 1.5f,
+                                               mTitleBarTheme.ButtonHoveredColor.B * 1.5f,
                                                1.0f};
-    style.Colors[ImGuiCol_SeparatorActive] = {mTitleBarTheme.ButtonActiveColor.R,
-                                              mTitleBarTheme.ButtonActiveColor.G,
-                                              mTitleBarTheme.ButtonActiveColor.B,
+    style.Colors[ImGuiCol_SeparatorActive] = {mTitleBarTheme.ButtonActiveColor.R * 1.5f,
+                                              mTitleBarTheme.ButtonActiveColor.G * 1.5f,
+                                              mTitleBarTheme.ButtonActiveColor.B * 1.5f,
                                               1.0f};
     style.Colors[ImGuiCol_ResizeGrip] = {
-        mTitleBarTheme.BgColor.R * 0.6f, mTitleBarTheme.BgColor.G * 0.6f, mTitleBarTheme.BgColor.B * 0.6f, 0.4f};
-    style.Colors[ImGuiCol_ResizeGripHovered] = {mTitleBarTheme.ButtonHoveredColor.R,
-                                                mTitleBarTheme.ButtonHoveredColor.G,
-                                                mTitleBarTheme.ButtonHoveredColor.B,
-                                                0.8f};
+        mTitleBarTheme.BgColor.R * 1.5f, mTitleBarTheme.BgColor.G * 1.5f, mTitleBarTheme.BgColor.B * 1.5f, 0.4f};
+    style.Colors[ImGuiCol_ResizeGripHovered] = {mTitleBarTheme.ButtonActiveColor.R,
+                                                mTitleBarTheme.ButtonActiveColor.G,
+                                                mTitleBarTheme.ButtonActiveColor.B,
+                                                1.0f};
     style.Colors[ImGuiCol_ResizeGripActive] = {mTitleBarTheme.ButtonActiveColor.R,
                                                mTitleBarTheme.ButtonActiveColor.G,
                                                mTitleBarTheme.ButtonActiveColor.B,
                                                1.0f};
 
-    style.Colors[ImGuiCol_Tab] = {
-        mTitleBarTheme.BgColor.R * 0.6f, mTitleBarTheme.BgColor.G * 0.6f, mTitleBarTheme.BgColor.B * 0.6f, 1.0f};
-    style.Colors[ImGuiCol_TabHovered] = {mTitleBarTheme.ButtonHoveredColor.R,
-                                         mTitleBarTheme.ButtonHoveredColor.G,
-                                         mTitleBarTheme.ButtonHoveredColor.B,
+    style.Colors[ImGuiCol_Tab] = {mTitleBarTheme.BgColor.R, mTitleBarTheme.BgColor.G, mTitleBarTheme.BgColor.B, 1.0f};
+    style.Colors[ImGuiCol_TabHovered] = {mTitleBarTheme.ButtonActiveColor.R * 0.8f,
+                                         mTitleBarTheme.ButtonActiveColor.G * 0.8f,
+                                         mTitleBarTheme.ButtonActiveColor.B * 0.8f,
                                          1.0f};
-    style.Colors[ImGuiCol_TabSelected] = {
-        mTitleBarTheme.BgColor.R * 1.0f, mTitleBarTheme.BgColor.G * 1.0f, mTitleBarTheme.BgColor.B * 1.0f, 1.0f};
-    style.Colors[ImGuiCol_TabSelectedOverline] = {1.0f, 1.0f, 1.0f, 1.0f};
+    style.Colors[ImGuiCol_TabSelected] = {mTitleBarTheme.ButtonHoveredColor.R,
+                                          mTitleBarTheme.ButtonHoveredColor.G,
+                                          mTitleBarTheme.ButtonHoveredColor.B,
+                                          1.0f};
+    style.Colors[ImGuiCol_TabSelectedOverline] = {0.0f, 0.0f, 0.0f, 0.0f};
     style.Colors[ImGuiCol_TabDimmed] = {
-        mTitleBarTheme.BgColor.R * 0.4f, mTitleBarTheme.BgColor.G * 0.4f, mTitleBarTheme.BgColor.B * 0.4f, 1.0f};
-    style.Colors[ImGuiCol_TabDimmedSelected] = {
-        mTitleBarTheme.BgColor.R * 0.6f, mTitleBarTheme.BgColor.G * 0.6f, mTitleBarTheme.BgColor.B * 0.6f, 1.0f};
-    style.Colors[ImGuiCol_TabDimmedSelectedOverline] = {0.8f, 0.8f, 0.8f, 1.0f};
+        mTitleBarTheme.BgColor.R * 0.8f, mTitleBarTheme.BgColor.G * 0.8f, mTitleBarTheme.BgColor.B * 0.8f, 1.0f};
+    style.Colors[ImGuiCol_TabDimmedSelected] = {mTitleBarTheme.ButtonHoveredColor.R * 0.8f,
+                                                mTitleBarTheme.ButtonHoveredColor.G * 0.8f,
+                                                mTitleBarTheme.ButtonHoveredColor.B * 0.8f,
+                                                1.0f};
+    style.Colors[ImGuiCol_TabDimmedSelectedOverline] = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    style.Colors[ImGuiCol_DockingPreview] = {mTitleBarTheme.ButtonHoveredColor.R,
-                                             mTitleBarTheme.ButtonHoveredColor.G,
-                                             mTitleBarTheme.ButtonHoveredColor.B,
+    style.Colors[ImGuiCol_DockingPreview] = {mTitleBarTheme.ButtonActiveColor.R,
+                                             mTitleBarTheme.ButtonActiveColor.G,
+                                             mTitleBarTheme.ButtonActiveColor.B,
                                              0.6f};
-    style.Colors[ImGuiCol_DockingEmptyBg] = {mTitleBarTheme.BgColor.R * 0.8f,
-                                             mTitleBarTheme.BgColor.G * 0.8f,
-                                             mTitleBarTheme.BgColor.B * 0.8f,
+    style.Colors[ImGuiCol_DockingEmptyBg] = {mTitleBarTheme.BgColor.R * 0.5f,
+                                             mTitleBarTheme.BgColor.G * 0.5f,
+                                             mTitleBarTheme.BgColor.B * 0.5f,
                                              mTitleBarTheme.BgColor.A};
 
     style.Colors[ImGuiCol_TableHeaderBg] = {
-        mTitleBarTheme.BgColor.R * 0.8f, mTitleBarTheme.BgColor.G * 0.8f, mTitleBarTheme.BgColor.B * 0.8f, 1.0f};
+        mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
     style.Colors[ImGuiCol_TableBorderStrong] = {
-        mTitleBarTheme.BgColor.R * 0.5f, mTitleBarTheme.BgColor.G * 0.5f, mTitleBarTheme.BgColor.B * 0.5f, 1.0f};
+        mTitleBarTheme.BgColor.R * 2.0f, mTitleBarTheme.BgColor.G * 2.0f, mTitleBarTheme.BgColor.B * 2.0f, 1.0f};
     style.Colors[ImGuiCol_TableBorderLight] = {
-        mTitleBarTheme.BgColor.R * 0.3f, mTitleBarTheme.BgColor.G * 0.3f, mTitleBarTheme.BgColor.B * 0.3f, 1.0f};
+        mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
     style.Colors[ImGuiCol_TableRowBg] = {0.0f, 0.0f, 0.0f, 0.0f};
     style.Colors[ImGuiCol_TableRowBgAlt] = {1.0f, 1.0f, 1.0f, 0.04f};
 
-    style.Colors[ImGuiCol_PlotLines] = {0.8f, 0.8f, 0.8f, 1.0f};
-    style.Colors[ImGuiCol_PlotLinesHovered] = {1.0f, 1.0f, 1.0f, 1.0f};
-    style.Colors[ImGuiCol_PlotHistogram] = {mTitleBarTheme.ButtonHoveredColor.R,
-                                            mTitleBarTheme.ButtonHoveredColor.G,
-                                            mTitleBarTheme.ButtonHoveredColor.B,
-                                            1.0f};
-    style.Colors[ImGuiCol_PlotHistogramHovered] = {mTitleBarTheme.ButtonActiveColor.R,
-                                                   mTitleBarTheme.ButtonActiveColor.G,
-                                                   mTitleBarTheme.ButtonActiveColor.B,
-                                                   1.0f};
+    style.Colors[ImGuiCol_PlotLines] = {
+        mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
+    style.Colors[ImGuiCol_PlotLinesHovered] = {
+        mTitleBarTheme.BgColor.R * 1.5f, mTitleBarTheme.BgColor.G * 1.5f, mTitleBarTheme.BgColor.B * 1.5f, 1.0f};
+    style.Colors[ImGuiCol_PlotHistogram] = {
+        mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
+    style.Colors[ImGuiCol_PlotHistogramHovered] = {
+        mTitleBarTheme.BgColor.R * 1.5f, mTitleBarTheme.BgColor.G * 1.5f, mTitleBarTheme.BgColor.B * 1.5f, 1.0f};
     style.Colors[ImGuiCol_InputTextCursor] = {1.0f, 1.0f, 1.0f, 1.0f};
     style.Colors[ImGuiCol_TreeLines] = {
-        mTitleBarTheme.BgColor.R * 0.8f, mTitleBarTheme.BgColor.G * 0.8f, mTitleBarTheme.BgColor.B * 0.8f, 1.0f};
+        mTitleBarTheme.BgColor.R * 1.1f, mTitleBarTheme.BgColor.G * 1.1f, mTitleBarTheme.BgColor.B * 1.1f, 1.0f};
 
-    style.Colors[ImGuiCol_DragDropTarget] = {mTitleBarTheme.ButtonActiveColor.R,
-                                             mTitleBarTheme.ButtonActiveColor.G,
-                                             mTitleBarTheme.ButtonActiveColor.B,
-                                             1.0f};
+    style.Colors[ImGuiCol_DragDropTarget] = {1.0f, 1.0f, 1.0f, 1.0f};
     style.Colors[ImGuiCol_DragDropTargetBg] = {mTitleBarTheme.ButtonHoveredColor.R,
                                                mTitleBarTheme.ButtonHoveredColor.G,
                                                mTitleBarTheme.ButtonHoveredColor.B,
@@ -274,13 +275,32 @@ bool UISystem::init()
                                             mTitleBarTheme.CloseButtonHoveredColor.B,
                                             1.0f};
 
-    style.Colors[ImGuiCol_NavCursor] = {mTitleBarTheme.ButtonActiveColor.R,
-                                        mTitleBarTheme.ButtonActiveColor.G,
-                                        mTitleBarTheme.ButtonActiveColor.B,
-                                        1.0f};
+    style.Colors[ImGuiCol_NavCursor] = {1.0f, 1.0f, 1.0f, 1.0f};
     style.Colors[ImGuiCol_NavWindowingHighlight] = {1.0f, 1.0f, 1.0f, 0.7f};
-    style.Colors[ImGuiCol_NavWindowingDimBg] = {0.0f, 0.0f, 0.0f, 0.2f};
-    style.Colors[ImGuiCol_ModalWindowDimBg] = {0.0f, 0.0f, 0.0f, 0.6f};
+    style.Colors[ImGuiCol_NavWindowingDimBg] = {0.0f, 0.0f, 0.0f, 0.4f};
+    style.Colors[ImGuiCol_ModalWindowDimBg] = {0.0f, 0.0f, 0.0f, 0.7f};
+
+    // Setup imgui size
+    style.WindowPadding = ImVec2(8.0f, 8.0f);
+    style.FramePadding = ImVec2(3.0f, 3.0f);
+    style.ItemSpacing = ImVec2(4.0f, 4.0f);
+    style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
+    style.TouchExtraPadding = ImVec2(0.0f, 0.0f);
+    style.IndentSpacing = 21.0f;
+    style.GrabMinSize = 12.0f;
+
+    style.WindowBorderSize = 1.0f;
+    style.ChildBorderSize = 1.0f;
+    style.PopupBorderSize = 1.0f;
+    style.FrameBorderSize = 1.0f;
+
+    style.WindowRounding = 0.0f;
+    style.ChildRounding = 3.0f;
+    style.FrameRounding = 3.0f;
+    style.PopupRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+
+    style.DockingSeparatorSize = 1.0f;
 
     // Setup ImGuizmo config
     ImGuizmo::Style& gizmoStyle = ImGuizmo::GetStyle();
@@ -306,15 +326,23 @@ bool UISystem::init()
     return true;
 }
 
-void UISystem::submitDrawCommandForUI()
+void UISystem::draw()
 {
     while (!mUIDrawableQueue.IsEmpty())
     {
         mUIDrawableQueue.Front()->DrawUI();
         mUIDrawableQueue.Pop();
     }
+}
 
+void UISystem::submitDrawCommandForUI()
+{
     ImGui::Render();
+
+    const ImDrawData* pMainDrawData = ImGui::GetDrawData();
+
+    RenderingSystem::GetInstance().SubmitUIViewportData(IPlatformApplication::GetInstance().GetMainWindow(),
+                                                        *pMainDrawData);
 
     const ImGuiIO& io = ImGui::GetIO();
     // Update and Render additional Platform Windows
@@ -323,17 +351,26 @@ void UISystem::submitDrawCommandForUI()
         ImGui::UpdatePlatformWindows();
     }
 
-    const ImDrawData* mainDrawData = ImGui::GetDrawData();
-
-    IRenderingSystem::GetInstance().SubmitUIViewportData(IPlatformApplication::GetInstance().GetMainWindow(),
-                                                         *mainDrawData);
-
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
         for (int32_t i = 0; i < platformIO.Viewports.Size; ++i)
         {
             const ImGuiViewport* viewport = platformIO.Viewports[i];
+
+            const ImGuiViewportP* viewportP = static_cast<const ImGuiViewportP*>(viewport);
+
+            const ImGuiContext& g = *GImGui;
+
+            bool bDestroyPlatformWindow = false;
+            bDestroyPlatformWindow |= (viewportP->LastFrameActive < g.FrameCount - 1);
+            bDestroyPlatformWindow |=
+                (viewportP->Window == nullptr || !viewportP->Window->Active || viewportP->Window->Hidden);
+
+            if (bDestroyPlatformWindow)
+            {
+                continue;
+            }
 
             if (viewport->ID == ImGui::GetMainViewport()->ID)
             {
@@ -344,7 +381,7 @@ void UISystem::submitDrawCommandForUI()
 
             if (viewport->DrawData && pTargetWindow)
             {
-                IRenderingSystem::GetInstance().SubmitUIViewportData(pTargetWindow, *viewport->DrawData);
+                RenderingSystem::GetInstance().SubmitUIViewportData(pTargetWindow, *viewport->DrawData);
             }
         }
     }

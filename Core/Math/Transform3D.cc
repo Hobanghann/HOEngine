@@ -53,7 +53,7 @@ std::string Transform3D::ToString() const
     std::snprintf(buf,
                   sizeof(buf),
                   "Transform3D Origin: %s, Basis: %s",
-                  GetOrigin().ToString().c_str(),
+                  GetPosition().ToString().c_str(),
                   GetBasis().ToString().c_str());
     return std::string(buf);
 }

@@ -45,7 +45,12 @@ class IWin32Window : public IPlatformWindow
 
     ~IWin32Window() override
     {
-        ::ReleaseDC(mhWnd, mhDC);
+        if (mhWnd)
+        {
+            ::ReleaseDC(mhWnd, mhDC);
+            ::DestroyWindow(mhWnd);
+            mhWnd = nullptr;
+        }
     }
 
     void* GetNativeHandle() const override
@@ -59,7 +64,10 @@ class IWin32Window : public IPlatformWindow
 
     void Present() const override
     {
-        ::SwapBuffers(mhDC);
+        bool bSuccess;
+        bSuccess = ::SwapBuffers(mhDC);
+        (void)bSuccess;
+        HO_ASSERT(bSuccess, "Failed to swap buffers.");
     }
 
     void ProcessWindowDragging() const override;

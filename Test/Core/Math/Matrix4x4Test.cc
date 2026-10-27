@@ -316,11 +316,3 @@ TEST_F(Matrix4x4Test, Determinant_ValidMatrix_ReturnsCorrectScalarValue)
                 Vector4(0.0f, 0.0f, 0.0f, 4.0f));
     EXPECT_NEAR(m.Determinant(), 24.0f, math::EPSILON_CMP);
 }
-
-TEST_F(Matrix4x4Test, ToMatrix3x3Conversion)
-{
-    Matrix3x3 sub = mat116.ToMatrix3x3();
-    EXPECT_EQ(sub.Row0, Vector3(1.0f, 2.0f, 3.0f));
-    EXPECT_EQ(sub.Row1, Vector3(5.0f, 6.0f, 7.0f));
-    EXPECT_EQ(sub.Row2, Vector3(9.0f, 10.0f, 11.0f));
-}

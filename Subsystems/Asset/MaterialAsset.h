@@ -3,18 +3,20 @@
 #include "AssetDefs.h"
 #include "Core/Math/Color128.h"
 #include "Core/Math/Matrix3x3.h"
-#include "Core/Templates/GlobalPoolIndex.h"
-#include "Core/Templates/WeakLocalPoolIndex.h"
+#include "IAsset.h"
 #include "ShaderAsset.h"
+#include "Subsystems/Object/ObjectHandle.h"
 #include "TextureAsset.h"
 
 namespace ho
 {
 struct GpuMaterial;
-using GpuMaterialHandle = WeakLocalPoolIndex<GpuMaterial, ObjectPool>;
+using GpuMaterialHandle = WeakTypedHandle<GpuMaterial, TypedObjectPool>;
 
-struct MaterialAsset
+struct RMaterialAsset final : public RIAsset
 {
+    HO_INJECT_REFLECTION_CODE(RMaterialAsset)
+
     struct RenderPipelineState
     {
         eMaterialAlphaMode AlphaMode = eMaterialAlphaMode::None;
@@ -23,23 +25,34 @@ struct MaterialAsset
         bool bBackfaceCulling = true;
     };
 
-    MaterialAsset()
+    RMaterialAsset()
     {
+        for (int32_t i = 0; i < static_cast<int32_t>(eShaderStage::Last); ++i)
+        {
+            hShaders[i] = ObjectHandle<RShaderAsset>::sNULL;
+        }
         for (int32_t i = 0; i < static_cast<int32_t>(eMaterialTextureUsage::Last); ++i)
         {
-            hTextures[i] = TextureHandle::sNULL;
+            hTextures[i] = ObjectHandle<RTextureAsset>::sNULL;
             UVChannels[i] = 0;
             UVTransforms[i] = Matrix3x3::sIdentity;
         }
     }
 
-    StringHandle hName = StringHandle::sNULL;
+    RMaterialAsset(const RMaterialAsset&) = delete;
+    RMaterialAsset& operator=(const RMaterialAsset&) = delete;
+    ~RMaterialAsset() override = default;
+
+    RMaterialAsset(RMaterialAsset&&) noexcept = default;
+    RMaterialAsset& operator=(RMaterialAsset&&) noexcept = default;
+
+    int32_t GetByteSize() const override;
 
     eMaterialAssetType Type = eMaterialAssetType::None;
 
     RenderPipelineState PipelineState;
 
-    ShaderHandle hShaders[static_cast<int32_t>(eShaderStage::Last)] = {};
+    ObjectHandle<RShaderAsset> hShaders[static_cast<int32_t>(eShaderStage::Last)] = {};
 
     // Legacy / Phong Attributes
     Color128 Ambient{0.f, 0.f, 0.f, 1.f};
@@ -62,12 +75,11 @@ struct MaterialAsset
     float OcclusionStrength = 1.0f;
 
     StringHandle hTextureNames[static_cast<int32_t>(eMaterialTextureUsage::Last)] = {};
-    TextureHandle hTextures[static_cast<int32_t>(eMaterialTextureUsage::Last)] = {};
+    ObjectHandle<RTextureAsset> hTextures[static_cast<int32_t>(eMaterialTextureUsage::Last)] = {};
     int32_t UVChannels[static_cast<int32_t>(eMaterialTextureUsage::Last)] = {};
     Matrix3x3 UVTransforms[static_cast<int32_t>(eMaterialTextureUsage::Last)] = {};
 
-    GpuMaterialHandle hRenderProxy = GpuMaterialHandle::sNULL;
+    GpuMaterialHandle hRenderProxy;
 };
 
-using MaterialHandle = WeakLocalPoolIndex<MaterialAsset, ObjectPool>;
 } // namespace ho

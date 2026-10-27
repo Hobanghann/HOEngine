@@ -20,6 +20,8 @@ enum class eEngineApplicationType
     Game = 3,
 };
 
+#define HO_GRAPHICS_API_GL
+
 enum eGraphicsAPI
 {
     GL = 0,

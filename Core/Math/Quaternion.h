@@ -82,6 +82,8 @@ struct alignas(16) Quaternion final
     [[nodiscard]] constexpr Vector3 Transform(const Vector3& v) const;
     [[nodiscard]] constexpr Vector3 InvTransform(const Vector3& v) const;
 
+    [[nodiscard]] Vector3 ToEuler(math::eEulerOrder order = math::eEulerOrder::ZYX) const;
+
     [[nodiscard]] std::string ToString() const;
 
     union

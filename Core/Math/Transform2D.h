@@ -9,13 +9,17 @@ namespace ho
 {
 struct Transform2D final
 {
-    [[nodiscard]] static Transform2D FromAngle(float angle);
+    static constexpr Transform2D FromPosition(const Vector2& position);
+    static constexpr Transform2D FromScalePosition(const Vector2& scale, const Vector2& position);
+    static constexpr Transform2D FromAnglePosition(float angleRad, const Vector2& position);
+    static constexpr Transform2D FromScaleAnglePosition(const Vector2& scale, float angleRad, const Vector2& position);
+    static constexpr Transform2D FromBasis(const Basis2D& basis);
+    static constexpr Transform2D FromBasisPosition(const Basis2D& basis, const Vector2& position);
+    static constexpr Transform2D FromMatrix(const Matrix3x3& mat);
 
     constexpr Transform2D();
-    constexpr Transform2D(float scaleX, float scaleY, const Vector2& right, const Vector2& up, const Vector2& origin);
-    constexpr Transform2D(const Basis2D& basis, const Vector2& origin);
-    constexpr Transform2D(const Matrix3x3& m);
     constexpr Transform2D(const Transform2D&) = default;
+    constexpr explicit Transform2D(const Matrix3x3& m);
     constexpr Transform2D& operator=(const Transform2D& rhs);
     ~Transform2D() = default;
 
@@ -25,8 +29,10 @@ struct Transform2D final
     [[nodiscard]] FORCE_INLINE Vector2 GetUp() const;
     [[nodiscard]] FORCE_INLINE Vector2 GetScaledRight() const;
     [[nodiscard]] FORCE_INLINE Vector2 GetScaledUp() const;
-    [[nodiscard]] FORCE_INLINE Vector2 GetOrigin() const;
-    constexpr void SetOrigin(const Vector2& origin);
+    [[nodiscard]] FORCE_INLINE float GetRotateAngleRad() const;
+
+    [[nodiscard]] FORCE_INLINE Vector2 GetPosition() const;
+    constexpr void SetPosition(const Vector2& position);
 
     [[nodiscard]] constexpr Basis2D GetBasis() const;
     constexpr void SetBasis(const Basis2D& basis);
@@ -86,19 +92,46 @@ struct Transform2D final
     Matrix3x3 Matrix;
 };
 
+constexpr Transform2D Transform2D::FromPosition(const Vector2& position)
+{
+    return Transform2D(Matrix3x3(Vector3::sUnitX, Vector3::sUnitY, Vector3(position, 1.f)));
+}
+
+constexpr Transform2D Transform2D::FromScalePosition(const Vector2& scale, const Vector2& position)
+{
+    return Transform2D(Matrix3x3(scale.X * Vector3::sUnitX, scale.Y * Vector3::sUnitY, Vector3(position, 1.f)));
+}
+
+constexpr Transform2D Transform2D::FromAnglePosition(float angleRad, const Vector2& position)
+{
+    float sin = 0.0f;
+    float cos = 0.0f;
+    math::SinCos(&sin, &cos, angleRad);
+    return Transform2D(Matrix3x3(Vector3(cos, sin, 0.0f), Vector3(-sin, cos, 0.0f), Vector3(position, 1.f)));
+}
+
+constexpr Transform2D Transform2D::FromScaleAnglePosition(const Vector2& scale, float angleRad, const Vector2& position)
+{
+    float sin = 0.0f;
+    float cos = 0.0f;
+    math::SinCos(&sin, &cos, angleRad);
+    return Transform2D(
+        Matrix3x3(scale.X * Vector3(cos, sin, 0.0f), scale.Y * Vector3(-sin, cos, 0.0f), Vector3(position, 1.f)));
+}
+
+constexpr Transform2D Transform2D::FromBasis(const Basis2D& basis)
+{
+    return Transform2D(Matrix3x3(Vector3(basis.Matrix.GetCol0()), Vector3(basis.Matrix.GetCol1()), Vector3::sUnitZ));
+}
+
+constexpr Transform2D Transform2D::FromBasisPosition(const Basis2D& basis, const Vector2& position)
+{
+    return Transform2D(
+        Matrix3x3(Vector3(basis.Matrix.GetCol0()), Vector3(basis.Matrix.GetCol1()), Vector3(position, 1.f)));
+}
+
 constexpr Transform2D::Transform2D()
   : Matrix(Matrix3x3::sIdentity)
-{
-}
-
-constexpr Transform2D::Transform2D(
-    float scaleX, float scaleY, const Vector2& right, const Vector2& up, const Vector2& origin)
-  : Matrix(Matrix3x3(Vector3(scaleX * right), Vector3(scaleY * up), origin.ToHomogeneous()))
-{
-}
-
-constexpr Transform2D::Transform2D(const Basis2D& basis, const Vector2& origin)
-  : Matrix(Matrix3x3(Vector3(basis.GetScaledRight()), Vector3(basis.GetScaledUp()), origin.ToHomogeneous()))
 {
 }
 
@@ -147,19 +180,26 @@ Vector2 Transform2D::GetScaledUp() const
     return Vector2(Matrix.GetCol1());
 }
 
-Vector2 Transform2D::GetOrigin() const
+float Transform2D::GetRotateAngleRad() const
+{
+    const Vector2 right = GetRight();
+    return math::Atan2(right.Y, right.X);
+}
+
+Vector2 Transform2D::GetPosition() const
 {
     return Vector2(Matrix.GetCol2());
 }
 
-constexpr void Transform2D::SetOrigin(const Vector2& origin)
+constexpr void Transform2D::SetPosition(const Vector2& position)
 {
-    Matrix.SetCol2(origin.ToHomogeneous());
+    Matrix.SetCol2(Vector3(position, 1.0f));
 }
 
 constexpr Basis2D Transform2D::GetBasis() const
 {
-    return Basis2D(Vector2(Matrix.Data[0][0], Matrix.Data[1][0]), Vector2(Matrix.Data[0][1], Matrix.Data[1][1]));
+    return Basis2D(
+        Matrix2x2(Vector2(Matrix.Data[0][0], Matrix.Data[1][0]), Vector2(Matrix.Data[0][1], Matrix.Data[1][1])));
 }
 
 constexpr void Transform2D::SetBasis(const Basis2D& basis)
@@ -410,7 +450,7 @@ constexpr Transform2D Transform2D::InverseFast() const
 
 void Transform2D::LookAt(const Vector2& at)
 {
-    const Vector2 adjAt = at - GetOrigin();
+    const Vector2 adjAt = at - GetPosition();
     if (adjAt.IsEqualApprox(Vector2::sZero))
     {
         return;
@@ -439,18 +479,18 @@ constexpr Transform2D Transform2D::operator*(const Transform2D& rhs) const
 
 constexpr Vector2 Transform2D::Transform(const Vector2& v) const
 {
-    return GetBasis().Transform(v) + GetOrigin();
+    return GetBasis().Transform(v) + GetPosition();
 }
 
 constexpr Vector2 Transform2D::InvTransform(const Vector2& v) const
 {
-    const Vector2 w = v - GetOrigin();
+    const Vector2 w = v - GetPosition();
     return GetBasis().InvTransform(w);
 }
 
 constexpr Vector2 Transform2D::InvTransformFast(const Vector2& v) const
 {
-    const Vector2 w = v - GetOrigin();
+    const Vector2 w = v - GetPosition();
     return GetBasis().InvTransformFast(w);
 }
 } // namespace ho

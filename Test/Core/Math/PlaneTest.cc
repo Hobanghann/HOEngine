@@ -17,7 +17,7 @@ TEST(PlaneTest, Constructor_DefaultAndAllParameters_InitializesNormalizedNormalA
     EXPECT_FLOAT_EQ(p.Normal.Z, 0.0f);
     EXPECT_FLOAT_EQ(p.D, 0.0f);
 
-    Plane p1(1.0f, 2.0f, 3.0f, -6.0f);
+    Plane p1 = Plane::FromCoefficients(1.0f, 2.0f, 3.0f, -6.0f);
     const float mag = Vector3(1.0f, 2.0f, 3.0f).Magnitude();
     EXPECT_NEAR(p1.Normal.X, 1.0f / mag, math::EPSILON_CMP);
     EXPECT_NEAR(p1.Normal.Y, 2.0f / mag, math::EPSILON_CMP);
@@ -26,7 +26,7 @@ TEST(PlaneTest, Constructor_DefaultAndAllParameters_InitializesNormalizedNormalA
 
     Vector3 normal(0.0f, 1.0f, 0.0f);
     Vector3 point(0.0f, 5.0f, 0.0f);
-    Plane p2(normal, point);
+    Plane p2 = Plane::FromNormalPoint(normal, point);
     EXPECT_TRUE(p2.Normal.IsEqualApprox(Vector3(0.0f, 1.0f, 0.0f)));
     EXPECT_NEAR(p2.D, -5.0f, math::EPSILON_CMP);
 
@@ -34,18 +34,18 @@ TEST(PlaneTest, Constructor_DefaultAndAllParameters_InitializesNormalizedNormalA
     Vector3 v2(1.0f, 0.0f, 0.0f);
     Vector3 v3(0.0f, 1.0f, 0.0f);
 
-    Plane p3(v1, v2, v3, math::eClockDirection::CounterClockWise);
+    Plane p3 = Plane::FromPoints(v1, v2, v3, math::eClockDirection::CounterClockWise);
     EXPECT_TRUE(p3.Normal.IsEqualApprox(Vector3(0.0f, 0.0f, 1.0f)));
     EXPECT_NEAR(p3.D, 0.0f, math::EPSILON_CMP);
 
-    Plane p4(v1, v2, v3, math::eClockDirection::ClockWise);
+    Plane p4 = Plane::FromPoints(v1, v2, v3, math::eClockDirection::ClockWise);
     EXPECT_TRUE(p4.Normal.IsEqualApprox(Vector3(0.0f, 0.0f, -1.0f)));
     EXPECT_NEAR(p4.D, 0.0f, math::EPSILON_CMP);
 }
 
 TEST(PlaneTest, OperatorAssign_AnotherPlane_CopiesValues)
 {
-    Plane p(1.0f, 2.0f, 3.0f, -6.0f);
+    Plane p = Plane::FromCoefficients(1.0f, 2.0f, 3.0f, -6.0f);
     Plane p1;
     p1 = p;
 
@@ -54,9 +54,9 @@ TEST(PlaneTest, OperatorAssign_AnotherPlane_CopiesValues)
 
 TEST(PlaneTest, OperatorComparison_DifferentPlanes_ReturnsCorrectBoolean)
 {
-    Plane p1(0.0f, 1.0f, 0.0f, 5.0f);
-    Plane p2(0.0f, 1.0f, 0.0f, 5.0f);
-    Plane p3(0.0f, 1.0f, 0.0f, 6.0f);
+    Plane p1 = Plane::FromCoefficients(0.0f, 1.0f, 0.0f, 5.0f);
+    Plane p2 = Plane::FromCoefficients(0.0f, 1.0f, 0.0f, 5.0f);
+    Plane p3 = Plane::FromCoefficients(0.0f, 1.0f, 0.0f, 6.0f);
 
     EXPECT_TRUE(p1 == p2);
     EXPECT_FALSE(p1 != p2);
@@ -66,8 +66,8 @@ TEST(PlaneTest, OperatorComparison_DifferentPlanes_ReturnsCorrectBoolean)
 
 TEST(PlaneTest, IsEqualApprox_WithinEpsilon_ReturnsTrue)
 {
-    Plane p1(0.0f, 1.0f, 0.0f, 5.0f);
-    Plane p2(0.0f, 1.000001f, 0.0f, 5.000001f);
+    Plane p1 = Plane::FromCoefficients(0.0f, 1.0f, 0.0f, 5.0f);
+    Plane p2 = Plane::FromCoefficients(0.0f, 1.000001f, 0.0f, 5.000001f);
 
     EXPECT_TRUE(p1.IsEqualApprox(p2));
     EXPECT_FALSE(p1.IsNotEqualApprox(p2));
@@ -75,7 +75,7 @@ TEST(PlaneTest, IsEqualApprox_WithinEpsilon_ReturnsTrue)
 
 TEST(PlaneTest, GetDistToPoint_PointsInDifferentSpaces_ReturnsSignedDistance)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     Vector3 front(0.0f, 10.0f, 0.0f);
     Vector3 on(0.0f, 5.0f, 0.0f);
@@ -88,7 +88,7 @@ TEST(PlaneTest, GetDistToPoint_PointsInDifferentSpaces_ReturnsSignedDistance)
 
 TEST(PlaneTest, Project_PointToPlane_ReturnsClosestPointOnPlane)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     Vector3 front(0.0f, 10.0f, 0.0f);
     Vector3 on(0.0f, 5.0f, 0.0f);
@@ -101,7 +101,7 @@ TEST(PlaneTest, Project_PointToPlane_ReturnsClosestPointOnPlane)
 
 TEST(PlaneTest, GetPointSide_PointsInFrontAndBack_ReturnsCorrectSide)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     Vector3 front(0.0f, 10.0f, 0.0f);
     Vector3 on(0.0f, 5.0f, 0.0f);
@@ -114,7 +114,7 @@ TEST(PlaneTest, GetPointSide_PointsInFrontAndBack_ReturnsCorrectSide)
 
 TEST(PlaneTest, GetLineSide_PointsAcrossPlane_ReturnsIntersectOrCorrectSide)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     Vector3 front1(0.0f, 10.0f, 0.0f); // Outside
     Vector3 back(0.0f, 0.0f, 0.0f);    // Inside
@@ -128,7 +128,7 @@ TEST(PlaneTest, GetLineSide_PointsAcrossPlane_ReturnsIntersectOrCorrectSide)
 
 TEST(PlaneTest, GetTriangleSide_PointsInVariousPositions_ReturnsCorrectSide)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     Vector3 front1(0.0f, 10.0f, 0.0f);
     Vector3 front2(1.0f, 8.0f, 0.0f);
@@ -148,7 +148,7 @@ TEST(PlaneTest, GetTriangleSide_PointsInVariousPositions_ReturnsCorrectSide)
 
 TEST(PlaneTest, GetAabbSide_BoxesInVariousPositions_ReturnsCorrectSide)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     AABB above(Vector3(-1.0f, 6.0f, -1.0f), Vector3(1.0f, 7.0f, 1.0f));
     EXPECT_EQ(p.GetAabbSide(above), math::eSide::Outside);
@@ -162,7 +162,7 @@ TEST(PlaneTest, GetAabbSide_BoxesInVariousPositions_ReturnsCorrectSide)
 
 TEST(PlaneTest, GetSphereSide_SpheresInVariousPositions_ReturnsCorrectSide)
 {
-    Plane p(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
+    Plane p = Plane::FromNormalPoint(Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 5.0f, 0.0f));
 
     Sphere out(Vector3(0.0f, 8.0f, 0.0f), 1.0f);
     EXPECT_EQ(p.GetSphereSide(out), math::eSide::Outside);

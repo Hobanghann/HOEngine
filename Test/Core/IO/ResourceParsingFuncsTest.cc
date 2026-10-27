@@ -48,24 +48,13 @@ TEST(ResourceParseFuncsTest, parseModelFile_OBJ_VerifiesFullSceneHierarchyAndMat
         EXPECT_EQ(subMeshIR.MorphTargets.size(), subMeshIR.MorphNameToIndexMap.size());
 
         EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
-        EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-        EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-        EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-        EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
     }
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
 
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
-
     // Check MaterialIR
     const MaterialIR* pTexMaterialIR = pModelIR->pMaterialIRs[0].get();
-    EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
+    EXPECT_EQ(pTexMaterialIR->Ambient, Color128(0.01f, 0.01f, 0.01f));
     EXPECT_TRUE(pTexMaterialIR->Diffuse.IsEqualApprox(Color128(0.6f, 0.6f, 0.6f)));
     EXPECT_EQ(pTexMaterialIR->Specular, Color128(0.0f, 0.0f, 0.0f));
     EXPECT_EQ(pTexMaterialIR->Shininess, 32.0f);
@@ -338,19 +327,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
-
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check Material
     const MaterialIR* pMaterialIR = nullptr;
@@ -362,7 +340,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBox_ValidatesStandardSpecificati
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
-    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
+    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.01f, 0.01f, 0.01f));
     EXPECT_TRUE(pMaterialIR->Diffuse.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Specular, Color128(1.0f, 1.0f, 1.0f));
     EXPECT_EQ(pMaterialIR->Shininess, 32.0f);
@@ -439,19 +417,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
-
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check Material
     const MaterialIR* pMaterialIR = nullptr;
@@ -463,7 +430,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxInterleaved_ValidatesStandard
         }
     }
     ASSERT_NE(pMaterialIR, nullptr);
-    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.001f, 0.001f, 0.001f));
+    EXPECT_EQ(pMaterialIR->Ambient, Color128(0.01f, 0.01f, 0.01f));
     EXPECT_TRUE(pMaterialIR->Diffuse.IsEqualApprox(Color128(0.800000011920929f, 0.0f, 0.0f)));
     EXPECT_EQ(pMaterialIR->Specular, Color128(1.0f, 1.0f, 1.0f));
     EXPECT_EQ(pMaterialIR->Shininess, 32.0f);
@@ -554,19 +521,8 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFBoxTextured_ValidatesStandardSpe
 
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
     EXPECT_LT(subMeshIR.RenderMaterialIndex, pModelIR->pMaterialIRs.size());
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.X, subMeshIR.Aabb.MaxEdges.X);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Y, subMeshIR.Aabb.MaxEdges.Y);
-    EXPECT_LE(subMeshIR.Aabb.MinEdges.Z, subMeshIR.Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(subMeshIR.Sphere.Radius > 0.0f);
 
     EXPECT_EQ(pMeshIR->SubMeshes.size(), pMeshIR->SubMeshNameToIndexMap.size());
-
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.X, pMeshIR->Aabb.MaxEdges.X);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Y, pMeshIR->Aabb.MaxEdges.Y);
-    EXPECT_LE(pMeshIR->Aabb.MinEdges.Z, pMeshIR->Aabb.MaxEdges.Z);
-
-    EXPECT_TRUE(pMeshIR->Sphere.Radius > 0.0f);
 
     // Check Material
     EXPECT_TRUE(subMeshIR.RenderMaterialIndex != -1);
@@ -772,10 +728,10 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(2.7939699442924854e-9f, -1.4156600514070309e-7f, -0.6860002279281616f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_1").Matrix;
-    Matrix3x3 temp = localTransform.ToMatrix3x3();
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale)) << "Expected:\n"
-                                                                         << rotateScale.ToString() << "\nActural:\n"
-                                                                         << temp.ToString() << "\n";
+    Matrix3x3 temp(localTransform);
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale)) << "Expected:\n"
+                                                                      << rotateScale.ToString() << "\nActural:\n"
+                                                                      << temp.ToString() << "\n";
     EXPECT_TRUE(Vector3(localTransform.GetCol3()).IsEqualApprox(translate));
 
     // leg_joint_R_1
@@ -789,7 +745,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.06845717132091522f, 0.004460853058844805f, 0.07147114723920822f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -803,7 +759,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.2661120891571045f, -1.4901200273698124e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -817,7 +773,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-7.450579708745408e-9f, 0.27582409977912905f, 3.725289854372704e-9f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -833,7 +789,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.0014585329918190837f, -0.06619873642921448f, -0.027856800705194474f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_R_5").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -849,7 +805,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.06761927157640457f, 0.004461091011762619f, 0.07226461172103882f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -865,7 +821,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.2661122083663941f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -879,7 +835,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.27582401037216189f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -894,7 +850,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.0023464928381145f, -0.06617330759763718f, -0.02785675972700119f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("leg_joint_L_5").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -909,7 +865,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0009999809553846717f, -4.842879874900064e-8f, -0.1714905947446823f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -923,7 +879,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.21801769733428956f, -3.725289854372704e-9f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("torso_joint_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -938,7 +894,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-0.08800055086612702f, -0.0001992879988392815f, 0.0009773969650268557f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -954,7 +910,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-7.450579708745408e-9f, 0.24452559649944304f, 5.96045985901128e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -969,7 +925,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(-5.96045985901128e-8f, 0.1855168044567108f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_R_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -984,7 +940,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.08800055086612702f, -0.0001992879988392815f, 0.0009773969650268557f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -998,7 +954,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(1.8626500342122655e-9f, 0.24452590942382813f, 5.96045985901128e-8f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1013,7 +969,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.1855167001485825f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("arm_joint_L_3").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1027,7 +983,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 7.450579886381094e-8f, -0.05255972966551781f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_1").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1041,7 +997,7 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
     translate = Vector3(0.0f, 0.06650590896606446f, 0.0f);
 
     localTransform = pSkeletonIR->GetLocalTransformByBoneName("neck_joint_2").Matrix;
-    EXPECT_TRUE(localTransform.ToMatrix3x3().IsEqualApprox(rotateScale));
+    EXPECT_TRUE(Matrix3x3(localTransform).IsEqualApprox(rotateScale));
     EXPECT_TRUE(Vector3(localTransform.GetCol3().X, localTransform.GetCol3().Y, localTransform.GetCol3().Z)
                     .IsEqualApprox(translate));
 
@@ -1051,17 +1007,23 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFRiggidFiture_ValidatesStandardSp
 
     auto TestSkeletalTrack = [&](const char* boneName)
     {
-        EXPECT_TRUE(pModelIR->pAnimationIRs[0]->BoneIndexToSkeletalTrackIndexMap.find(
-                        pSkeletonIR->BoneNameToIndexMap.find(boneName)->second) !=
-                    pModelIR->pAnimationIRs[0]->BoneIndexToSkeletalTrackIndexMap.end());
-        const AnimationIR::SkeletalTrack& torso_joint_1Track = pModelIR->pAnimationIRs[0]->GetSkeletalTrackByBoneIndex(
-            pSkeletonIR->BoneNameToIndexMap.find(boneName)->second);
-        EXPECT_EQ(torso_joint_1Track.TranslationInterpMode, AnimationIR::eInterpolationMode::Linear);
-        EXPECT_GT(torso_joint_1Track.TranslationKeySequence.size(), 0);
-        EXPECT_EQ(torso_joint_1Track.RotationInterpMode, AnimationIR::eInterpolationMode::Linear);
-        EXPECT_GT(torso_joint_1Track.RotationKeySequence.size(), 0);
-        EXPECT_EQ(torso_joint_1Track.ScalingInterpMode, AnimationIR::eInterpolationMode::Linear);
-        EXPECT_GT(torso_joint_1Track.ScalingKeySequence.size(), 0);
+        int32_t boneIdx = pSkeletonIR->BoneNameToIndexMap.find(boneName)->second;
+        const AnimationIR::SkeletalTrack* pTrack = nullptr;
+        for (int32_t i = 0; i < static_cast<int32_t>(pModelIR->pAnimationIRs[0]->SkeletalTracks.size()); ++i)
+        {
+            if (pModelIR->pAnimationIRs[0]->SkeletalTracks[i].BoneIndex == boneIdx)
+            {
+                pTrack = &(pModelIR->pAnimationIRs[0]->SkeletalTracks[i]);
+                break;
+            }
+        }
+        EXPECT_NE(pTrack, nullptr);
+        if (pTrack)
+        {
+            EXPECT_GT(pTrack->TranslationKeySequence.size(), 0);
+            EXPECT_GT(pTrack->RotationKeySequence.size(), 0);
+            EXPECT_GT(pTrack->ScalingKeySequence.size(), 0);
+        }
     };
 
     TestSkeletalTrack("torso_joint_1");
@@ -1092,7 +1054,6 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
     std::unique_ptr<const ModelIR> pModelIR = parseModelFile(path, std::string("AnimatedMorphCube"), false);
     ASSERT_NE(pModelIR, nullptr);
     const MeshIR* pMeshIR = pModelIR->pMeshIR.get();
-    const SkeletonIR* pSkeletonIR = pModelIR->pSkeletonIR.get();
 
     // Check Morph Target
     const MeshIR::SubMesh& subMeshIR = pMeshIR->GetSubMeshByName("Cube");
@@ -1108,12 +1069,9 @@ TEST(ResourceParseFuncsTest, parseModelFile_glTFAnimatedMorphCube_ValidatesStand
     // Check AnimationIR
     EXPECT_EQ(pModelIR->pAnimationIRs.size(), 1);
     EXPECT_EQ(pModelIR->pAnimationIRs[0]->MorphTargetTracks.size(), 1);
-    EXPECT_TRUE(pModelIR->pAnimationIRs[0]->BoneIndexToMorphTargetTrackIndexMap.find(0) !=
-                pModelIR->pAnimationIRs[0]->BoneIndexToMorphTargetTrackIndexMap.end());
-    const AnimationIR::MorphTargetTrack& track = pModelIR->pAnimationIRs[0]->GetMorphTargetTrackByBoneIndex(
-        pSkeletonIR->BoneNameToIndexMap.find("AnimatedMorphCube")->second);
-    EXPECT_EQ(track.KeySequance.size(), 127);
-    for (const AnimationIR::MorphingKey& key : track.KeySequance)
+    const AnimationIR::MorphTargetTrack& track = pModelIR->pAnimationIRs[0]->MorphTargetTracks[0];
+    EXPECT_EQ(track.KeySequence.size(), 127);
+    for (const AnimationIR::MorphKey& key : track.KeySequence)
     {
         EXPECT_EQ(key.MorphTargetIndices.size(), key.Weights.size());
         EXPECT_EQ(key.Weights.size(), 2);

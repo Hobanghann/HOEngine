@@ -16,9 +16,7 @@ void IUIDrawable::drawMainWindowTitleBar(const TitleBarTheme& theme) const
     ImGui::SetNextWindowSize(
         ImVec2(static_cast<float>(pMainWindow->GetClientWidth()), static_cast<float>(theme.Height)));
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
 
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(theme.BgColor.R, theme.BgColor.G, theme.BgColor.B, theme.BgColor.A));
 
@@ -36,7 +34,7 @@ void IUIDrawable::drawMainWindowTitleBar(const TitleBarTheme& theme) const
 
         const float iconMargin = (static_cast<float>(theme.Height) - static_cast<float>(theme.IconHeight)) * 0.5f;
         ImGui::SetCursorPos(ImVec2(iconMargin, iconMargin));
-        drawIcon(IPlatformApplication::GetInstance().GetIconNativeHandle(), theme.IconWidth, theme.IconHeight);
+        drawTitleBarIcon(IPlatformApplication::GetInstance().GetIconNativeHandle(), theme.IconWidth, theme.IconHeight);
 
         ImGui::SameLine();
 
@@ -47,34 +45,34 @@ void IUIDrawable::drawMainWindowTitleBar(const TitleBarTheme& theme) const
         {
             const float textMarginY = (static_cast<float>(theme.Height) - static_cast<float>(theme.TextSize)) * 0.5f;
             ImGui::SetCursorPosY(textMarginY);
-            drawTitle(pMainWindow->GetTitle(), theme.TextColor, theme.TextSize);
+            drawTitleBarTitle(pMainWindow->GetTitle(), theme.TextColor, theme.TextSize);
         }
 
         ImGui::SameLine();
 
         ImGui::SetCursorPos({buttonStartX, 0.0f});
 
-        drawMinimizeButton(theme.ButtonIconColor,
-                           theme.ButtonHoveredColor,
-                           theme.ButtonActiveColor,
-                           static_cast<int32_t>(static_cast<float>(theme.Height) * 1.5f),
-                           theme.Height);
+        drawTitleBarMinimizeButton(theme.ButtonIconColor,
+                                   theme.ButtonHoveredColor,
+                                   theme.ButtonActiveColor,
+                                   static_cast<int32_t>(static_cast<float>(theme.Height) * 1.5f),
+                                   theme.Height);
 
         ImGui::SetCursorPos({buttonStartX + (static_cast<float>(theme.Height) * 1.5f), 0.0f});
 
-        drawMaximizeButton(theme.ButtonIconColor,
-                           theme.ButtonHoveredColor,
-                           theme.ButtonActiveColor,
-                           static_cast<int32_t>(static_cast<float>(theme.Height) * 1.5f),
-                           theme.Height);
+        drawTitleBarMaximizeButton(theme.ButtonIconColor,
+                                   theme.ButtonHoveredColor,
+                                   theme.ButtonActiveColor,
+                                   static_cast<int32_t>(static_cast<float>(theme.Height) * 1.5f),
+                                   theme.Height);
 
         ImGui::SetCursorPos({buttonStartX + (static_cast<float>(theme.Height) * 1.5f * 2.0f), 0.0f});
 
-        drawCloseButton(theme.ButtonIconColor,
-                        theme.CloseButtonHoveredColor,
-                        theme.CloseButtonActiveColor,
-                        static_cast<int32_t>(static_cast<float>(theme.Height) * 1.5f),
-                        theme.Height);
+        drawTitleBarCloseButton(theme.ButtonIconColor,
+                                theme.CloseButtonHoveredColor,
+                                theme.CloseButtonActiveColor,
+                                static_cast<int32_t>(static_cast<float>(theme.Height) * 1.5f),
+                                theme.Height);
 
         if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered() &&
             ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -92,11 +90,7 @@ void IUIDrawable::drawMainWindowTitleBar(const TitleBarTheme& theme) const
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.0f) && !ImGui::IsAnyItemHovered() &&
             !ImGui::IsAnyItemActive())
         {
-            const float clickedY = ImGui::GetIO().MouseClickedPos[0].y;
-            const float titleBarTop = static_cast<float>(pMainWindow->GetPosY());
-            const float titleBarBottom = static_cast<float>(pMainWindow->GetPosY()) + static_cast<float>(theme.Height);
-
-            if (clickedY >= titleBarTop && clickedY <= titleBarBottom)
+            if (ImGui::IsWindowHovered())
             {
                 pMainWindow->ProcessWindowDragging();
             }
@@ -105,10 +99,10 @@ void IUIDrawable::drawMainWindowTitleBar(const TitleBarTheme& theme) const
     ImGui::EndChild();
 
     ImGui::PopStyleColor();
-    ImGui::PopStyleVar(3);
+    ImGui::PopStyleVar();
 }
 
-void IUIDrawable::drawIcon(void* iconNativeHandle, int32_t width, int32_t height) const
+void IUIDrawable::drawTitleBarIcon(void* iconNativeHandle, int32_t width, int32_t height) const
 {
     if (iconNativeHandle != nullptr)
     {
@@ -127,7 +121,7 @@ void IUIDrawable::drawIcon(void* iconNativeHandle, int32_t width, int32_t height
     }
 }
 
-void IUIDrawable::drawTitle(const std::string& titleStr, const Color128& textColor, float textSize) const
+void IUIDrawable::drawTitleBarTitle(const std::string& titleStr, const Color128& textColor, float textSize) const
 {
     if (titleStr.empty())
     {
@@ -141,11 +135,11 @@ void IUIDrawable::drawTitle(const std::string& titleStr, const Color128& textCol
     ImGui::PopStyleColor();
 }
 
-void IUIDrawable::drawMinimizeButton(const Color128& iconColor,
-                                     const Color128& hoveredColor,
-                                     const Color128& activateColor,
-                                     int32_t width,
-                                     int32_t height) const
+void IUIDrawable::drawTitleBarMinimizeButton(const Color128& iconColor,
+                                             const Color128& hoveredColor,
+                                             const Color128& activateColor,
+                                             int32_t width,
+                                             int32_t height) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
@@ -187,11 +181,11 @@ void IUIDrawable::drawMinimizeButton(const Color128& iconColor,
     }
 }
 
-void IUIDrawable::drawMaximizeButton(const Color128& iconColor,
-                                     const Color128& hoveredColor,
-                                     const Color128& activateColor,
-                                     int32_t width,
-                                     int32_t height) const
+void IUIDrawable::drawTitleBarMaximizeButton(const Color128& iconColor,
+                                             const Color128& hoveredColor,
+                                             const Color128& activateColor,
+                                             int32_t width,
+                                             int32_t height) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 
@@ -240,11 +234,11 @@ void IUIDrawable::drawMaximizeButton(const Color128& iconColor,
     }
 }
 
-void IUIDrawable::drawCloseButton(const Color128& iconColor,
-                                  const Color128& hoveredColor,
-                                  const Color128& activateColor,
-                                  int32_t width,
-                                  int32_t height) const
+void IUIDrawable::drawTitleBarCloseButton(const Color128& iconColor,
+                                          const Color128& hoveredColor,
+                                          const Color128& activateColor,
+                                          int32_t width,
+                                          int32_t height) const
 {
     const IPlatformWindow* pMainWindow = IPlatformApplication::GetInstance().GetMainWindow();
 

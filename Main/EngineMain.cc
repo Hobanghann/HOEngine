@@ -11,6 +11,10 @@ int EngineMain(const EngineMainParam& param)
 
     EngineInitParam engineInitParam;
 
+#if defined(HO_GRAPHICS_API_GL)
+    engineInitParam.GraphicsAPI = eGraphicsAPI::GL;
+#endif
+
 #if defined(HO_APP_TEST_APP)
     engineInitParam.ApplicationType = eEngineApplicationType::TestApp;
 #elif defined(HO_APP_EDITOR)

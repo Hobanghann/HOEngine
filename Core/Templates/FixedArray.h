@@ -1,5 +1,6 @@
 #pragma once
 
+#include <initializer_list>
 #include <memory>
 
 #include "Macros.h"
@@ -7,7 +8,7 @@
 namespace ho
 {
 template <typename T>
-class FixedArray
+class FixedArray final
 {
   public:
     FixedArray() = default;
@@ -22,6 +23,27 @@ class FixedArray
         }
     }
 
+    FixedArray(int32_t size, const T& value)
+      : FixedArray(size)
+    {
+        std::fill_n(mpArray.get(), size, value);
+    }
+
+    FixedArray(std::initializer_list<T> initList)
+      : mSize(static_cast<int32_t>(initList.size()))
+    {
+        if (mSize > 0)
+        {
+            mpArray = std::make_unique<T[]>(mSize);
+
+            const T* it = initList.begin();
+            for (int32_t i = 0; i < mSize; ++i)
+            {
+                mpArray[i] = *it++;
+            }
+        }
+    }
+
     FixedArray(const FixedArray&) = delete;
     FixedArray& operator=(const FixedArray&) = delete;
 
@@ -29,6 +51,7 @@ class FixedArray
       : mpArray(std::move(other.mpArray))
       , mSize(other.mSize)
     {
+        other.mSize = 0;
     }
 
     FixedArray& operator=(FixedArray&& rhs) noexcept
@@ -40,19 +63,20 @@ class FixedArray
 
         mpArray = std::move(rhs.mpArray);
         mSize = rhs.mSize;
+        rhs.mSize = 0;
         return *this;
     }
 
     T& operator[](int32_t index)
     {
         HO_ASSERT(index >= 0 && index < mSize, "Out of bound.");
-        return mpArray[index];
+        return mpArray[static_cast<size_t>(index)];
     }
 
     const T& operator[](int32_t index) const
     {
         HO_ASSERT(index >= 0 && index < mSize, "Out of bound.");
-        return mpArray[index];
+        return mpArray[static_cast<size_t>(index)];
     }
 
     T* Data()
@@ -92,6 +116,11 @@ class FixedArray
     int32_t GetSize() const
     {
         return mSize;
+    }
+
+    int32_t GetByteSize() const
+    {
+        return sizeof(T) * mSize;
     }
 
     void Release()

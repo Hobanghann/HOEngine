@@ -28,14 +28,21 @@ class IPlatformWindow
 
     virtual void* GetNativeHandle() const = 0;
 
-    void SetTitle(const std::string& titleStr)
+    void SetStaticTitle(const std::string& titleStr)
     {
-        mTitleStr = titleStr;
+        mStaticTitleStr = titleStr;
+        updateFullTitle();
+    }
+
+    void SetDynamicTitle(const std::string& titleStr)
+    {
+        mDynamicTitleStr = titleStr;
+        updateFullTitle();
     }
 
     const std::string& GetTitle() const
     {
-        return mTitleStr;
+        return mFullTitleStr;
     }
 
     void SetPosX(int32_t posX)
@@ -96,6 +103,11 @@ class IPlatformWindow
         mbResizing = bResizing;
     }
 
+    void SetWindowDestroyed(bool bDestroyed)
+    {
+        mbDestroyed = bDestroyed;
+    }
+
     bool IsWindowMinimized() const
     {
         return mbMinimized;
@@ -111,6 +123,11 @@ class IPlatformWindow
         return mbResizing;
     }
 
+    bool IsDestroyed() const
+    {
+        return mbDestroyed;
+    }
+
     virtual void ActivateContext() const = 0;
 
     virtual void DeactivateContext() const = 0;
@@ -124,7 +141,24 @@ class IPlatformWindow
     virtual void Close() const = 0;
 
   protected:
-    std::string mTitleStr;
+    void updateFullTitle()
+    {
+        const size_t totalSize = mStaticTitleStr.size() + mDynamicTitleStr.size() + 3; // 3 is for " | ".
+
+        mFullTitleStr.clear();
+        mFullTitleStr.reserve(totalSize);
+
+        mFullTitleStr = mStaticTitleStr;
+
+        if (!mDynamicTitleStr.empty())
+        {
+            mFullTitleStr.append(" | ").append(mDynamicTitleStr);
+        }
+    }
+
+    std::string mStaticTitleStr;
+    std::string mDynamicTitleStr;
+    std::string mFullTitleStr;
 
     int32_t mPosX = 0;
     int32_t mPosY = 0;
@@ -136,5 +170,7 @@ class IPlatformWindow
     bool mbMinimized = false;
     bool mbMaximized = false;
     bool mbResizing = false;
+
+    bool mbDestroyed = false;
 };
 } // namespace ho

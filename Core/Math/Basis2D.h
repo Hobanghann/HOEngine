@@ -8,13 +8,14 @@ namespace ho
 {
 struct alignas(16) Basis2D
 {
-    [[nodiscard]] static Basis2D FromAngle(float angle);
+    static constexpr Basis2D FromScale(const Vector2& scale);
+    static constexpr Basis2D FromAngle(float angleRad);
+    static constexpr Basis2D FromScaleAngle(const Vector2& scale, float angleRad);
+    static constexpr Basis2D FromMatrix(const Matrix2x2& m);
 
     constexpr Basis2D();
     constexpr Basis2D(const Basis2D&) = default;
-    constexpr Basis2D(const Vector2& scaledRight, const Vector2& scaledUp);
-    constexpr Basis2D(float scaleX, float scaleY, const Vector2& right, const Vector2& up);
-    constexpr explicit Basis2D(const Matrix2x2& m);
+    constexpr Basis2D(const Matrix2x2& m);
     constexpr Basis2D& operator=(const Basis2D& rhs);
     ~Basis2D() = default;
 
@@ -24,6 +25,7 @@ struct alignas(16) Basis2D
     [[nodiscard]] FORCE_INLINE Vector2 GetUp() const;
     [[nodiscard]] constexpr Vector2 GetScaledRight() const;
     [[nodiscard]] constexpr Vector2 GetScaledUp() const;
+    [[nodiscard]] FORCE_INLINE float GetRotateAngleRad() const;
 
     constexpr bool operator==(const Basis2D& rhs) const;
     constexpr bool operator!=(const Basis2D& rhs) const;
@@ -51,11 +53,11 @@ struct alignas(16) Basis2D
     constexpr void ScaleUniformLocal(float scale);
     [[nodiscard]] constexpr Basis2D ScaledUniformLocal(float scale) const;
 
-    void Rotate(float angle);
-    [[nodiscard]] Basis2D Rotated(float angle) const;
+    void Rotate(float angleRad);
+    [[nodiscard]] Basis2D Rotated(float angleRad) const;
 
-    void RotateLocal(float angle);
-    [[nodiscard]] Basis2D RotatedLocal(float angle) const;
+    void RotateLocal(float angleRad);
+    [[nodiscard]] Basis2D RotatedLocal(float angleRad) const;
 
     constexpr void Invert();
     [[nodiscard]] constexpr Basis2D Inverse() const;
@@ -78,18 +80,36 @@ struct alignas(16) Basis2D
     Matrix2x2 Matrix;
 };
 
+constexpr Basis2D Basis2D::FromScale(const Vector2& scale)
+
+{
+    return Basis2D::FromMatrix(Matrix2x2(scale.X * Vector2::sUnitX, scale.Y * Vector2::sUnitY));
+}
+
+constexpr Basis2D Basis2D::FromAngle(float angleRad)
+
+{
+    float sin = 0.0f;
+    float cos = 0.0f;
+    math::SinCos(&sin, &cos, angleRad);
+    return Basis2D(Matrix2x2(Vector2(cos, sin), Vector2(-sin, cos)));
+}
+
+constexpr Basis2D Basis2D::FromScaleAngle(const Vector2& scale, float angleRad)
+{
+    float sin = 0.0f;
+    float cos = 0.0f;
+    math::SinCos(&sin, &cos, angleRad);
+    return Basis2D(Matrix2x2(scale.X * Vector2(cos, sin), scale.Y * Vector2(-sin, cos)));
+}
+
+constexpr Basis2D Basis2D::FromMatrix(const Matrix2x2& mat)
+{
+    return Basis2D(mat);
+}
+
 constexpr Basis2D::Basis2D()
   : Matrix(Matrix2x2::sIdentity)
-{
-}
-
-constexpr Basis2D::Basis2D(const Vector2& scaledRight, const Vector2& scaledUp)
-  : Matrix(Matrix2x2(scaledRight, scaledUp))
-{
-}
-
-constexpr Basis2D::Basis2D(float scaleX, float scaleY, const Vector2& right, const Vector2& up)
-  : Matrix(Matrix2x2(scaleX * right, scaleY * up))
 {
 }
 
@@ -136,6 +156,12 @@ constexpr Vector2 Basis2D::GetScaledRight() const
 constexpr Vector2 Basis2D::GetScaledUp() const
 {
     return Matrix.GetCol1();
+}
+
+float Basis2D::GetRotateAngleRad() const
+{
+    const Vector2 right = GetRight();
+    return math::Atan2(right.Y, right.X);
 }
 
 constexpr bool Basis2D::operator==(const Basis2D& rhs) const

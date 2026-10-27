@@ -9,28 +9,38 @@ namespace ho
 enum class eTextureFormat : uint8_t
 {
     None = 0,
+
     R8_UNORM = 1,
     R8G8_UNORM = 2,
     R8G8B8A8_UNORM = 3,
-    R8_SRGB = 4,
-    R8G8_SRGB = 5,
-    R8G8B8A8_SRGB = 6,
-    R16_FLOAT = 7,
-    R16G16_FLOAT = 8,
-    R16G16B16A16_FLOAT = 9,
-    R32_FLOAT = 10,
-    BC1_UNORM = 11,
-    BC1_SRGB = 12,
-    BC3_UNORM = 13,
-    BC3_SRGB = 14,
-    BC4_UNORM = 15,
-    BC4_SNORM = 16,
-    BC5_UNORM = 17,
-    BC5_SNORM = 18,
-    BC6H_UF16 = 19,
-    BC6H_SF16 = 20,
-    BC7_UNORM = 21,
-    BC7_SRGB = 22,
+    B8G8R8A8_UNORM = 4,
+    R8_SRGB = 5,
+    R8G8_SRGB = 6,
+    R8G8B8A8_SRGB = 7,
+
+    R16_FLOAT = 8,
+    R16G16_FLOAT = 9,
+    R16G16B16A16_FLOAT = 10,
+
+    R32_FLOAT = 11,
+    R32G32_FLOAT = 12,
+    R32G32B32A32_FLOAT = 13,
+
+    D24_UNORM_S8_UINT = 14,
+    D32_FLOAT = 15,
+
+    BC1_UNORM = 16,
+    BC1_SRGB = 17,
+    BC3_UNORM = 18,
+    BC3_SRGB = 19,
+    BC4_UNORM = 20,
+    BC4_SNORM = 21,
+    BC5_UNORM = 22,
+    BC5_SNORM = 23,
+    BC6H_UF16 = 24,
+    BC6H_SF16 = 25,
+    BC7_UNORM = 26,
+    BC7_SRGB = 27,
 };
 
 enum class eTextureType : uint8_t
@@ -76,24 +86,19 @@ enum class eAnimInterpolationMode : uint8_t
 enum class eMaterialAssetType : uint8_t
 {
     None = 0,
-    Unlit = 1 << 0,
-    Legacy = 1 << 1,
-    StandardLit = 1 << 2,
+    Unlit = 1,
+    Legacy = 2,
+    StandardLit = 3,
 };
-
-// NOLINTBEGIN
-FORCE_INLINE eMaterialAssetType operator|(eMaterialAssetType lhs, eMaterialAssetType rhs)
-{
-    return static_cast<eMaterialAssetType>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
-}
-// NOLINTEND
 
 enum class eShaderStage : uint8_t
 {
     None = 0,
     VertexShader = 1,
-    FragmentShader = 2,
-    Last = 3,
+    GeometryShader = 2,
+    FragmentShader = 3,
+    ComputeShader = 4,
+    Last = 5,
 };
 
 enum class eMaterialAlphaMode : uint8_t

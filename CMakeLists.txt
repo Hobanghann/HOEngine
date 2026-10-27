@@ -50,6 +50,7 @@ if (MSVC)
         /wd4324         # disable: redundant padding warning
         /permissive-
         /Zc:__cplusplus
+        /Zc:preprocessor
         /EHsc
         /D_HAS_EXCEPTIONS=0
         /utf-8
@@ -81,8 +82,12 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wno-c++98-compat-pedantic
             -Wno-unused-parameter
             -Wno-gnu-anonymous-struct   # allow anonymous struct/union
-            -Wno-double-promotion       # allow float to double promotion
+            -Wno-double-promotion
             -Wno-sign-conversion
+            -Wno-invalid-offsetof   # Allow non-standard-layout offsetof for reflection
+                                    # conditionally-supported by the C++ standard.
+                                    # Verified to work with MSVC, but if Clang does not behave correctly, the reflection system must be redesigned.
+            -Wno-nontrivial-memcall
             -fno-exceptions
             -finput-charset=UTF-8
             -fexec-charset=UTF-8
@@ -109,9 +114,68 @@ set(PLATFORMS_NAME Platforms)
 set(CORE_NAME Core)
 set(APP_THIRD_PARTY_NAME AppThirdParty)
 set(SUBSYSTEMS_NAME Subsystems)
+set(SCENE_NAME Scene)
+set(SCENE_DISPATCHER_NAME SceneDispatchers)
 set(ENGINE_APPLICATION_NAME EngineApplication)
 set(ENGINE_NAME Engine)
 set(MAIN_NAME Main)
+
+##########################################################
+# Set Reflection Linker Options
+##########################################################
+# The reflection system relies on static variable initialization for type registration.
+# However, the linker's dead-code elimination may discard .obj files that lack direct references.
+# The options below force the linker to include all object files from submodules containing reflection code.
+add_library(REFLECTION_FLAGS INTERFACE)
+
+if (MSVC)
+    target_link_options(
+        REFLECTION_FLAGS
+        INTERFACE
+        /WHOLEARCHIVE:$<TARGET_FILE:${SCENE_NAME}>
+        /WHOLEARCHIVE:$<TARGET_FILE:${SUBSYSTEMS_NAME}>
+    )
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (CMAKE_CXX_COMPILER_LINKER_ID STREQUAL "MSVC")
+        # link.exe, invoked through clang++
+        target_link_options(
+            REFLECTION_FLAGS
+            INTERFACE
+            "-Wl,/WHOLEARCHIVE:$<TARGET_FILE:${SCENE_NAME}>"
+            "-Wl,/WHOLEARCHIVE:$<TARGET_FILE:${SUBSYSTEMS_NAME}>"
+        )
+
+    elseif (
+        CMAKE_CXX_COMPILER_LINKER_ID STREQUAL "LLD"
+        AND CMAKE_CXX_COMPILER_LINKER_FRONTEND_VARIANT STREQUAL "MSVC"
+    )
+        # lld-link.exe, invoked through clang++
+        target_link_options(
+            REFLECTION_FLAGS
+            INTERFACE
+            "-Wl,/WHOLEARCHIVE:$<TARGET_FILE:${SCENE_NAME}>"
+            "-Wl,/WHOLEARCHIVE:$<TARGET_FILE:${SUBSYSTEMS_NAME}>"
+        )
+
+    elseif (CMAKE_CXX_COMPILER_LINKER_ID STREQUAL "GNU")
+        # GNU ld / GNU-compatible linker
+        target_link_options(
+            REFLECTION_FLAGS
+            INTERFACE
+            "LINKER:--whole-archive"
+            "$<TARGET_FILE:${SCENE_NAME}>"
+            "$<TARGET_FILE:${SUBSYSTEMS_NAME}>"
+            "LINKER:--no-whole-archive"
+        )
+
+    else()
+        message(FATAL_ERROR
+            "Unsupported linker: "
+            "${CMAKE_CXX_COMPILER_LINKER_ID}, "
+            "frontend: ${CMAKE_CXX_COMPILER_LINKER_FRONTEND_VARIANT}"
+        )
+    endif()
+endif()
 
 ##########################################################
 # Process modules
@@ -121,6 +185,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORMS_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${CORE_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/${APP_THIRD_PARTY_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SUBSYSTEMS_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SCENE_NAME})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${SCENE_DISPATCHER_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_APPLICATION_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_NAME})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_NAME})

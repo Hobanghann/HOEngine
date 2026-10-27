@@ -9,5 +9,6 @@
 
 build*/
 build/
+out/
 
 Testing/

@@ -7,7 +7,7 @@
 namespace ho
 {
 template <typename T>
-class AtomicNumeric
+class AtomicNumeric final
 {
   public:
     explicit AtomicNumeric(T value)

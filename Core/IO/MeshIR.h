@@ -11,7 +11,6 @@
 #include "Core/Math/Sphere.h"
 #include "Core/Math/Transform3D.h"
 #include "Core/Math/Vector2.h"
-#include "Core/Templates/ID.h"
 #include "Path.h"
 
 namespace ho
@@ -103,11 +102,6 @@ struct MeshIR
                           (BoneWeights.empty() ? true : (Positions.size() == BoneWeights.size())),
                       "Invalid SubMesh format.");
 
-            if (!Positions.empty())
-            {
-                Aabb = AABB::FromPositions(Positions.data(), static_cast<int32_t>(Positions.size()));
-                Sphere = Sphere::FromPositionsRitter(Positions.data(), static_cast<int32_t>(Positions.size()));
-            }
             MorphNameToIndexMap.reserve(MorphTargets.size());
             for (int32_t i = 0; i < static_cast<int32_t>(MorphTargets.size()); ++i)
             {
@@ -148,9 +142,6 @@ struct MeshIR
         // Index of ModelIR's pMaterialIRs.
         int32_t RenderMaterialIndex;
 
-        AABB Aabb;
-        Sphere Sphere;
-
         std::unordered_map<std::string, int32_t> MorphNameToIndexMap;
     };
 
@@ -159,31 +150,6 @@ struct MeshIR
       , NameStr(std::move(nameStr))
       , SubMeshes(std::move(subMeshes))
     {
-        if (!SubMeshes.empty())
-        {
-            // Merge all submesh bounding volume
-            Aabb = SubMeshes[0].Aabb;
-            for (int32_t i = 1; i < static_cast<int32_t>(SubMeshes.size()); ++i)
-            {
-                Aabb = AABB::Merge(Aabb, SubMeshes[i].Aabb);
-            }
-
-            std::vector<Vector3> allPositions;
-            int32_t allVertexCount = 0;
-            for (const auto& sm : SubMeshes)
-            {
-                allVertexCount += static_cast<int32_t>(sm.Positions.size());
-            }
-            allPositions.reserve(allVertexCount);
-            for (const auto& sm : SubMeshes)
-            {
-                allPositions.insert(allPositions.end(), sm.Positions.begin(), sm.Positions.end());
-            }
-            if (!allPositions.empty())
-            {
-                Sphere = Sphere::FromPositionsRitter(allPositions.data(), static_cast<int32_t>(allPositions.size()));
-            }
-        }
         SubMeshNameToIndexMap.reserve(SubMeshes.size());
         for (int32_t i = 0; i < static_cast<int32_t>(SubMeshes.size()); ++i)
         {
@@ -209,9 +175,6 @@ struct MeshIR
     std::string NameStr;
 
     std::vector<SubMesh> SubMeshes;
-
-    AABB Aabb;
-    Sphere Sphere;
 
     std::unordered_map<std::string, int32_t> SubMeshNameToIndexMap;
 };

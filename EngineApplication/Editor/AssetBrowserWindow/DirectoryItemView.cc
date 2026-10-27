@@ -11,7 +11,7 @@
 
 namespace ho
 {
-void drawByteSize(int64_t byteSize)
+static void drawByteSize(int64_t byteSize)
 {
     constexpr double kKB = 1024.0;
     constexpr double kMB = kKB * 1024.0;
@@ -38,7 +38,7 @@ void drawByteSize(int64_t byteSize)
     }
 }
 
-void drawColorStripe(const Color128& color)
+static void drawColorStripe(const Color128& color)
 {
     const ImVec2 pos = ImGui::GetCursorScreenPos();
     const float textHeight = ImGui::GetTextLineHeight();
@@ -52,7 +52,7 @@ void drawColorStripe(const Color128& color)
     ImGui::SetCursorScreenPos(ImVec2(pos.x + kStripeWidth + 2.0f, pos.y));
 }
 
-void drawDirectoryColorStripe()
+static void drawDirectoryColorStripe()
 {
     const ImVec2 pos = ImGui::GetCursorScreenPos();
     const float textHeight = ImGui::GetTextLineHeight();

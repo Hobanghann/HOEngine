@@ -213,7 +213,7 @@ void RScene::DestroyGameObject(ObjectHandle<TGameObject> hObj)
     }
 
     DestroyComponent(hObj->GetComponent<RTransformComponent>());
-    for (auto& hComp : hObj->GetComponents())
+    for (auto& hComp : hObj->template GetComponents())
     {
         if (hComp.IsValid())
         {
@@ -231,7 +231,7 @@ void RScene::DestroyGameObject(ObjectHandle<TGameObject> hObj)
 template <typename TGameObject>
 void RScene::DestroyGameObjectAndDescendantRecursive(ObjectHandle<TGameObject> hObj)
 {
-    ObjectHandle<RTransformComponent> hCurrChild = hObj->GetComponent<RTransformComponent>()->GetFirstChild();
+    ObjectHandle<RTransformComponent> hCurrChild = hObj->template GetComponent<RTransformComponent>()->GetFirstChild();
     while (hCurrChild.IsValid())
     {
         DestroyGameObjectAndDescendantRecursive(hCurrChild->GetOwner()->GetHandle());

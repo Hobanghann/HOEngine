@@ -212,8 +212,7 @@ void RScene::DestroyGameObject(ObjectHandle<TGameObject> hObj)
         return;
     }
 
-    DestroyComponent(hObj->GetComponent<RTransformComponent>());
-    for (auto& hComp : hObj->template GetComponents())
+    for (auto& hComp : hObj->GetComponents())
     {
         if (hComp.IsValid())
         {

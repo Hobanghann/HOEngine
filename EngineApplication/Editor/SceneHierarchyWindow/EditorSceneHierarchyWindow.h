@@ -56,8 +56,6 @@ class EditorSceneHierarchyWindow final : public IEngineWindow
     void setGameObjectVisibleInEditorRecursive(ObjectHandle<RGameObject> hGameObj, bool bVisible) const;
     void setGameObjectClickableInEditorRecursive(ObjectHandle<RGameObject> hGameObj, bool bClickable) const;
 
-    std::string getUniqueGameObjectName(const std::string& baseNameStr) const;
-
     ObjectHandle<RGameObject> mhRenamingGameObject;
 
     ImGuiTextFilter mGameObjectFilter;

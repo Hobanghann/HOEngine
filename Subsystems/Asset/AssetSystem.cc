@@ -406,7 +406,7 @@ ObjectHandle<RShaderAsset> AssetSystem::ImportShader(std::string* pOutErrorMsg,
     importCtx.ImportType = eImportType::Shader;
     importCtx.hDstAsset = hNewAsset;
     importCtx.BeginCount = 5;
-    importCtx.ShaderContext.ppOutErrorMsg = &pOutErrorMsg;
+    importCtx.ShaderContext.pOutErrorMsg = pOutErrorMsg;
     importCtx.ShaderContext.pSrcShaderIR = &srcShaderIR;
     importCtx.ShaderContext.Stage = stage;
     importCtx.ShaderContext.CompatibleMaterialType = compatibleMaterialType;
@@ -814,7 +814,7 @@ void AssetSystem::uploadPendingAssets()
                     case eImportType::Shader:
                         HO_ASSERT(importCtx.ShaderContext.pSrcShaderIR, "Invalid context.");
                         bSucceed = importer::importShader(importCtx.hDstAsset.Cast<RShaderAsset>(),
-                                                          *importCtx.ShaderContext.ppOutErrorMsg,
+                                                          importCtx.ShaderContext.pOutErrorMsg,
                                                           *importCtx.ShaderContext.pSrcShaderIR,
                                                           importCtx.ShaderContext.Stage,
                                                           importCtx.ShaderContext.CompatibleMaterialType);

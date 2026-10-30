@@ -207,7 +207,7 @@ class AssetSystem final
 
     struct ShaderImportContext
     {
-        std::string** ppOutErrorMsg = nullptr;
+        std::string* pOutErrorMsg = nullptr;
         const parser::ShaderIR* pSrcShaderIR = nullptr;
         eShaderStage Stage = eShaderStage::None;
         eMaterialAssetType CompatibleMaterialType = eMaterialAssetType::None;

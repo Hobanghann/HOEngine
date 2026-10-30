@@ -1,12 +1,11 @@
 #include "EditorSceneHierarchyWindow.h"
 
 #include <IconsMaterialDesignIcons.h>
-#include <charconv>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <vector>
 
 #include "../Editor.h"
+#include "../Utils/EditorUtils.h"
 #include "Platforms/IPlatformApplication.h"
 #include "Scene/Components/TransformComponent.h"
 #include "Scene/SceneManager.h"
@@ -211,6 +210,7 @@ void EditorSceneHierarchyWindow::drawAddPopup()
         const ImVec2 buttonSize = ImGui::GetItemRectSize();
 
         ImGui::SetNextWindowPos({buttonMin.x, buttonMin.y + buttonSize.y});
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup("##SceneHierarchyAddPopup");
         mbOpenAddPopup = false;
     }
@@ -220,7 +220,7 @@ void EditorSceneHierarchyWindow::drawAddPopup()
 
     auto createNon3DObj = [&](const std::string& baseNameStr, ObjectHandle<RComponent> hNewComp)
     {
-        const std::string newObjNameStr = getUniqueGameObjectName(baseNameStr);
+        const std::string newObjNameStr = getUniqueGameObjectName(hCurrScene, baseNameStr);
         const ObjectHandle<RGameObject> hNewObj =
             hCurrScene->CreateGameObject<RGameObject>(StringHandle(newObjNameStr));
         hNewObj->AttachComponent(hNewComp);
@@ -229,7 +229,7 @@ void EditorSceneHierarchyWindow::drawAddPopup()
     };
     auto create3DObj = [&](const std::string& baseNameStr, ObjectHandle<RStaticMeshAsset> hMesh)
     {
-        const std::string newObjNameStr = getUniqueGameObjectName(baseNameStr);
+        const std::string newObjNameStr = getUniqueGameObjectName(hCurrScene, baseNameStr);
         const ObjectHandle<RGameObject> hNewObj =
             hCurrScene->CreateGameObject<RGameObject>(StringHandle(newObjNameStr));
         const ObjectHandle<RStaticMeshComponent> hNewComp = hCurrScene->CreateComponent<RStaticMeshComponent>();
@@ -239,14 +239,13 @@ void EditorSceneHierarchyWindow::drawAddPopup()
         mpOwner->SetSelectedGameObject(hNewObj);
     };
 
-    ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 8.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 6.0f));
     if (ImGui::BeginPopup("##SceneHierarchyAddPopup", ImGuiWindowFlags_NoDecoration))
     {
         if (ImGui::MenuItem(ICON_MDI_CUBE_OUTLINE "  Create Empty"))
         {
-            const std::string newObjNameStr = getUniqueGameObjectName("GameObject");
+            const std::string newObjNameStr = getUniqueGameObjectName(hCurrScene, "GameObject");
             const ObjectHandle<RGameObject> hNewObj =
                 hCurrScene->CreateGameObject<RGameObject>(StringHandle(newObjNameStr));
             mhRenamingGameObject = hNewObj;
@@ -255,7 +254,7 @@ void EditorSceneHierarchyWindow::drawAddPopup()
         }
         if (ImGui::MenuItem(ICON_MDI_CUBE_OUTLINE "  Create Empty Child"))
         {
-            const std::string newObjNameStr = getUniqueGameObjectName("GameObject");
+            const std::string newObjNameStr = getUniqueGameObjectName(hCurrScene, "GameObject");
             const ObjectHandle<RGameObject> hNewObj =
                 hCurrScene->CreateGameObject<RGameObject>(StringHandle(newObjNameStr));
             if (hSelectedObj.IsValid())
@@ -633,11 +632,11 @@ void EditorSceneHierarchyWindow::drawGameObjRightClickPopup()
     if (mbOpenGameObjRightClickPopup)
     {
         ImGui::SetNextWindowPos(ImGui::GetMousePos(), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup("##SceneHierarchyWindowRightClickPopup");
         mbOpenGameObjRightClickPopup = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 8.0f));
     if (ImGui::BeginPopup("##SceneHierarchyWindowRightClickPopup"))
     {
@@ -695,6 +694,7 @@ void EditorSceneHierarchyWindow::drawGameObjPropertiesPopup()
 
     if (mbOpenGameObjPropertiesPopup)
     {
+        ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup(
             (std::string(*hSelectedObj->GetName()) + std::string(" Properties###GameObjectPropertiesPopup")).c_str());
         mbOpenGameObjPropertiesPopup = false;
@@ -711,7 +711,6 @@ void EditorSceneHierarchyWindow::drawGameObjPropertiesPopup()
         strncpy_s(sNameBuffer, sizeof(sNameBuffer), *hSelectedObj->GetName(), _TRUNCATE);
     }
 
-    ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 8.0f));
 
     if (ImGui::BeginPopupModal(sPopupNameStr.c_str(),
@@ -871,83 +870,5 @@ void EditorSceneHierarchyWindow::setGameObjectClickableInEditorRecursive(ObjectH
         setGameObjectClickableInEditorRecursive(hChild->GetOwner(), bClickable);
         hChild = hChild->GetNextSibling();
     }
-}
-
-// NOTE: Supposed duplicated name handled to 'Name (n)'
-std::string EditorSceneHierarchyWindow::getUniqueGameObjectName(const std::string& baseNameStr) const
-{
-    static const int32_t sMaxDupCount = 2048;
-    static std::vector<bool> sbIsNumUsed(sMaxDupCount);
-
-    const ObjectHandle<RScene> hCurrScene = mpOwner->GetCurrentScene();
-    HO_ASSERT(hCurrScene.IsValid(), "This function must be called with valid handle. Check caller.");
-
-    std::fill(sbIsNumUsed.begin(), sbIsNumUsed.end(), false);
-    int32_t maxNum = -1;
-    for (const auto& hGameObj : hCurrScene->GetGameObjects<RGameObject>())
-    {
-        std::string objNameStr(*hGameObj->GetName());
-        if (baseNameStr.size() > objNameStr.size())
-        {
-            continue;
-        }
-
-        const std::string::size_type idx = objNameStr.find(baseNameStr);
-        if (idx != 0)
-        {
-            continue;
-        }
-
-        int32_t num = -1;
-        if (baseNameStr.size() == objNameStr.size())
-        {
-            num = 0;
-        }
-        else if (objNameStr.find(" (", idx) == baseNameStr.size() && objNameStr[objNameStr.size() - 1] == ')')
-        {
-            const char* first = objNameStr.c_str() + baseNameStr.size() + 2;
-            const char* last = objNameStr.c_str() + objNameStr.size() - 1;
-
-            int value = 0;
-            auto result = std::from_chars(first, last, value);
-
-            if (result.ec == std::errc{} && result.ptr == last)
-            {
-                num = value;
-            }
-        }
-
-        HO_ASSERT(num < sMaxDupCount, "Duplicated object count exceeds maximum limit.");
-        if (num >= 0)
-        {
-            sbIsNumUsed[num] = true;
-            if (maxNum < num)
-            {
-                maxNum = num;
-            }
-        }
-    }
-
-    int32_t targetNum = -1;
-    for (int32_t i = 0; i <= maxNum; ++i)
-    {
-        if (!sbIsNumUsed[i])
-        {
-            targetNum = i;
-            break;
-        }
-    }
-
-    if (targetNum == -1)
-    {
-        targetNum = maxNum + 1;
-    }
-
-    if (targetNum == 0)
-    {
-        return baseNameStr;
-    }
-
-    return std::string(baseNameStr).append(" (").append(std::to_string(targetNum)).append(")");
 }
 } // namespace ho

@@ -305,11 +305,11 @@ void EditorMainWindow::drawNewScenePopup()
 {
     if (mbOpenNewScenePopup)
     {
+        ImGui::SetNextWindowSize(ImVec2(400.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup("New Scene##MainWindowNewScenePopup");
         mbOpenNewScenePopup = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(400.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 8.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 10.0f));
     if (ImGui::BeginPopupModal("New Scene##MainWindowNewScenePopup",

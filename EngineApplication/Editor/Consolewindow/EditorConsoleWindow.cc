@@ -256,12 +256,11 @@ void EditorConsoleWindow::drawMenuBarFiltersPopup()
         const ImVec2 buttonSize = ImGui::GetItemRectSize();
 
         ImGui::SetNextWindowPos({buttonMin.x, buttonMin.y + buttonSize.y});
-
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup("##ConsoleMenuBarFiltersPopup");
         mbOpenMenuBarFiltersPopup = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 8.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 6.0f));
     if (ImGui::BeginPopup("##ConsoleMenuBarFiltersPopup", ImGuiWindowFlags_NoDecoration))
@@ -363,12 +362,11 @@ void EditorConsoleWindow::drawMenuBarSettingsPopup()
         const ImVec2 buttonSize = ImGui::GetItemRectSize();
 
         ImGui::SetNextWindowPos({buttonMin.x, buttonMin.y + buttonSize.y});
-
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup("##ConsoleMenuBarSettingsPopup");
         mbOpenMenuBarSettingsPopup = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 8.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 6.0f));
     if (ImGui::BeginPopup("##ConsoleMenuBarSettingsPopup", ImGuiWindowFlags_NoDecoration))

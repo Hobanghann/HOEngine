@@ -2,7 +2,10 @@
 
 #include "../../IEngineWindow.h"
 #include "../Utils/DirectoryHierarchy.h"
-#include "AssetLoadContext.h"
+#include "ModelImportWorkflow.h"
+#include "ShaderImportWorkflow.h"
+#include "TextureBakeWorkflow.h"
+#include "TextureImportWorkflow.h"
 
 namespace ho
 {
@@ -30,52 +33,6 @@ class EditorAssetBrowserWindow final : public IEngineWindow
     void DrawUI() override;
 
   private:
-    enum class eModelLoadState
-    {
-        None,
-        ParseSetting,
-        Parsing,
-        ImportSetting,
-        ImportBegin,
-        Importing,
-        Fail,
-    };
-
-    enum class eTextureLoadState
-    {
-        None,
-        ParseSetting,
-        Parsing,
-        ImportSetting,
-        ImportBegin,
-        Importing,
-        Fail,
-    };
-
-    enum class eShaderLoadState
-    {
-        None,
-        ParseSetting,
-        Parsing,
-        ImportSetting,
-        Importing,
-        Fail,
-    };
-
-    enum class eTextureBakeState
-    {
-        None,
-        BakeSetting,
-        Baking,
-        Fail,
-    };
-
-    void processModelLoadPipeline();
-    void processTextureLoadPipeline();
-    void processShaderLoadPipeline();
-
-    void processTextureBakePipeline();
-
     bool mbOpenMenuBarAddPopup = false;
     void drawMenuBarAddPopup();
     bool mbOpenNewFolderPopup = false;
@@ -86,75 +43,20 @@ class EditorAssetBrowserWindow final : public IEngineWindow
     void handleDirectoryHierarchyViewRequest();
     void handleDirectoryItemViewRequest();
 
-    // Model import functions
-    void showModelFileOpenDialog();
-
-    void initializeModelParseContext(const std::string& importPathStr);
-    void resetModelParseContext();
-    void initializeModelImportContext();
-    void resetModelImportContext();
-    void cleanModelImportContext();
-
-    void drawModelImportWizard();
-    void parseModel();
-    void beginModelImport();
-    void checkModelImport();
     void addModelToDirectoryHierarchy();
-
-    // Shader import functions
-    void showShaderFileOpenDialog();
-
-    void initializeShaderParseContext(const std::string& importPathStr);
-    void resetShaderParseContext();
-    void initializeShaderImportContext();
-    void resetShaderImportContext();
-    void cleanShaderImportContext();
-
-    void drawShaderImportWizard();
-    void parseShader();
-    void importShader();
-    void addShaderToDirectoryHierarchy();
-
-    // Texture import functions
-    void resetTextureParseContext();
-    void initializeTextureImportContext();
-    void resetTextureImportContext();
-    void cleanTextureImportContext();
-
-    void drawTextureImportWizard();
-    void parseTexture();
-    void beginTextureImport();
-    void checkTextureImport();
     void addTextureToDirectoryHierarchy();
-
-    // Texture bake functions
-    void initializeTextureBakeContext(ObjectHandle<RTextureAsset> hSrcTexture);
-    void resetTextureBakeContext();
-    void cleanTextureBakeContext();
-
-    void drawTextureBakeWizard();
-    void bakeTexture();
+    void addShaderToDirectoryHierarchy();
     void addBakedTextureToDirectoryHierarchy();
 
+    bool mbOpenDirectoryPropertiesPopup = false;
     void drawDirectoryPropertiesPopup();
+    bool mbOpenItemPropertiesPopup = false;
     void drawItemPropertiesPopup();
 
-    std::string getUniqueAssetName(const std::string& baseNameStr) const;
-
-    eModelLoadState mModelLoadState = eModelLoadState::None;
-    ModelParseContext mModelParseContext;
-    ModelImportContext mModelImportContext;
-
-    eShaderLoadState mShaderLoadState = eShaderLoadState::None;
-    ShaderParseContext mShaderParseContext;
-    ShaderImportContext mShaderImportContext;
-
-    eTextureLoadState mTextureLoadState = eTextureLoadState::None;
-    TextureParseContext mTextureParseContext;
-    TextureImportContext mTextureImportContext;
-
-    eTextureBakeState mTextureBakeState = eTextureBakeState::None;
-    TextureBakeContext mTextureBakeContext;
+    ModelImportWorkflow mModelImportWorkflow;
+    TextureImportWorkflow mTextureImportWorkflow;
+    ShaderImportWorkflow mShaderImportWorkflow;
+    TextureBakeWorkflow mTextureBakeWorkflow;
 
     DirectoryHierarchy mDirectoryHierarchy;
     DirectoryHierarchy::Directory* mpOpenedDir = nullptr;

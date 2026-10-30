@@ -110,7 +110,7 @@ void EditorInspectorWindow::drawAddComponentPopup()
         const ImVec2 buttonSize = ImGui::GetItemRectSize();
 
         ImGui::SetNextWindowPos({buttonMin.x, buttonMin.y + buttonSize.y});
-
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::OpenPopup("##InspectorAddComponentPopup");
         mbOpenAddComponentPopup = false;
     }
@@ -118,7 +118,6 @@ void EditorInspectorWindow::drawAddComponentPopup()
     const ObjectHandle<RGameObject> hSelectedObj = mpOwner->GetSelectedGameObject();
     HO_ASSERT(hSelectedObj.IsValid(), "This function must be called with valid handle. Check caller.");
 
-    ImGui::SetNextWindowSize(ImVec2(200.0f, 0.0f), ImGuiCond_Appearing);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 8.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 6.0f));
     if (ImGui::BeginPopup("##InspectorAddComponentPopup", ImGuiWindowFlags_NoDecoration))

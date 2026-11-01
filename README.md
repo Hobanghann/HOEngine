@@ -5,8 +5,10 @@
 
 # 스크린샷
 <p align="center">
-  <img src="Docs/demo_optimized.gif" width="49%">
-  <img src="Docs/Screenshot.png" width="49%">
+  <img src="Docs/demo_optimized.gif" width="80%">
+</p>
+<p align="center">
+  <img src="Docs/Screenshot.png" width="80%">
 </p>
 
 # 빌드 환경 및 방법

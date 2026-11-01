@@ -249,8 +249,8 @@ void RScene::RenameGameObject(ObjectHandle<TGameObject> hObj, StringHandle hName
     {
         return;
     }
-    hObj->setName(hName);
     mNameToGameObjectMap.erase(hObj->GetName());
+    hObj->setName(hName);
     mNameToGameObjectMap[hName] = hObj;
 }
 

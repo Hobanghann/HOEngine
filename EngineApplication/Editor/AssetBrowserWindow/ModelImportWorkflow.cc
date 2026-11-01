@@ -1307,10 +1307,11 @@ bool ModelImportWorkflow::beginImporting()
     }
 
     // Import morph animations
-    mImportContext.hImportedMorphAnims =
-        FixedArray<ObjectHandle<RMorphAnimationAsset>>(mImportContext.bImportMorphAnimation.GetSize());
+
     if (mImportContext.bHasMorphAnimation)
     {
+        mImportContext.hImportedMorphAnims =
+            FixedArray<ObjectHandle<RMorphAnimationAsset>>(mImportContext.bImportMorphAnimation.GetSize());
         for (int32_t i = 0; i < mImportContext.bImportMorphAnimation.GetSize(); ++i)
         {
             if (mImportContext.bImportMorphAnimation[i])
@@ -1405,31 +1406,11 @@ bool ModelImportWorkflow::checkImporting()
         }
     }
 
-    if (mImportContext.hImportedMorphTargets.IsValid())
+    if (mImportContext.bHasMorphTargets && mImportContext.bImportMorphTargets)
     {
-        switch (mImportContext.hImportedMorphTargets->TransferState)
+        if (mImportContext.hImportedMorphTargets.IsValid())
         {
-            case eAssetTransferState::Ready:
-                ++mImportContext.ImportedAssetCount;
-                break;
-            case eAssetTransferState::Failed:
-                ++mImportContext.ImportedAssetCount;
-                bSucceed = false;
-                break;
-            default:
-                break;
-        }
-    }
-    else
-    {
-        ++mImportContext.ImportedAssetCount;
-    }
-
-    for (int32_t i = 0; i < mImportContext.hImportedMorphAnims.GetSize(); ++i)
-    {
-        if (mImportContext.hImportedMorphAnims[i].IsValid())
-        {
-            switch (mImportContext.hImportedMorphAnims[i]->TransferState)
+            switch (mImportContext.hImportedMorphTargets->TransferState)
             {
                 case eAssetTransferState::Ready:
                     ++mImportContext.ImportedAssetCount;
@@ -1445,6 +1426,32 @@ bool ModelImportWorkflow::checkImporting()
         else
         {
             ++mImportContext.ImportedAssetCount;
+        }
+    }
+
+    if (mImportContext.bHasMorphAnimation)
+    {
+        for (int32_t i = 0; i < mImportContext.hImportedMorphAnims.GetSize(); ++i)
+        {
+            if (mImportContext.hImportedMorphAnims[i].IsValid())
+            {
+                switch (mImportContext.hImportedMorphAnims[i]->TransferState)
+                {
+                    case eAssetTransferState::Ready:
+                        ++mImportContext.ImportedAssetCount;
+                        break;
+                    case eAssetTransferState::Failed:
+                        ++mImportContext.ImportedAssetCount;
+                        bSucceed = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                ++mImportContext.ImportedAssetCount;
+            }
         }
     }
 

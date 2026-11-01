@@ -48,7 +48,7 @@ class UISystem final
 
     static void deleteInstance();
 
-    bool init();
+    bool init() const;
 
     void draw();
 
@@ -59,8 +59,6 @@ class UISystem final
     TitleBarTheme mTitleBarTheme;
 
     FixedQueue<IUIDrawable*> mUIDrawableQueue;
-
-    ImFont* mpIconsMaterialDesignIcons = nullptr;
 
     static UISystem* spInstance;
 };

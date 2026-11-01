@@ -48,7 +48,7 @@ class UISystem final
 
     static void deleteInstance();
 
-    bool init();
+    bool init() const;
 
     void draw();
 

@@ -59,7 +59,7 @@ void UISystem::deleteInstance()
     spInstance = nullptr;
 }
 
-bool UISystem::init()
+bool UISystem::init() const
 {
     ImGuiIO& io = ImGui::GetIO();
 

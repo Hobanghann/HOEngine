@@ -63,35 +63,27 @@ bool UISystem::init()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    // ====================================================================
-    // Load text font (Default - Inter & Korean)
-    // ====================================================================
-    const float fontSize = 16.0f;
-    const ImWchar* pGlyphRangesKorean = io.Fonts->GetGlyphRangesKorean();
+    // Load fonts
+    io.Fonts->Flags |= ImFontAtlasFlags_NoPowerOfTwoHeight;
+
     Path fontPath = Path(std::string("Platforms/Resources/Fonts/Inter_18pt-Regular.ttf"));
     fontPath.ResolveProjectPath();
-
-    mpIconsMaterialDesignIcons =
-        io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str(), fontSize, nullptr, pGlyphRangesKorean);
-    if (!mpIconsMaterialDesignIcons)
+    if (!io.Fonts->AddFontFromFileTTF(fontPath.ToString().c_str()))
     {
-        HO_ASSERT(false, "Failed to load base font.");
+        HO_ASSERT(false, "Failed to load font.");
         return false;
     }
-    ImFontConfig iconConfig;
-    iconConfig.MergeMode = true;
-    iconConfig.PixelSnapH = true;
-    iconConfig.GlyphMinAdvanceX = 14.f;
-    iconConfig.GlyphOffset = ImVec2(0.0f, 2.0f);
 
-    static const ImWchar sIconRangesMDI[] = {static_cast<ImWchar>(ICON_MIN_MDI), static_cast<ImWchar>(ICON_MAX_MDI), 0};
-
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.PixelSnapH = true;
+    config.GlyphMinAdvanceX = 13.f;
+    config.GlyphOffset = ImVec2(0.0f, 2.0f);
     Path iconPath = Path(std::string("Platforms/Resources/Fonts/materialdesignicons-webfont.ttf"));
     iconPath.ResolveProjectPath();
-
-    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 16.0f, &iconConfig, sIconRangesMDI))
+    if (!io.Fonts->AddFontFromFileTTF(iconPath.ToString().c_str(), 13.0f, &config))
     {
-        HO_ASSERT(false, "Failed to merge icons.");
+        HO_ASSERT(false, "Failed to icons.");
         return false;
     }
 
@@ -281,6 +273,8 @@ bool UISystem::init()
     style.Colors[ImGuiCol_ModalWindowDimBg] = {0.0f, 0.0f, 0.0f, 0.7f};
 
     // Setup imgui size
+    style.FontSizeBase = 15.0f;
+
     style.WindowPadding = ImVec2(8.0f, 8.0f);
     style.FramePadding = ImVec2(3.0f, 3.0f);
     style.ItemSpacing = ImVec2(4.0f, 4.0f);

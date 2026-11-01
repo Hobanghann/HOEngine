@@ -60,8 +60,6 @@ class UISystem final
 
     FixedQueue<IUIDrawable*> mUIDrawableQueue;
 
-    ImFont* mpIconsMaterialDesignIcons = nullptr;
-
     static UISystem* spInstance;
 };
 } // namespace ho

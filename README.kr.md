@@ -1,5 +1,5 @@
 <p align="right">
-  <a href="README.en.md">English</a> | <a href="README.kr.md"><b>한국어</b></a>
+  <a href="README.md">English</a> | <a href="README.kr.md"><b>한국어</b></a>
 </p>
 
 # 프로젝트 개요
@@ -9,10 +9,10 @@
 
 # 스크린샷
 <p align="center">
-  <img src="Docs/demo_optimized.gif" width="80%">
+  <img src="Docs/demo_optimized.gif" width="100%">
 </p>
 <p align="center">
-  <img src="Docs/Screenshot.png" width="80%">
+  <img src="Docs/Screenshot.png" width="100%">
 </p>
 
 # 빌드 환경 및 방법
@@ -59,7 +59,7 @@ cmake --build <디렉토리 이름>
 
 # 엔진 구조
 <p align="center">
-  <img src="Docs/EngineArchitecture.svg" width="70%">
+  <img src="Docs/EngineArchitecture.svg" width="100%">
 </p>
 
 # 엔진 실행 흐름
@@ -70,18 +70,19 @@ cmake --build <디렉토리 이름>
 다이어그램으로 나타낸 엔진의 실행 흐름은 다음과 같습니다.
 
 <p align="center">
-  <img src="Docs/EngineExecutionFlow.kr.svg" width="50%">
+  <img src="Docs/EngineExecutionFlow.kr.svg" width="70%">
 </p>
 
 # 기능
 주요 모듈별 현재 구현된 기능은 다음과 같습니다.
 
-| Name | Type |
+| Name | Features |
 |---|---|
 | **Reflection System** | Built-in Type, Enum, Struct, Class에 대한 Reflection 정보 등록 및 조회<br>타입의 Name, Size, Alignment, Enum Entry, Property, Method 및 상속 관계 관리<br>Property별 Widget Type 메타데이터를 통한 Editor UI 표시 방식 지정<br>정적 등록 매크로를 통한 Reflection 정보 등록 |
-| **Object System** | Object의 생성 및 소멸 관리<br>Object Pooling 기반 메모리 관리<br>상속 관계 기반 Object 순회<br>ObjectHandle을 통한 Dangling Pointer 방지 및 안전한 Type Casting<br>Object Manager를 통한 Object Pool 관리 |
-| **Asset System** | Asset의 생성, 등록, 검색 및 소멸 관리<br>Static Mesh, Morph Target, Morph Animation, Material, Texture, Shader Asset 지원<br>Model Import 및 Asset Import Workflow 지원<br>Asset 간 참조 관계 관리 및 GPU Resource Upload 상태 관리 |
-| **Rendering System** | **Rendering Infrastructure**<br>Render Pass 및 Render Stage 기반 렌더링 파이프라인 구성<br>Render Queue Double Buffering 및 별도 Rendering Thread를 통한 렌더링 작업 처리<br>Rendering Backend 추상화 및 GPU Resource 관리<br><br>**Rendering Pipeline**<br>Forward Rendering 기반 렌더링 파이프라인<br>PBR(GGX 기반 BRDF) 및 Phong Shading 지원<br>Opaque, Masked, Blended 등 Material Alpha Mode에 따른 렌더링 처리<br>Instanced Rendering을 통한 Draw Command 처리<br><br>**Shadow Mapping**<br>Directional, Point, Spot Light의 Dynamic Shadow Mapping<br>Point, Spot Light의 Static Shadow Map Baking 및 런타임 적용<br>Directional Light를 위한 Cascaded Shadow Mapping(CSM)<br><br>**Image Based Lighting**<br>Irradiance Map Baking<br>Prefiltered Environment Map Baking<br>BRDF Integration Map을 활용한 Image Based Lighting<br><br>**Post Processing**<br>ACES Filmic Tone Mapping<br>Gamma Correction |
-| **Scene Manager** | Scene 및 GameObject, Component의 생성, 소멸 생명주기 관리<br>Component 기반 GameObject 구성 및 관리<br>Scene 및 Object의 Update, Garbage Collection 관리<br><br>Transform Component: Object Transform 및 Hierarchy 관리<br>Camera Component: Perspective, Orthographic Projection 지원<br>Static Mesh Component: Static Mesh 및 Shadow Casting Mode 설정<br>SkyBox Component: Sky Map, Irradiance Map, Prefiltered Environment Map 설정<br>Directional Light Component: Cascade 설정 및 Shadow Mapping<br>Point Light Component: Attenuation 및 Shadow Mapping<br>Spot Light Component: Cutoff, Attenuation 및 Shadow Mapping |
+| **Object System** | Object의 생성 및 소멸 관리<br>Memory Pooling을 통한 메모리 관리<br>상속 관계 기반 Object 순회<br>ObjectHandle을 통한 Dangling Pointer 방지 및 안전한 Type Casting|
+| **Asset System** | Asset의 생성, 등록, 검색 및 소멸 관리<br>Static Mesh, Morph Target, Morph Animation, Material, Texture, Shader Asset 지원<br>Model Import 및 Asset Import Workflow 지원
+| **Rendering System** | **Rendering Infrastructure**<br>별도 Rendering Thread를 통한 렌더링 작업 처리<br>PBR(GGX 기반 BRDF) 및 Phong Shading 지원<br><br>**Shadow Mapping**<br>Directional, Point, Spot Light의 Dynamic Shadow Mapping<br>Point, Spot Light의 Static Shadow Map Baking 및 런타임 적용<br>Directional Light를 위한 Cascaded Shadow Mapping(CSM)<br><br>**Image Based Lighting**<br>Irradiance Map Baking<br>Prefiltered Environment Map Baking<br>Irradiance, Prefiltered Environment, BRDF Integration Map을 활용한 Image Based Lighting<br><br>**Post Processing**<br>ACES Filmic Tone Mapping<br>Gamma Correction |
+| **Scene Manager** | Scene 및 GameObject, Component의 생성, 소멸 생명주기 관리<br>Component 기반 GameObject 구성 및 관리<br>Scene 및 Object의 Update, Garbage Collection 관리<br><br>**제공 Component**<br>Transform Component: Object Transform 및 Hierarchy 관리<br>Camera Component: Perspective, Orthographic Projection 지원<br>Static Mesh Component: Static Mesh 및 Shadow Casting Mode 설정<br>SkyBox Component: Sky Map, Irradiance Map, Prefiltered Environment Map 설정<br>Directional Light Component: Cascade 설정 및 Shadow Mapping<br>Point Light Component: Attenuation 및 Shadow Mapping<br>Spot Light Component: Cutoff, Attenuation 및 Shadow Mapping |
 |**Editor**| **Main Window**: 	에디터의 메인 윈도우 및 메뉴 구성<br>**Scene Hierarchy Window**: Scene에 포함된 GameObject의 계층 구조 조회 및 관리<br>**Inspector Window**: 선택한 GameObject와 Component의 속성 조회 및 편집<br>**Scene View Window**: 현재 Scene의 렌더링 결과 확인 및 편집 도구 제공<br>**Asset Browser**: 엔진 에셋 탐색 및 관리<br>**Camera Preview	Window**: Scene에 존재하는 Camera의 렌더링 결과 확인<br>**Console Window**: 엔진 및 에디터에서 발생한 로그 확인|
+
 # Reference
